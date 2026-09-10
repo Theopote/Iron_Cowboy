@@ -1,0 +1,54 @@
+#include "Game/SteppeGameMode.h"
+#include "Player/SteppePlayerController.h"
+#include "Character/Horse/SteppeHorseCharacter.h"
+#include "Character/Horse/HorseAttributeComponent.h"
+#include "Character/Rider/SteppeRiderCharacter.h"
+#include "Character/Rider/RidingComponent.h"
+#include "Debug/SteppeHUD.h"
+#include "HAL/IConsoleManager.h"
+#include "Engine/World.h"
+#include "Steppe.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Paths.h"
+#include "TimerManager.h"
+#include "UnrealClient.h"
+ASteppeGameMode::ASteppeGameMode()
+{
+    PlayerControllerClass = ASteppePlayerController::StaticClass();
+    DefaultPawnClass=ASteppeRiderCharacter::StaticClass();
+    HUDClass=ASteppeHUD::StaticClass();
+    HorseClass=ASteppeHorseCharacter::StaticClass();
+}
+void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer)
+{
+    Super::HandleStartingNewPlayer_Implementation(NewPlayer);
+    auto* Rider=Cast<ASteppeRiderCharacter>(NewPlayer->GetPawn()); if (!Rider) { return; }
+    if (!IsValid(PlaygroundHorse))
+    {
+        FActorSpawnParameters Params; Params.SpawnCollisionHandlingOverride=ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
+        PlaygroundHorse=GetWorld()->SpawnActor<ASteppeHorseCharacter>(HorseClass,HorseSpawnTransform,Params);
+    }
+    if (PlaygroundHorse)
+    {
+        PlaygroundHorse->Attributes->bInfiniteStamina=bInfiniteStamina;
+        if (bStartMounted) { Rider->Riding->TryMount(PlaygroundHorse); }
+    }
+    else { UE_LOG(LogSteppe,Error,TEXT("Playground horse could not spawn; check spawn transform/collision.")); }
+    if (bDebugEnabled) { IConsoleManager::Get().FindConsoleVariable(TEXT("steppe.Debug.Horse"))->Set(1,ECVF_SetByCode); }
+    if (FParse::Param(FCommandLine::Get(),TEXT("SteppeSmoke")))
+    {
+        // Explicit development smoke mode; normal play never injects input or exits.
+        NewPlayer->SetControlRotation(FRotator(-12,0,0));
+        FTimerHandle StartHandle,ShotHandle,ExitHandle;
+        GetWorldTimerManager().SetTimer(StartHandle,FTimerDelegate::CreateWeakLambda(Rider,[Rider]()
+        {
+            FRidingIntent Intent; Intent.Forward=1; Rider->Riding->SetIntent(Intent);
+        }),1.f,false);
+        GetWorldTimerManager().SetTimer(ShotHandle,FTimerDelegate::CreateWeakLambda(this,[this]()
+        {
+            UE_LOG(LogSteppe,Display,TEXT("STEPPE_SMOKE: Horse=%s Speed=%.1f Mounted=%d"),*GetNameSafe(PlaygroundHorse),PlaygroundHorse?PlaygroundHorse->GetVelocity().Size2D():0.f,PlaygroundHorse && PlaygroundHorse->MountedRider.IsValid());
+            FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeSmoke.png"),true,false);
+        }),7.f,false);
+        GetWorldTimerManager().SetTimer(ExitHandle,FTimerDelegate::CreateWeakLambda(NewPlayer,[NewPlayer]() { NewPlayer->ConsoleCommand(TEXT("quit")); }),9.f,false);
+    }
+}
