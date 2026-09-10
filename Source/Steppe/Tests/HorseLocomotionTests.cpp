@@ -13,6 +13,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "GameFramework/WorldSettings.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSteppeMathTest,"Steppe.P1.MathAndStamina",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FSteppeMathTest::RunTest(const FString& Parameters)
@@ -53,8 +54,11 @@ bool FSteppeWorldTest::RunTest(const FString& Parameters)
     auto* Horse=World->SpawnActor<ASteppeHorseCharacter>(FVector(0,0,100),FRotator::ZeroRotator);
     auto* Rider=World->SpawnActor<ASteppeRiderCharacter>(FVector(0,200,100),FRotator::ZeroRotator);
     World->InitializeActorsForPlay(FURL()); World->BeginPlay();
+    World->GetWorldSettings()->NotifyBeginPlay();
+    World->GetWorldSettings()->NotifyMatchStarted();
     auto Step=[World](float Seconds)
     {
+        // Engine tick tasks deduplicate on GFrameCounter, even across explicit World::Tick calls.
         for (int32 I=0; I<FMath::RoundToInt(Seconds*60); ++I) { ++GFrameCounter; World->Tick(LEVELTICK_All,1.f/60); }
     };
     Step(.5f);
@@ -94,6 +98,7 @@ bool FSteppeWorldTest::RunTest(const FString& Parameters)
     Rider->Riding->Dismount(); TestFalse(TEXT("Safe dismount succeeds"),Rider->Riding->IsMounted());
     TestTrue(TEXT("Remount succeeds"),Rider->Riding->TryMount(Horse));
     Horse->Destroy(); TestFalse(TEXT("Destroyed mount releases rider"),Rider->Riding->IsMounted());
+    World->EndPlay(EEndPlayReason::Quit);
     World->DestroyWorld(false); GEngine->DestroyWorldContext(World);
     return true;
 }

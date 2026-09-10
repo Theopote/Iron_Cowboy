@@ -39,7 +39,12 @@ void ASteppeRiderCharacter::EnsureInputConfig()
 {
     if (!InputConfig) { InputConfig=NewObject<USteppeInputConfig>(this); InputConfig->CreateRuntimeDefaults(); }
 }
-void ASteppeRiderCharacter::PawnClientRestart() { Super::PawnClientRestart(); RefreshInputContext(); }
+void ASteppeRiderCharacter::PawnClientRestart()
+{
+    Super::PawnClientRestart();
+    if (Controller) { Riding->AddTickPrerequisiteActor(Controller); }
+    RefreshInputContext();
+}
 void ASteppeRiderCharacter::RefreshInputContext()
 {
     EnsureInputConfig();

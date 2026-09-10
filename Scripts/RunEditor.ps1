@@ -19,10 +19,15 @@ if ($Smoke) { $editorArgs += '-SteppeSmoke'; $editorArgs += '-windowed'; $editor
 if ($Tests) { $editorArgs += '-TestExit=Automation Test Queue Empty'; $editorArgs += "-ReportExportPath=$PSScriptRoot\..\Saved\Automation" }
 if ($PythonScript) { $editorArgs += "-ExecutePythonScript=$PythonScript" }
 else { $editorArgs += "-ExecCmds=$Commands" }
+$runStarted = Get-Date
 & $editorPath @editorArgs
 if ($LASTEXITCODE -ne 0) { throw "Editor exited with $LASTEXITCODE; see $logPath" }
 if ($Tests) {
-    $report = Get-Content (Join-Path $PSScriptRoot '..\Saved\Automation\index.json') -Raw | ConvertFrom-Json
-    if ($report.failed -gt 0 -or $report.succeeded -lt 2) { throw "Automation incomplete/failed: $($report.succeeded) succeeded, $($report.failed) failed; see $logPath" }
+    $reportPath = Join-Path $PSScriptRoot '..\Saved\Automation\index.json'
+    if ((Get-Item $reportPath).LastWriteTime -lt $runStarted) { throw 'Automation report is stale.' }
+    $report = Get-Content $reportPath -Raw | ConvertFrom-Json
+    $passed = $report.succeeded + $report.succeededWithWarnings
+    if ($report.failed -gt 0 -or $passed -lt 2 -or $report.notRun -gt 0 -or $report.inProcess -gt 0) { throw "Automation incomplete/failed: $passed passed, $($report.failed) failed; see $logPath" }
+    Write-Output "Automation: $passed passed, $($report.failed) failed, $($report.succeededWithWarnings) passed with warnings."
 }
 Write-Output "Editor exited successfully. Log: $logPath"

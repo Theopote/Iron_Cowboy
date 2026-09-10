@@ -10,6 +10,7 @@
 #include "Steppe.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Paths.h"
+#include "Misc/App.h"
 #include "TimerManager.h"
 #include "UnrealClient.h"
 ASteppeGameMode::ASteppeGameMode()
@@ -38,7 +39,9 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
     if (FParse::Param(FCommandLine::Get(),TEXT("SteppeSmoke")))
     {
         // Explicit development smoke mode; normal play never injects input or exits.
-        NewPlayer->SetControlRotation(FRotator(-12,0,0));
+        FApp::SetUseFixedTimeStep(true);
+        FApp::SetFixedDeltaTime(1.0/60.0);
+        NewPlayer->SetControlRotation(FRotator(-12,25,0));
         FTimerHandle StartHandle,ShotHandle,ExitHandle;
         GetWorldTimerManager().SetTimer(StartHandle,FTimerDelegate::CreateWeakLambda(Rider,[Rider]()
         {

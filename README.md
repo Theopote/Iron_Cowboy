@@ -1,32 +1,50 @@
 # 《套马的汉子》 / Project STEPPE
 
-目标是让骑手向马提出意图，由马的响应和运动系统决定结果。当前工作范围仅 P0 工程初始化与 P1 骑乘运动；不实现野马 AI、马群、套索等后续玩法。
+UE **5.8.2** 的 C++ 骑乘运动原型。范围仅 P0 + P1；目标是骑手提出意图，马以渐进加减速、速度相关转向与有限体力回应。
 
-目标引擎：**Unreal Engine 5.8**。2026-09-10 用户确认保留此版本，不改用本机 UE 5.7.4。
+## 打开与试玩
 
-当前：P0 源码骨架已建立，**构建与 Editor 验收阻塞**。P1 尚未开始，当前工程还不能骑马。
-
-## 构建与运行
-
-安装 UE 5.8 及其要求的 Visual Studio C++ 工具链后，在项目根目录执行：
+1. 关闭正在运行的 Steppe Editor，在项目根目录执行：
 
 ```powershell
-.\Scripts\Build.ps1 -EngineRoot 'D:\Program Files\Epic Games\UE_5.8'
+.\Scripts\Build.ps1 -EngineRoot 'C:\Program Files\Epic Games\UE_5.8'
 ```
 
-路径为示例，应替换为真实引擎目录。脚本检查引擎版本，拒绝使用其他版本。构建成功后用 UE 5.8 打开 `Steppe.uproject`，检查 Output Log 中模块加载情况与错误。完整 Editor 步骤见 `Docs/EDITOR_SETUP.md`。
+2. 用 UE 5.8.2 打开 `Steppe.uproject`。默认加载 `L_Prototype_Grassland`。
+3. 点击 Play，默认已骑上占位马。无需下载模型或手工创建输入资产。
 
-## 当前操作与调试
+当前是灰盒原型：方块马身、圆柱骑手、2 km 平地、距离标记、绕桩与坡道；没有最终动画、音效或美术。代码通过与手感满意是不同验收，P1 仍需至少 10 分钟人工试玩调参。
 
-P0 尚无骑乘按键。控制台可用 `steppe.Debug.Horse 1`、`steppe.Debug.Movement 1` 设置调试开关，`SteppeToggleDebug` 切换 Horse 开关；遥测与向量绘制将在 P1 实现。
+## 按键
 
-P1 计划按键：W/S 前进意图/减速，A/D 转向，鼠标自由观察，Shift 冲刺，Ctrl 制动，E 上下马，F1 调试。这些绑定尚未实现。
+| 按键 | 行为 |
+| --- | --- |
+| W | 前进意图；逐步加速至 Gallop |
+| S | 制动，不倒车 |
+| A / D | 缰绳转向，高速转向更慢 |
+| 鼠标 | 独立自由观察，不改变马朝向 |
+| 左 Shift + W | 请求 Sprint；受体力限制 |
+| 左 Ctrl | 强制动 |
+| E | 上马 / 下马，要求速度低于 200 cm/s，且下马侧有安全落脚点 |
+| F1 | 显示 / 隐藏马遥测 |
 
-## 文件
+松开 W 自然减速。Walk/Trot/Canter/Gallop/Sprint 根据实际速度和滞回计算，不是瞬间换挡。上下马切换 Enhanced Input Context。
 
-- `Source/Steppe/`：主模块、GameMode、PlayerController、Native Tags、日志、调试 Subsystem。
-- `Config/`：默认 GameMode、Enhanced Input 类及项目描述。
-- `Scripts/Build.ps1`：版本检查与 Editor 编译入口。
-- `Docs/`：架构、Editor 设置、进度、验收清单、原始需求副本。
+## 调试与调参
 
-没有创建任何 `.uasset` 或 `.umap`，也没有初始化或修改 Git 数据库。当前不提供可玩关卡、马模型或动画。
+控制台：`steppe.Debug.Horse 1` 显示状态、步态、速度、意图、转向、体力；`steppe.Debug.Movement 1` 显示向量。绿色=当前朝向，青色=速度，黄色=期望朝向，紫色=期望运动。`SteppeToggleDebug` 切换遥测。
+
+主要调参资产：`/Game/Steppe/Data/Horses/DA_HorseLocomotion_Default`。包含各步态速度/加减速度、转向曲线、体力门槛、FOV/距离曲线、镜头 Lag。Horse Blueprint 的 Attributes 组件提供个体速度上限、敏捷、体力和质量；GameMode Blueprint 提供 Start Mounted、Horse Spawn Transform、Debug Enabled、Infinite Stamina。
+
+## 验证
+
+```powershell
+.\Scripts\RunEditor.ps1 -Commands 'Automation RunTests Steppe.P1' -Tests -LogName P1-FinalTests
+.\Scripts\RunEditor.ps1 -Game -Render -Smoke -Commands '' -LogName P1-Render
+```
+
+第一条运行数学和真实 UWorld 集成测试，报告位于 `Saved/Automation/index.json`。第二条启动实际游戏，以固定 60 Hz 模拟约 9 秒，自动上马前进、截图并退出；不要用于人工试玩。截图位于 `Saved/Screenshots/SteppeSmoke.png`。
+
+当前构建使用 V7 / Unreal5_8 IncludeOrder；因本机共享 PCH 编译停顿，模块禁用 PCH，构建脚本传入 `-NoUBA` 禁用 detouring。没有修改引擎安装。Editor 开启 Live Coding 时应先保存关闭再运行外部构建。
+
+详见 `Docs/DEVELOPMENT_STATUS.md`（真实结果和逐项验收）、`Docs/ARCHITECTURE.md`、`Docs/EDITOR_SETUP.md`。没有实现 P2 AI、马群、套索或多人网络。
