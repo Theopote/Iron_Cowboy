@@ -106,7 +106,7 @@ void ASteppeRiderCharacter::Interact()
     for (TActorIterator<ASteppeHorseCharacter> It(GetWorld()); It; ++It)
     {
         const float D=FVector::Dist(It->GetActorLocation(),GetActorLocation());
-        if (D<Distance && !It->MountedRider.IsValid()) { Closest=*It; Distance=D; }
+        if (D<Distance && It->bCanBeMounted && !It->MountedRider.IsValid()) { Closest=*It; Distance=D; }
     }
     Riding->TryMount(Closest);
 }

@@ -13,12 +13,15 @@
 #include "Misc/App.h"
 #include "TimerManager.h"
 #include "UnrealClient.h"
+#include "Character/Horse/SteppeWildHorseCharacter.h"
+#include "AI/HorseBrainComponent.h"
 ASteppeGameMode::ASteppeGameMode()
 {
     PlayerControllerClass = ASteppePlayerController::StaticClass();
     DefaultPawnClass=ASteppeRiderCharacter::StaticClass();
     HUDClass=ASteppeHUD::StaticClass();
     HorseClass=ASteppeHorseCharacter::StaticClass();
+    WildHorseClass=ASteppeWildHorseCharacter::StaticClass();
 }
 void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer)
 {
@@ -35,6 +38,17 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
         if (bStartMounted) { Rider->Riding->TryMount(PlaygroundHorse); }
     }
     else { UE_LOG(LogSteppe,Error,TEXT("Playground horse could not spawn; check spawn transform/collision.")); }
+    if (bSpawnWildHorse)
+    {
+        if (!IsValid(WildHorse))
+        {
+            FActorSpawnParameters Params;
+            Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
+            WildHorse = GetWorld()->SpawnActor<ASteppeWildHorseCharacter>(WildHorseClass, WildHorseSpawnTransform, Params);
+        }
+        if (WildHorse) { WildHorse->Brain->SetThreatTarget(Rider); }
+        else { UE_LOG(LogSteppe, Error, TEXT("Wild horse spawn failed; check WildHorseClass and spawn clearance.")); }
+    }
     if (bDebugEnabled) { IConsoleManager::Get().FindConsoleVariable(TEXT("steppe.Debug.Horse"))->Set(1,ECVF_SetByCode); }
     if (FParse::Param(FCommandLine::Get(),TEXT("SteppeSmoke")))
     {
@@ -50,6 +64,12 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
         GetWorldTimerManager().SetTimer(ShotHandle,FTimerDelegate::CreateWeakLambda(this,[this]()
         {
             UE_LOG(LogSteppe,Display,TEXT("STEPPE_SMOKE: Horse=%s Speed=%.1f Mounted=%d"),*GetNameSafe(PlaygroundHorse),PlaygroundHorse?PlaygroundHorse->GetVelocity().Size2D():0.f,PlaygroundHorse && PlaygroundHorse->MountedRider.IsValid());
+            if (WildHorse)
+            {
+                UE_LOG(LogSteppe, Display, TEXT("STEPPE_P2_SMOKE: State=%s Awareness=%.2f Visible=%d Speed=%.1f"),
+                    *UEnum::GetValueAsString(WildHorse->Brain->State), WildHorse->Brain->Awareness,
+                    WildHorse->Brain->bThreatVisible, WildHorse->GetVelocity().Size2D());
+            }
             FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeSmoke.png"),true,false);
         }),7.f,false);
         GetWorldTimerManager().SetTimer(ExitHandle,FTimerDelegate::CreateWeakLambda(NewPlayer,[NewPlayer]() { NewPlayer->ConsoleCommand(TEXT("quit")); }),9.f,false);

@@ -7,6 +7,8 @@
 #include "Character/Horse/HorseLocomotionConfig.h"
 #include "DrawDebugHelpers.h"
 #include "Engine/World.h"
+#include "Character/Horse/SteppeWildHorseCharacter.h"
+#include "AI/HorseBrainComponent.h"
 void ASteppeHUD::DrawHUD()
 {
     Super::DrawHUD();
@@ -17,6 +19,27 @@ void ASteppeHUD::DrawHUD()
     auto* Horse=Mode?Mode->PlaygroundHorse.Get():nullptr; if (!IsValid(Horse)) { return; }
     auto* Move=Cast<UHorseMovementComponent>(Horse->GetCharacterMovement()); if (!Move) { return; }
     const auto& C=*Horse->GetLocomotionConfig();
+    if (IsValid(Mode->WildHorse))
+    {
+        auto* Wild = Mode->WildHorse.Get();
+        auto* Brain = Wild->Brain.Get();
+        if (Debug->IsHorseDebugEnabled())
+        {
+            DrawRect(FLinearColor(0,0,0,.65f),18,250,650,90);
+            DrawText(FString::Printf(TEXT("WILD HORSE: %s | awareness %.0f%%\nDistance %.1f m | closing %.1f m/s | visible %s\nPath %s | approach slowly, then compare a fast chase. Wild horse cannot be mounted."),
+                *UEnum::GetValueAsString(Brain->State), Brain->Awareness*100.f,
+                SteppeUnits::ToMetersPerSecond(Brain->ThreatDistance), SteppeUnits::ToMetersPerSecond(Brain->ClosingSpeed),
+                Brain->bThreatVisible?TEXT("yes"):TEXT("no"),Brain->bPathBlocked?TEXT("blocked"):TEXT("clear")),
+                FLinearColor(1,.85f,.3f),26,257,nullptr,1.f);
+            DrawDebugString(GetWorld(), FVector(0,0,180), FString::Printf(TEXT("WILD | %s"),*UEnum::GetValueAsString(Brain->State)), Wild, FColor::Yellow, 0.f, true);
+        }
+        if (Debug->IsMovementDebugEnabled())
+        {
+            const FVector Start = Wild->GetActorLocation()+FVector(0,0,130);
+            DrawDebugDirectionalArrow(GetWorld(), Start, Start+Brain->SteeringDirection*500.f,40,FColor::Orange,false,0,0,4);
+            DrawDebugSphere(GetWorld(), Brain->Goal,90,12,FColor::Orange,false,0,0,2);
+        }
+    }
     const TCHAR* Stress=Move->TurnStress>=C.StressCritical?TEXT("CRITICAL"):(Move->TurnStress>=C.StressWarning?TEXT("WARNING"):TEXT("SAFE"));
     if (Debug->IsHorseDebugEnabled())
     {

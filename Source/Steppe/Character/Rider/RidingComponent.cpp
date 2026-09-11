@@ -15,7 +15,7 @@ void URidingComponent::TickComponent(float Dt,ELevelTick TickType,FActorComponen
 bool URidingComponent::TryMount(ASteppeHorseCharacter* Horse)
 {
     auto* Rider=Cast<ASteppeRiderCharacter>(GetOwner());
-    if (!Rider || !IsValid(Horse) || IsMounted() || Horse->MountedRider.IsValid() || FVector::Dist(Rider->GetActorLocation(),Horse->GetActorLocation())>MountDistance || Horse->GetVelocity().Size2D()>DismountMaxSpeed)
+    if (!Rider || !IsValid(Horse) || !Horse->bCanBeMounted || IsMounted() || Horse->MountedRider.IsValid() || FVector::Dist(Rider->GetActorLocation(),Horse->GetActorLocation())>MountDistance || Horse->GetVelocity().Size2D()>DismountMaxSpeed)
     {
         UE_LOG(LogSteppeRiding,Display,TEXT("Mount refused: invalid/occupied target, distance or speed limit.")); return false;
     }

@@ -2,6 +2,10 @@
 #include "NativeGameplayTags.h"
 namespace SteppeTags
 {
+    STEPPE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Horse_State_Roaming);
+    STEPPE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Horse_State_Alert);
+    STEPPE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Horse_State_Flee);
+    STEPPE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Horse_State_Recovering);
     STEPPE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Horse_State_Idle);
     STEPPE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Horse_State_Moving);
     STEPPE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Horse_State_Stumbling);
