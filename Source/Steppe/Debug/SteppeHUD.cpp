@@ -9,6 +9,7 @@
 #include "Engine/World.h"
 #include "Character/Horse/SteppeWildHorseCharacter.h"
 #include "AI/HorseBrainComponent.h"
+#include "GameFramework/PlayerController.h"
 void ASteppeHUD::DrawHUD()
 {
     Super::DrawHUD();
@@ -27,11 +28,16 @@ void ASteppeHUD::DrawHUD()
         {
             DrawRect(FLinearColor(0,0,0,.65f),18,250,650,90);
             DrawText(FString::Printf(TEXT("WILD HORSE: %s | awareness %.0f%%\nDistance %.1f m | closing %.1f m/s | visible %s\nPath %s | approach slowly, then compare a fast chase. Wild horse cannot be mounted."),
-                *UEnum::GetValueAsString(Brain->State), Brain->Awareness*100.f,
+                *UEnum::GetDisplayValueAsText(Brain->State).ToString(), Brain->Awareness*100.f,
                 SteppeUnits::ToMetersPerSecond(Brain->ThreatDistance), SteppeUnits::ToMetersPerSecond(Brain->ClosingSpeed),
                 Brain->bThreatVisible?TEXT("yes"):TEXT("no"),Brain->bPathBlocked?TEXT("blocked"):TEXT("clear")),
                 FLinearColor(1,.85f,.3f),26,257,nullptr,1.f);
-            DrawDebugString(GetWorld(), FVector(0,0,180), FString::Printf(TEXT("WILD | %s"),*UEnum::GetValueAsString(Brain->State)), Wild, FColor::Yellow, 0.f, true);
+            FVector2D LabelPosition;
+            if (PlayerOwner && PlayerOwner->ProjectWorldLocationToScreen(Wild->GetActorLocation()+FVector(0,0,180),LabelPosition)
+                && (LabelPosition.X>680.f || LabelPosition.Y>350.f))
+            {
+                DrawText(TEXT("WILD HORSE"), FLinearColor::Yellow,LabelPosition.X,LabelPosition.Y,nullptr,1.f);
+            }
         }
         if (Debug->IsMovementDebugEnabled())
         {

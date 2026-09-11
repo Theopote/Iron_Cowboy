@@ -6,7 +6,8 @@ param(
     [switch]$Game,
     [switch]$Render,
     [switch]$Tests,
-    [switch]$Smoke
+    [switch]$Smoke,
+    [ValidateRange(1,10000)][int]$ExpectedTests = 2
 )
 $ErrorActionPreference = 'Stop'
 $projectPath = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\Steppe.uproject'))
@@ -27,7 +28,7 @@ if ($Tests) {
     if ((Get-Item $reportPath).LastWriteTime -lt $runStarted) { throw 'Automation report is stale.' }
     $report = Get-Content $reportPath -Raw | ConvertFrom-Json
     $passed = $report.succeeded + $report.succeededWithWarnings
-    if ($report.failed -gt 0 -or $passed -lt 2 -or $report.notRun -gt 0 -or $report.inProcess -gt 0) { throw "Automation incomplete/failed: $passed passed, $($report.failed) failed; see $logPath" }
+    if ($report.failed -gt 0 -or $passed -lt $ExpectedTests -or $report.notRun -gt 0 -or $report.inProcess -gt 0) { throw "Automation incomplete/failed: $passed passed (expected at least $ExpectedTests), $($report.failed) failed; see $logPath" }
     Write-Output "Automation: $passed passed, $($report.failed) failed, $($report.succeededWithWarnings) passed with warnings."
 }
 Write-Output "Editor exited successfully. Log: $logPath"

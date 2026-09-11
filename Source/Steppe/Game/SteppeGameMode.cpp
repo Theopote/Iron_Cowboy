@@ -15,6 +15,7 @@
 #include "UnrealClient.h"
 #include "Character/Horse/SteppeWildHorseCharacter.h"
 #include "AI/HorseBrainComponent.h"
+#include "AI/WildHorseConfig.h"
 ASteppeGameMode::ASteppeGameMode()
 {
     PlayerControllerClass = ASteppePlayerController::StaticClass();
@@ -66,9 +67,9 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
             UE_LOG(LogSteppe,Display,TEXT("STEPPE_SMOKE: Horse=%s Speed=%.1f Mounted=%d"),*GetNameSafe(PlaygroundHorse),PlaygroundHorse?PlaygroundHorse->GetVelocity().Size2D():0.f,PlaygroundHorse && PlaygroundHorse->MountedRider.IsValid());
             if (WildHorse)
             {
-                UE_LOG(LogSteppe, Display, TEXT("STEPPE_P2_SMOKE: State=%s Awareness=%.2f Visible=%d Speed=%.1f"),
+                UE_LOG(LogSteppe, Display, TEXT("STEPPE_P2_SMOKE: State=%s Awareness=%.2f Visible=%d Speed=%.1f Config=%s"),
                     *UEnum::GetValueAsString(WildHorse->Brain->State), WildHorse->Brain->Awareness,
-                    WildHorse->Brain->bThreatVisible, WildHorse->GetVelocity().Size2D());
+                    WildHorse->Brain->bThreatVisible, WildHorse->GetVelocity().Size2D(), *WildHorse->Brain->GetConfig().GetPathName());
             }
             FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeSmoke.png"),true,false);
         }),7.f,false);
