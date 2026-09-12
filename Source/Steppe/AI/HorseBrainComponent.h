@@ -7,7 +7,7 @@ class UWildHorseConfig;
 class ASteppeHorseCharacter;
 
 UENUM(BlueprintType)
-enum class EWildHorseState : uint8 { Roaming, Alert, Fleeing, Recovering };
+enum class EWildHorseState : uint8 { Roaming, Alert, Fleeing, Recovering, Yielding };
 
 UCLASS(ClassGroup=(Steppe), meta=(BlueprintSpawnableComponent))
 class STEPPE_API UHorseBrainComponent : public UActorComponent
@@ -31,6 +31,7 @@ public:
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") float StoppingProbeDistance = 0.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") FVector Goal = FVector::ZeroVector;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") FVector SteeringDirection = FVector::ZeroVector;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") float ApproachSpeed = 0.f;
     const UWildHorseConfig& GetConfig() const;
 private:
     void Sense(float Dt, const ASteppeHorseCharacter& Horse);
@@ -44,6 +45,7 @@ private:
     FRandomStream Random;
     float StateSeconds = 0.f;
     float UnseenSeconds = 1000.f;
+    float ReleasedSeconds = 0.f;
     float PauseRemaining = 0.f;
     float RoamGoalSeconds = 0.f;
 };

@@ -43,6 +43,7 @@ void UHorseBrainComponent::SetThreatTarget(AActor* Target)
     ThreatTarget = Target == GetOwner() ? nullptr : Target;
     bThreatVisible = false;
     ClosingSpeed = 0.f;
+    ApproachSpeed = 0.f;
     // Keep the last observed position briefly: losing sight must not instantly cancel a chase.
 }
 void UHorseBrainComponent::Sense(float Dt, const ASteppeHorseCharacter& Horse)
@@ -51,12 +52,14 @@ void UHorseBrainComponent::Sense(float Dt, const ASteppeHorseCharacter& Horse)
     bThreatVisible = false;
     ThreatDistance = 0.f;
     ClosingSpeed = 0.f;
+    ApproachSpeed = 0.f;
     if (AActor* Target = ThreatTarget.Get())
     {
         const FVector ToHorse = (Horse.GetActorLocation() - Target->GetActorLocation()).GetSafeNormal2D();
         ThreatDistance = FVector::Dist2D(Horse.GetActorLocation(), Target->GetActorLocation());
         // An attached rider's own movement component is disabled; use the mount's velocity.
         const AActor* MotionSource = Target->GetAttachParentActor() ? Target->GetAttachParentActor() : Target;
+        ApproachSpeed = FVector::DotProduct(MotionSource->GetVelocity(), ToHorse);
         ClosingSpeed = FMath::Max(0.f, FVector::DotProduct(MotionSource->GetVelocity() - Horse.GetVelocity(), ToHorse));
         if (ThreatDistance <= FMath::Max(1.f, C.NoticeDistance))
         {
@@ -69,11 +72,18 @@ void UHorseBrainComponent::Sense(float Dt, const ASteppeHorseCharacter& Horse)
         if (bThreatVisible) { LastThreatPosition = Target->GetActorLocation(); }
     }
     UnseenSeconds = bThreatVisible ? 0.f : UnseenSeconds + Dt;
-    if (bThreatVisible)
+    // Player pressure is independent of the horse's own escape velocity: a fleeing
+    // horse must not interpret its increasing separation as the player stopping.
+    const bool bPressure = bThreatVisible && ApproachSpeed > C.ApproachDeadZone;
+    ReleasedSeconds = bPressure ? 0.f : ReleasedSeconds + Dt;
+    if (bPressure)
     {
         const float Proximity = 1.f - FMath::Clamp(ThreatDistance / FMath::Max(1.f, C.NoticeDistance), 0.f, 1.f);
-        const float Rush = FMath::Clamp(ClosingSpeed / FMath::Max(1.f, C.FastClosingSpeed), 0.f, 2.f);
-        Awareness = FMath::Clamp(Awareness + FMath::Max(.01f,C.AwarenessRiseRate) * (.25f + Proximity + Rush) * Dt, 0.f, 1.f);
+        const float Rush = FMath::Clamp(ApproachSpeed / FMath::Max(1.f, C.FastClosingSpeed), 0.f, 2.f);
+        const float Ceiling = ApproachSpeed >= C.FastClosingSpeed ? 1.f : FMath::Max(C.AlertThreshold,FMath::Min(.6f,C.FlightThreshold-.05f));
+        const float Next = Awareness + FMath::Max(.01f,C.AwarenessRiseRate) * (.25f + Proximity + Rush) * Dt;
+        // Reduce existing fright gradually instead of snapping down to the slow cap.
+        Awareness = Awareness > Ceiling ? FMath::Max(Ceiling,Awareness-C.AwarenessDecayRate*Dt) : FMath::Min(Ceiling,Next);
     }
     else { Awareness = FMath::Max(0.f, Awareness - FMath::Max(.01f,C.AwarenessDecayRate) * Dt); }
 }
@@ -150,9 +160,10 @@ void UHorseBrainComponent::TickComponent(float Dt, ELevelTick TickType, FActorCo
         && !IsDirectionSupported(*Horse,Horse->GetVelocity().GetSafeNormal2D(),StoppingProbeDistance);
     StateSeconds += Dt;
     Sense(Dt, *Horse);
-    const bool ImmediateDanger = bThreatVisible && (ThreatDistance <= C.FlightDistance ||
-        (ThreatDistance <= C.FastApproachDistance && ClosingSpeed >= C.FastClosingSpeed));
-    const bool Alarm = ImmediateDanger || Awareness >= FMath::Clamp(C.FlightThreshold, .01f, 1.f);
+    const bool ImmediateDanger = bThreatVisible && (ThreatDistance <= C.PanicDistance ||
+        (ThreatDistance <= C.FastApproachDistance && ApproachSpeed >= C.FastClosingSpeed));
+    const bool Alarm = ImmediateDanger || (ApproachSpeed >= C.FastClosingSpeed && Awareness >= C.FlightThreshold);
+    const bool YieldPressure = bThreatVisible && ThreatDistance <= C.FlightDistance && ApproachSpeed > C.ApproachDeadZone;
     switch (State)
     {
     case EWildHorseState::Roaming:
@@ -161,26 +172,31 @@ void UHorseBrainComponent::TickComponent(float Dt, ELevelTick TickType, FActorCo
         break;
     case EWildHorseState::Alert:
         if (ImmediateDanger || (Alarm && StateSeconds >= C.MinimumAlertSeconds)) { ChangeState(EWildHorseState::Fleeing); }
-        else if (!bThreatVisible && Awareness <= C.CalmThreshold && StateSeconds >= C.MinimumAlertSeconds) { ChangeState(EWildHorseState::Recovering); }
+        else if (YieldPressure && StateSeconds >= C.MinimumAlertSeconds) { ChangeState(EWildHorseState::Yielding); }
+        else if (Awareness <= C.CalmThreshold && StateSeconds >= C.MinimumAlertSeconds) { ChangeState(EWildHorseState::Recovering); }
         break;
     case EWildHorseState::Fleeing:
-        if (!ImmediateDanger && !bThreatVisible && UnseenSeconds >= C.ThreatMemorySeconds && StateSeconds >= C.MinimumFlightSeconds) { ChangeState(EWildHorseState::Recovering); }
+        if (!ImmediateDanger && ReleasedSeconds >= C.PressureReleaseSeconds && (bThreatVisible || UnseenSeconds >= C.ThreatMemorySeconds) && StateSeconds >= C.MinimumFlightSeconds) { ChangeState(EWildHorseState::Recovering); }
+        break;
+    case EWildHorseState::Yielding:
+        if (Alarm) { ChangeState(EWildHorseState::Fleeing); }
+        else if (!YieldPressure && StateSeconds >= C.MinimumAlertSeconds) { ChangeState(EWildHorseState::Alert); }
         break;
     case EWildHorseState::Recovering:
         if (ImmediateDanger) { ChangeState(EWildHorseState::Fleeing); }
-        else if (bThreatVisible && Awareness >= C.AlertThreshold) { ChangeState(EWildHorseState::Alert); }
+        else if (bThreatVisible && ApproachSpeed > C.ApproachDeadZone && Awareness >= C.AlertThreshold) { ChangeState(EWildHorseState::Alert); }
         else if (Awareness <= C.CalmThreshold && StateSeconds >= C.RecoverySeconds) { ChangeState(EWildHorseState::Roaming); }
         break;
     }
     FHorseMovementIntent Intent;
     bPathBlocked = false;
-    if (State == EWildHorseState::Fleeing)
+    if (State == EWildHorseState::Fleeing || State == EWildHorseState::Yielding)
     {
         FVector Away = (Horse->GetActorLocation() - LastThreatPosition).GetSafeNormal2D();
         if (Away.IsNearlyZero()) { Away = Horse->GetActorForwardVector(); }
         Goal = Horse->GetActorLocation() + Away * FMath::Max(1.f,C.EscapeLookAhead);
-        Intent.DesiredSpeed = C.FlightSpeed;
-        Intent.RequestedGait = EHorseGait::Gallop;
+        Intent.DesiredSpeed = State == EWildHorseState::Yielding ? C.YieldSpeed : C.FlightSpeed;
+        Intent.RequestedGait = State == EWildHorseState::Yielding ? EHorseGait::Walk : EHorseGait::Gallop;
     }
     else if (State == EWildHorseState::Roaming)
     {
@@ -208,6 +224,7 @@ FGameplayTag UHorseBrainComponent::GetBehaviorTag() const
 {
     switch (State)
     {
+    case EWildHorseState::Yielding: return SteppeTags::Horse_State_Yielding;
     case EWildHorseState::Alert: return SteppeTags::Horse_State_Alert;
     case EWildHorseState::Fleeing: return SteppeTags::Horse_State_Flee;
     case EWildHorseState::Recovering: return SteppeTags::Horse_State_Recovering;

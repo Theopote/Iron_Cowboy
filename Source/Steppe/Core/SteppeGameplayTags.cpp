@@ -3,6 +3,7 @@ namespace SteppeTags
 {
     UE_DEFINE_GAMEPLAY_TAG(Horse_State_Roaming, "Horse.State.Roaming");
     UE_DEFINE_GAMEPLAY_TAG(Horse_State_Alert, "Horse.State.Alert");
+    UE_DEFINE_GAMEPLAY_TAG(Horse_State_Yielding, "Horse.State.Yielding");
     UE_DEFINE_GAMEPLAY_TAG(Horse_State_Flee, "Horse.State.Flee");
     UE_DEFINE_GAMEPLAY_TAG(Horse_State_Recovering, "Horse.State.Recovering");
     UE_DEFINE_GAMEPLAY_TAG(Horse_State_Idle, "Horse.State.Idle");

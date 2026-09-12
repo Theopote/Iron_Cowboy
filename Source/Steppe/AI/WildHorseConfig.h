@@ -10,7 +10,12 @@ class STEPPE_API UWildHorseConfig : public UDataAsset
 public:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Sensing", meta=(ClampMin="0.02")) float DecisionInterval = .1f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Sensing", meta=(ClampMin="1")) float NoticeDistance = 3500.f;
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Sensing", meta=(ClampMin="1")) float FlightDistance = 900.f;
+    // Existing assets retain this distance as the slow-approach yielding boundary.
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Sensing", meta=(ClampMin="1", DisplayName="Yield Distance")) float FlightDistance = 900.f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Sensing", meta=(ClampMin="1")) float PanicDistance = 350.f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Sensing", meta=(ClampMin="0")) float ApproachDeadZone = 20.f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="State", meta=(ClampMin="0")) float PressureReleaseSeconds = 2.f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="State", meta=(ClampMin="1")) float YieldSpeed = 220.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Sensing", meta=(ClampMin="1")) float FastApproachDistance = 2500.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Sensing", meta=(ClampMin="1")) float FastClosingSpeed = 700.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Sensing", meta=(ClampMin="0")) float ThreatMemorySeconds = 3.f;

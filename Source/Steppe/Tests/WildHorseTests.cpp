@@ -64,6 +64,7 @@ bool FWildPerceptionTest::RunTest(const FString& Parameters)
     Wild->GetCharacterMovement()->SetComponentTickEnabled(false);
     Rider->GetCharacterMovement()->SetComponentTickEnabled(false);
     Wild->Brain->SetThreatTarget(Rider);
+    Rider->GetCharacterMovement()->Velocity=FVector(180,0,0);
     Fixture.Step(.5f);
     TestTrue(TEXT("Clear line of sight detected"),Wild->Brain->bThreatVisible);
     TestEqual(TEXT("Slow approach has a calm observation period"),Wild->Brain->State,EWildHorseState::Roaming);
@@ -83,7 +84,7 @@ bool FWildPerceptionTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Calms after cooldown"),Wild->Brain->State,EWildHorseState::Roaming);
     TestTrue(TEXT("Awareness remains bounded"),Wild->Brain->Awareness>=0 && Wild->Brain->Awareness<=1);
     Wall->Destroy(); Rider->GetCharacterMovement()->Velocity=FVector::ZeroVector;
-    Rider->SetActorLocation(FVector(-500,0,100)); Fixture.Step(.2f);
+    Rider->SetActorLocation(FVector(-250,0,100)); Fixture.Step(.2f);
     TestEqual(TEXT("Very close threat triggers immediate flight"),Wild->Brain->State,EWildHorseState::Fleeing);
     Rider->Destroy(); Fixture.Step(10.f);
     TestEqual(TEXT("Destroyed target safely releases threat"),Wild->Brain->State,EWildHorseState::Roaming);
@@ -95,7 +96,7 @@ bool FWildMovementTest::RunTest(const FString& Parameters)
 {
     FWildTestWorld Fixture;
     auto* Wild = Fixture.World->SpawnActor<ASteppeWildHorseCharacter>(FVector(0,0,100),FRotator::ZeroRotator);
-    auto* Rider = Fixture.World->SpawnActor<ASteppeRiderCharacter>(FVector(-500,0,100),FRotator::ZeroRotator);
+    auto* Rider = Fixture.World->SpawnActor<ASteppeRiderCharacter>(FVector(-250,0,100),FRotator::ZeroRotator);
     Fixture.Begin();
     Wild->Brain->SetThreatTarget(Rider);
     Fixture.Step(1.f);
@@ -146,6 +147,49 @@ bool FWildHazardTest::RunTest(const FString& Parameters)
         Fixture.Step(.2f);
         TestFalse(TEXT("Clear lateral ground releases hazard brake"),Wild->Brain->bBrakingForHazard);
     }
+    return true;
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FWildApproachTest,"Steppe.P2.SlowApproachAndRelease",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FWildApproachTest::RunTest(const FString& Parameters)
+{
+    FWildTestWorld Fixture;
+    auto* Wild=Fixture.World->SpawnActor<ASteppeWildHorseCharacter>(FVector(0,0,100),FRotator::ZeroRotator);
+    auto* Rider=Fixture.World->SpawnActor<ASteppeRiderCharacter>(FVector(-2000,0,100),FRotator::ZeroRotator);
+    // Exercise the saved gameplay asset as well as native defaults used by other tests.
+    Wild->Brain->Config=LoadObject<UWildHorseConfig>(nullptr,TEXT("/Game/Steppe/Data/Horses/DA_WildHorse_Default.DA_WildHorse_Default"));
+    if (!TestNotNull(TEXT("Gameplay tuning asset loads"),Wild->Brain->Config.Get())) { return false; }
+    Fixture.Begin();
+    auto* Move=CastChecked<UHorseMovementComponent>(Wild->GetCharacterMovement());
+    Move->SetComponentTickEnabled(false);
+    Rider->GetCharacterMovement()->SetComponentTickEnabled(false);
+    Wild->Brain->SetThreatTarget(Rider);
+    // Hold distance constant to compare approaches without locomotion changing the stimulus.
+    Rider->GetCharacterMovement()->Velocity=FVector(180,0,0);
+    Fixture.Step(12.f);
+    TestEqual(TEXT("Sustained slow pressure observes rather than panics"),Wild->Brain->State,EWildHorseState::Alert);
+    TestTrue(TEXT("Slow awareness stays below flight threshold"),Wild->Brain->Awareness<Wild->Brain->GetConfig().FlightThreshold);
+    Rider->SetActorLocation(FVector(-800,0,100)); Fixture.Step(1.f);
+    TestEqual(TEXT("Slow approach at eight metres yields instead of fleeing"),Wild->Brain->State,EWildHorseState::Yielding);
+    TestTrue(TEXT("Yield uses walking intent"),Move->HorseIntent.DesiredSpeed>0 && Move->HorseIntent.DesiredSpeed<=250);
+    Rider->GetCharacterMovement()->Velocity=FVector::ZeroVector; Fixture.Step(1.f);
+    TestEqual(TEXT("Stopping halts retreat while player remains visible"),Wild->Brain->State,EWildHorseState::Alert);
+    TestEqual(TEXT("Observation requests no forward speed"),Move->HorseIntent.DesiredSpeed,0.f);
+    Fixture.Step(8.f);
+    TestEqual(TEXT("Visible stationary player permits full recovery"),Wild->Brain->State,EWildHorseState::Roaming);
+    Rider->SetActorLocation(FVector(-2000,0,100));
+    Rider->GetCharacterMovement()->Velocity=FVector(1000,0,0); Fixture.Step(.2f);
+    TestEqual(TEXT("Fast approach flees at twenty metres"),Wild->Brain->State,EWildHorseState::Fleeing);
+    Move->Velocity=FVector(1200,0,0); Fixture.Step(5.f);
+    TestEqual(TEXT("Horse outrunning player does not falsely release pursuit"),Wild->Brain->State,EWildHorseState::Fleeing);
+    Rider->GetCharacterMovement()->Velocity=FVector(-180,0,0); Fixture.Step(3.f);
+    TestEqual(TEXT("Visible retreat releases flight"),Wild->Brain->State,EWildHorseState::Recovering);
+    TestTrue(TEXT("Retreat is a signed approach speed"),Wild->Brain->ApproachSpeed<0.f);
+    // Return to a slow close approach with real horse movement enabled.
+    Move->Velocity=FVector::ZeroVector; Fixture.Step(8.f);
+    Rider->SetActorLocation(FVector(-800,0,100)); Rider->GetCharacterMovement()->Velocity=FVector(180,0,0);
+    Move->SetComponentTickEnabled(true); Fixture.Step(3.f);
+    TestTrue(TEXT("Yield moves horse through CMC at a bounded walking speed"),Wild->GetActorLocation().X>30 && Move->CurrentSpeed<=250.f);
+    TestTrue(TEXT("Slow physical approach never enters flight"),Wild->Brain->State!=EWildHorseState::Fleeing);
     return true;
 }
 #endif

@@ -27,9 +27,9 @@ void ASteppeHUD::DrawHUD()
         if (Debug->IsHorseDebugEnabled())
         {
             DrawRect(FLinearColor(0,0,0,.65f),18,250,650,90);
-            DrawText(FString::Printf(TEXT("WILD HORSE: %s | awareness %.0f%%\nDistance %.1f m | closing %.1f m/s | visible %s\nPath %s | approach slowly, then compare a fast chase. Wild horse cannot be mounted."),
+            DrawText(FString::Printf(TEXT("WILD HORSE: %s | awareness %.0f%%\nDistance %.1f m | approach %.1f m/s | visible %s\nPath %s | approach slowly, then compare a fast chase. Wild horse cannot be mounted."),
                 *UEnum::GetDisplayValueAsText(Brain->State).ToString(), Brain->Awareness*100.f,
-                SteppeUnits::ToMetersPerSecond(Brain->ThreatDistance), SteppeUnits::ToMetersPerSecond(Brain->ClosingSpeed),
+                SteppeUnits::ToMetersPerSecond(Brain->ThreatDistance), SteppeUnits::ToMetersPerSecond(Brain->ApproachSpeed),
                 Brain->bThreatVisible?TEXT("yes"):TEXT("no"),Brain->bBrakingForHazard?TEXT("hazard braking"):(Brain->bPathBlocked?TEXT("blocked"):TEXT("clear"))),
                 FLinearColor(1,.85f,.3f),26,257,nullptr,1.f);
             FVector2D LabelPosition;
