@@ -101,3 +101,29 @@ UE 5.8.2 编译通过，5 项测试通过（骑乘测试保留预期座位占位
 证据：Validation/P21-Results.json、Validation/P21-Retry-Playground.png；日志 Saved/Logs/P21-Tests.log 与 P21-RetryRender.log。自动重试调用与 F2 相同的方法，尚未模拟物理键盘 F2 或单独验证 PIE 重载。
 
 试玩时按 W 接近野马，观察转向与 Path，按 F2 回起点比较慢速和高速接近。复杂障碍仍可能停住，尚无全局寻路；有限采样可能漏掉很窄的沟隙，急坡可能被保守拒绝，不能保证任意速度/地形均及时停下。本轮保持 P2。
+
+## P2.2 慢速接近与压力解除（2026-09-12）
+
+用户试玩反馈：慢速与快速接近看起来都会直接逃跑。本轮将反应拆为观察、缓慢退让与逃跑，以下规则替代前文 P2 的无条件 9 米逃跑及可见即累积警觉规则。
+
+| 玩家行为 | 默认反应 |
+| --- | --- |
+| 低于 7 m/s 朝野马接近 | 先 Alert 停下观察，持续慢速压力的警觉上限为 60%，不会仅因等得久而触发逃跑 |
+| 慢速持续逼近至约 9 m | 观察至少 0.8 秒后进入 Yielding，按 220 cm/s 的目标速度走开 |
+| 7 m/s 及以上朝野马接近，距离在 25 m 内 | 立即 Fleeing，目标速度 1200 cm/s |
+| 任意方式进入 3.5 m 内 | 仍会立即逃跑，保留贴身安全距离 |
+| 停下、退后或不再朝野马移动 | 警觉下降；退让回到观察，逃跑在满足至少 3 秒逃跑和 2 秒压力解除后进入恢复；无需完全离开视线 |
+
+速度为朝向野马的玩家运动分量，不是按键按下时间；侧向经过不等于直接逼近。HUD 的 approach 显示该有符号速度，负数表示退后。原 ClosingSpeed 仍保留为双方相对靠近速度；逃跑中的野马不会因自己跑得更快而误判玩家停止追赶。状态行为标签新增 Horse.State.Yielding。
+
+兼容现有 DataAsset：原 FlightDistance 属性保留，但编辑器显示名改为 Yield Distance，现用于退让边界；新增 PanicDistance=350、ApproachDeadZone=20、PressureReleaseSeconds=2、YieldSpeed=220。未覆写已有调参或重建地图。Yielding 追加到状态枚举末尾，保持旧状态序号。
+
+试玩：F2 回起点，轻点 W 保持 HUD approach 低于 7 m/s，观察 Alert → Yielding；松开 W 后若坐骑仍在滑行，可用 Ctrl 刹停，观察警觉下降。再 F2 重试并持续按 W 加速，比较更远处触发 Fleeing。野马仍为占位模型，观察与退让主要通过停止/走开及 HUD 辨认，没有抬头动画。
+
+验证：UE 5.8.2 编译成功，6 项自动测试通过。新增 SlowApproachAndRelease 使用实际 DA_WildHorse_Default，覆盖长时间慢速压力、8 米退让、停止后可见恢复、20 米快速逃跑、野马跑得比玩家快时保持逃跑、玩家退后解除压力，以及通过真实 CMC 产生低速位移。原骑乘、感知遮挡、避障与沟隙测试均通过。运行命令：
+```powershell
+.\Scripts\RunEditor.ps1 -Tests -ExpectedTests 6 -Commands 'Automation RunTests Steppe.' -LogName P22-Tests
+.\Scripts\RunEditor.ps1 -Game -Render -Smoke -RetrySmoke -Commands 'steppe.Debug.Movement 1' -LogName P22-Render
+```
+
+证据：Validation/P22-Results.json、P22-Playground.png、P22-Retry.txt。自动测试验证规则差异，实际手感仍待试玩。本轮为 P2.2，尚未实现马群。
