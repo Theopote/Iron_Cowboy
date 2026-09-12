@@ -9,6 +9,7 @@ param(
     [switch]$Smoke,
     [switch]$RetrySmoke,
     [switch]$HerdIdleSmoke,
+    [switch]$IsolationSmoke,
     [ValidateRange(1,10000)][int]$ExpectedTests = 2
 )
 $ErrorActionPreference = 'Stop'
@@ -20,6 +21,7 @@ if (!$Render) { $editorArgs += '-nullrhi' }
 if ($Game) { $editorArgs += '-game' }
 if ($Smoke) { $editorArgs += '-SteppeSmoke'; $editorArgs += '-windowed'; $editorArgs += '-ResX=1280'; $editorArgs += '-ResY=720' }
 if ($HerdIdleSmoke) { if (!$Smoke -or !$Game) { throw 'HerdIdleSmoke requires Game and Smoke.' }; $editorArgs += '-SteppeHerdIdleSmoke' }
+if ($IsolationSmoke) { if (!$Smoke -or !$Game) { throw 'IsolationSmoke requires Game and Smoke.' }; $editorArgs += '-SteppeIsolationSmoke' }
 if ($RetrySmoke) { if (!$Smoke -or !$Game) { throw 'RetrySmoke requires Game and Smoke.' }; $editorArgs += '-SteppeRetrySmoke' }
 if ($Tests) { $editorArgs += '-TestExit=Automation Test Queue Empty'; $editorArgs += "-ReportExportPath=$PSScriptRoot\..\Saved\Automation" }
 if ($PythonScript) { $editorArgs += "-ExecutePythonScript=$PythonScript" }
@@ -58,5 +60,12 @@ if ($HerdIdleSmoke) {
         throw "Idle herd smoke did not confirm varied calm movement without blockage; see $logPath"
     }
     Write-Output 'Idle herd smoke: five calm horses, varied headings, no blockage or flight.'
+}
+if ($IsolationSmoke) {
+    $isolationLog = Get-Content $logPath -Raw
+    if ($isolationLog -notmatch 'STEPPE_P4_SMOKE: Focus=H[1-5]') {
+        throw "Isolation smoke did not select a visible herd member; see $logPath"
+    }
+    Write-Output 'Isolation smoke: a visible herd member was selected.'
 }
 Write-Output "Editor exited successfully. Log: $logPath"

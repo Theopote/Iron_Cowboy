@@ -16,6 +16,7 @@ public:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) TObjectPtr<UInputAction> Interact;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) TObjectPtr<UInputAction> MountDismount;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) TObjectPtr<UInputAction> Debug;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) TObjectPtr<UInputAction> FocusTarget;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) TObjectPtr<UInputMappingContext> OnFoot;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) TObjectPtr<UInputMappingContext> Riding;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) TObjectPtr<UInputAction> RestartTrial;

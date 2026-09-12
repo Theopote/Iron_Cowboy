@@ -1,6 +1,6 @@
 # 《套马的汉子》 / Project STEPPE
 
-UE **5.8.2** 的 C++ 骑乘运动原型。当前已完成 P1 基础并加入 P2 单匹野马；目标是骑手提出意图，马以渐进加减速、速度相关转向与有限体力回应。
+UE **5.8.2** 的 C++ 骑乘运动原型。当前已完成 P4 目标切出；骑手可驱赶五匹小规模马群并选定一匹完成隔离。
 
 ## 打开与试玩
 
@@ -11,7 +11,7 @@ UE **5.8.2** 的 C++ 骑乘运动原型。当前已完成 P1 基础并加入 P2 
 ```
 
 2. 用 UE 5.8.2 打开 `Steppe.uproject`。默认加载 `L_Prototype_Grassland`。
-3. 点击 Play，默认已骑上占位马。前方约 38 m 有一匹浅色野马，可缓慢接近或加速追逐。无需下载模型或手工创建输入资产。
+3. 点击 Play，默认已骑上占位马。前方约 38 m 有五匹浅色野马，可缓慢接近、加速追逐，并用 Q 选择一匹尝试切出。无需下载模型或手工创建输入资产。
 
 当前是灰盒原型：方块马身、圆柱骑手、2 km 平地、距离标记、绕桩与坡道；没有最终动画、音效或美术。代码通过与手感满意是不同验收，P1 仍需至少 10 分钟人工试玩调参。
 
@@ -26,7 +26,9 @@ UE **5.8.2** 的 C++ 骑乘运动原型。当前已完成 P1 基础并加入 P2 
 | 左 Shift + W | 请求 Sprint；受体力限制 |
 | 左 Ctrl | 强制动 |
 | E | 上马 / 下马，要求速度低于 200 cm/s，且下马侧有安全落脚点 |
+| Q | 选择视线前方的野马；再次选择同一匹可取消 |
 | F1 | 显示 / 隐藏马遥测 |
+| F2 | 重试当前场景 |
 
 松开 W 自然减速。Walk/Trot/Canter/Gallop/Sprint 根据实际速度和滞回计算，不是瞬间换挡。上下马切换 Enhanced Input Context。
 
@@ -47,4 +49,4 @@ UE **5.8.2** 的 C++ 骑乘运动原型。当前已完成 P1 基础并加入 P2 
 
 当前构建使用 V7 / Unreal5_8 IncludeOrder；因本机共享 PCH 编译停顿，模块禁用 PCH，构建脚本传入 `-NoUBA` 禁用 detouring。没有修改引擎安装。Editor 开启 Live Coding 时应先保存关闭再运行外部构建。
 
-详见 `Docs/DEVELOPMENT_STATUS.md`（真实结果和逐项验收）、`Docs/ARCHITECTURE.md`、`Docs/EDITOR_SETUP.md`。当前已实现 P3 的 5 匹小规模马群，试玩与配置见 `Docs/P3_SMALL_HERD.md`；尚未实现目标切出、套索、捕获或多人网络。
+详见 `Docs/DEVELOPMENT_STATUS.md`（真实结果和逐项验收）、`Docs/ARCHITECTURE.md`、`Docs/EDITOR_SETUP.md`。P4 试玩和验证见 `Docs/P4_TARGET_ISOLATION.md`；尚未实现套索、捕获或多人网络。

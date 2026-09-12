@@ -71,6 +71,7 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
         FApp::SetFixedDeltaTime(1.0/60.0);
         NewPlayer->SetControlRotation(FRotator(-12,25,0));
         const bool bHerdIdleSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeHerdIdleSmoke"));
+        const bool bIsolationSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeIsolationSmoke"));
         // Process-local count is restricted to this opt-in standalone smoke run.
         static int32 RetrySmokeCount=0;
         if (FParse::Param(FCommandLine::Get(),TEXT("SteppeRetrySmoke")))
@@ -85,7 +86,12 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
                 { CastChecked<ASteppePlayerController>(NewPlayer)->SteppeRestartTrial(); }),3.f,false);
             }
         }
-        FTimerHandle StartHandle,ShotHandle,ExitHandle;
+        FTimerHandle StartHandle,FocusHandle,ShotHandle,ExitHandle;
+        if (bIsolationSmoke)
+        {
+            GetWorldTimerManager().SetTimer(FocusHandle,FTimerDelegate::CreateWeakLambda(NewPlayer,[NewPlayer]()
+            { CastChecked<ASteppePlayerController>(NewPlayer)->SteppeFocusTarget(); }),1.2f,false);
+        }
         if (!bHerdIdleSmoke)
         {
             GetWorldTimerManager().SetTimer(StartHandle,FTimerDelegate::CreateWeakLambda(Rider,[Rider]()
@@ -122,6 +128,10 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
                 UE_LOG(LogSteppe,Display,TEXT("STEPPE_P3_SMOKE: Members=%d Alert=%d Yielding=%d Fleeing=%d Moving=%d Headings=%d Blocked=%d Recovering=%d Sources=%d MinSpacing=%.1f Spread=%.1f"),
                     HerdManager->Members.Num(),Alert,Yielding,Fleeing,Moving,HeadingBuckets.Num(),Blocked,Recovering,HerdManager->AlarmSourceCount,HerdManager->MinimumMemberSpacing,
                     HerdManager->Members.Num()>1?FVector::Dist2D(HerdManager->Members[0]->GetActorLocation(),HerdManager->Members.Last()->GetActorLocation()):0.f);
+                const int32 FocusIndex=WildHorses.IndexOfByKey(HerdManager->FocusedHorse);
+                UE_LOG(LogSteppe,Display,TEXT("STEPPE_P4_SMOKE: Focus=%s Distance=%.1f Progress=%.2f Isolated=%d"),
+                    FocusIndex==INDEX_NONE?TEXT("None"):*FString::Printf(TEXT("H%d"),FocusIndex+1),
+                    HerdManager->IsolationDistance,HerdManager->IsolationProgress,HerdManager->bTargetIsolated);
             }
             FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeSmoke.png"),true,false);
         }),bHerdIdleSmoke?3.5f:7.f,false);

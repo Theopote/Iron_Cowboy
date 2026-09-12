@@ -43,6 +43,7 @@ public:
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") float IndividualReactionScale = 1.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") float IndividualSteeringBias = 0.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") bool bRecoveringFromBlockage = false;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") bool bIsolationFocus = false;
     const UWildHorseConfig& GetConfig() const;
 private:
     void Sense(float Dt, const ASteppeHorseCharacter& Horse);

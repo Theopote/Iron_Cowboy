@@ -1,66 +1,57 @@
 # Current Phase
 
-**P3.1 — 马群个体差异、正确出生位置、动态避让与脱困已实现。**
+**P4 — 视线选马与目标切出闭环已实现，等待人工手感验收。**
 
-2026-09-11：用户试玩 P1 并反馈基本可用，随后授权按单匹野马计划继续。P1 基线记录保存在 P1_BASELINE.md。原始提示词的 P1 停止条件没有被自动越过，本次 P2 来自后续明确授权。
+项目使用 UE 5.8.2。P1 骑乘基础、P2 单匹野马、P2.2 慢速退让、P3 小规模马群和 P3.1 个体差异/防卡住均已通过对应试玩反馈后继续推进。
 
 # Completed
 
-- 新增 SteppeWildHorseCharacter、HorseBrainComponent、WildHorseConfig。
-- Roaming / Alert / Fleeing / Recovering 四状态，警觉积累、视线遮挡、相对靠近速度、最低状态持续时间与威胁记忆。
-- AI 只生成 FHorseMovementIntent，复用现有 CMC 加减速、转向、体力与碰撞。
-- 局部障碍探测和前方落脚检查；无可行方向时请求制动。
-- 禁止 E 直接骑走野马；原坐骑上下马不受影响。
-- GameMode 默认生成一匹野马，并显式绑定玩家骑手为感知目标。
-- 新增行为遥测与橙色方向/目标显示，避免世界标签遮盖 HUD。
-- Editor 创建真实野马 Blueprint、行为 DataAsset、占位材质，并保存引用到现有 GameMode；不重建已有地图。
+- 骑手输入经 RidingIntent 驱动坐骑，具备渐进加减速、速度相关转向、步态、体力、独立观察和安全上下马。
+- 五匹完整 WildHorse Actor 各自运行感知、状态机、局部避障和 CMC；HerdManager 汇总邻居、分离、群体方向与延迟警报。
+- 成员拥有不同游荡目标、暂停、反应尺度和转向偏好；探测区分环境与动态 Pawn，并具备拥挤让路和全阻挡原地找路。
+- Q 从视线前方 60 米范围选择一匹目标，再次选择同一匹可取消。
+- 目标保留自身逃跑、环境探测、动态避让和成员分离，关闭凝聚与群体方向对齐，支持从侧后方切离群体。
+- 目标距其余马群中心至少 18 米并保持 2 秒后完成隔离；HUD 显示编号、距离、进度和 ISOLATED。
+- F2 重试会重置骑手、坐骑、马群、目标与隔离进度。
 
 # Build Result
 
 **Succeeded — UE 5.8.2 / SteppeEditor Win64 Development。**
 
-UHT、C++ 编译和链接成功。仍使用 P1 已验证的 NoPCHs / -NoUBA 本地构建设置，没有修改引擎，没有增加 AIModule、NavigationSystem、Mass 或 GAS 依赖。
+UHT、C++ 编译和链接成功。仍使用已验证的 NoPCHs / -NoUBA 本地构建设置，没有修改引擎，也没有增加 NavigationSystem、Mass、GAS 或绳索物理依赖。
 
 # Validation
 
-自动测试：**6 passed, 0 failed**。
+自动测试：**8 passed, 0 failed**，其中 1 项包含既有的 RiderSeat 占位警告。
 
-| 测试 | 结果 |
-| --- | --- |
-| Steppe.P1.MathAndStamina | 通过 |
-| Steppe.P1.WorldMovementAndRiding | 通过，2 条预期的占位 RiderSeat fallback 警告 |
-| Steppe.P2.PerceptionAndState | 通过，无警告/错误 |
-| Steppe.P2.MovementOwnershipAndObstacles | 通过，无警告/错误 |
+P4 的 `Steppe.P4.TargetSelectionAndIsolation` 覆盖视线选择、目标 Brain 标记、距离外进度、回群衰减、隔离完成、重复选择取消，以及目标销毁后的安全释放。既有 P1–P3.1 测试继续通过。
 
-P2 测试覆盖：同距离慢/快接近差异、警觉到逃离、极近威胁、遮挡、短期记忆、恢复、威胁对象销毁、真实渐进加速与远离、AI/Rider 意图分离、野马不可上马、围堵时制动。
+实际渲染冒烟成功选择 H3。截图时五匹马均在移动和逃跑，记录到 5 个不同朝向、0 阻塞、最小间距 448.1 cm；H3 距其余群体中心 1012.0 cm，低于 1800 cm 阈值，进度正确保持 0%。
 
-实际游戏已启动并正常退出。记录到野马 Alert → Fleeing，截图时 Awareness=1.00、Visible=1、Speed=442.7 cm/s（仍在加速阶段），玩家坐骑为 Gallop 1200 cm/s。运行日志确认配置来自 `/Game/Steppe/Data/Horses/DA_WildHorse_Default`，不是仅使用代码默认值。HUD、方向向量和浅色野马在实际截图中可见。
-
-证据：Docs/Validation/P2-Results.json、P2-Playground.png；原始临时日志在 Saved/Logs/P2-FinalTests.log 与 P2-FinalRender.log。
+证据：`Validation/P4-Results.json`、`P4-Playground.png`、`P4-Runs.txt`。原始日志为 `Saved/Logs/P4-Automation.log` 与 `P4-FinalRender.log`。
 
 # Manual Steps
 
-打开 Steppe.uproject → Play。前方约 38 m 是由 5 个浅色占位体组成的野马群。先轻点 W 缓慢接近，再按 F2 重试并按住 W 高速接近，对比个体响应顺序。拉开距离后观察成员分别恢复。
+打开 `Steppe.uproject` → Play。用鼠标看向一匹野马并按 Q，确认青色 `TARGET H#` 标签。骑到目标靠群体的一侧或侧后方，把它驱赶到距离其余四匹中心 18 米外并保持 2 秒。完成前让目标回群应看到进度衰减；再次朝同一目标按 Q 应取消选择。F2 可重试。
 
-按键继承 P1：W/S、A/D、鼠标、Shift、Ctrl、E、F1、F2。`steppe.Debug.Movement 1` 显示个体方向和紫色群体中心；野马不能 E 上马。完整流程与参数见 P3_SMALL_HERD.md。
+`steppe.Debug.Movement 1` 显示个体方向、紫色群体中心、青色目标圈和隔离连线。完整规则见 P4_TARGET_ISOLATION.md。
 
 # Known Limits
 
-- 仅 5 匹近距离完整 Actor 与一个显式玩家目标；无远距离简化、领头马社会结构、套索、捕获、多人。
-- 仍是灰盒占位模型，没有真实马动画、听觉、鸣叫或奖励闭环。
-- 局部探测不是全局寻路，复杂地形可能停住或绕行不理想；不保证任意障碍都能绕开。
-- 感知为距离 + 全方向视线 + 靠近速度；数值是可调初值，不是马术研究结论。
-- 用户已确认 P2.2 单匹反应感觉不错；P3 马群手感仍待试玩。
+- 仅 5 匹近距离完整 Actor 与一个显式玩家目标；没有远距离简化或领头马社会结构。
+- 当前只完成目标切出，没有套索投掷、绳索物理、套中判定、驯服、捕获奖励或多人网络。
+- 仍是灰盒占位模型，没有真实马动画、听觉、鸣叫或最终美术。
+- 局部探测不是全局寻路；复杂封闭空间中仍可能原地寻找出口。
+- 感知和隔离数值是可调的原型初值，并非马术研究结论。
 - 仅验证 Editor Development 和 Editor -game，没有验证 Shipping 打包或其他平台。
 
 # Next Recommended Work
 
-试玩 P3，重点观察慢速接近时局部退让、高速切入时的传播节奏、马匹间距和复杂障碍附近的聚散。确认马群体验后再决定进入 P4 目标切出，或先调整 P3 参数。
+先试玩 P4，重点判断 Q 选择是否可靠、18 米距离与 2 秒保持是否清晰，以及目标是否能自然地从群体方向中被切出。手感确认后进入下一阶段：套索瞄准、投掷轨迹、命中窗口与失败回收；绳索视觉可先使用受约束的原型表现。
 
-2026-09-12 P2.1：新增 Steppe.P2.StoppingDistanceAndGaps 测试通过；两次单机场景重载验证通过。新增制动距离探测、沿途地面采样、危险制动 HUD 及 F2 重试。详情见 P2_WILD_HORSE.md 的 P2.1 节；新证据为 Validation/P21-Results.json、P21-Retry-Playground.png。上文 P2 速度和截图为历史记录。
+# Milestones
 
-2026-09-12 P2.2：根据用户试玩反馈加入 Yielding，慢速压力不再无限积累至逃跑；贴身逃跑边界为 3.5 m，原 9 m 边界改为慢速退让。停止/退后即使可见也会恢复。新增使用真实配置资产的 SlowApproachAndRelease 测试通过。新证据见 Validation/P22-Results.json，当前规则和试玩步骤见 P2_WILD_HORSE.md 的 P2.2 节；前文为历史里程碑记录。
-
-2026-09-12 P3：用户确认 P2.2 试玩感觉不错并明确授权小规模马群。新增 SteppeHerdManager，默认生成 5 匹完整野马，提供中心、方向、邻居、分离引导与按距离传播的群体警报。自动测试增至 7 项全部通过；实际游戏和两次场景重试通过，追逐截图时 4/5 匹仍在逃跑。当前验收与限制见 P3_SMALL_HERD.md。
-
-2026-09-12 P3.1：根据试玩反馈修复五匹马开局同步移动及卡住问题。HerdManager 新增根组件，马群从误落世界原点恢复到配置的 38 米外锚点；成员获得独立目标、暂停、转向偏好和反应时间。环境探测不再把其他 Pawn 当成静态封路，新增玩家坐骑动态避让、12 向探测、拥挤侧向让路及全阻挡原地转向。静止与高速追逐实际验证均为 5 个不同朝向、0 阻塞，最小间距约 4.2 米。详情见 P3_SMALL_HERD.md 的 P3.1 节。
+- 2026-09-11 P1：用户试玩并确认骑乘基础基本可用。
+- 2026-09-12 P2–P2.2：完成单匹野马、危险制动、场景重试和慢速退让；用户确认感觉不错。
+- 2026-09-12 P3–P3.1：完成五匹马群、延迟警报、个体差异、正确出生位置、动态避让与脱困；用户确认行为正常。
+- 2026-09-12 P4：完成视线选马与目标切出闭环；8 项自动测试及实际渲染冒烟通过。

@@ -248,11 +248,11 @@ void UHorseBrainComponent::TickComponent(float Dt, ELevelTick TickType, FActorCo
         if (HerdNeighborCount>0)
         {
             FVector Social=Desired+C.SeparationWeight*HerdSeparation+C.DynamicAvoidanceWeight*DynamicAvoidance;
-            if (State==EWildHorseState::Fleeing)
+            if (State==EWildHorseState::Fleeing && !bIsolationFocus)
             {
                 Social+=C.FlightAlignmentWeight*HerdVelocity.GetSafeNormal2D();
             }
-            else
+            else if (!bIsolationFocus)
             {
                 Social+=C.CohesionWeight*(HerdCenter-Horse->GetActorLocation()).GetSafeNormal2D();
                 Social+=C.AlignmentWeight*HerdVelocity.GetSafeNormal2D();

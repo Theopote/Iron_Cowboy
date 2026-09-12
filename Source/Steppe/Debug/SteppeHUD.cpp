@@ -14,7 +14,7 @@
 void ASteppeHUD::DrawHUD()
 {
     Super::DrawHUD();
-    DrawText(TEXT("STEPPE | W/S urge/slow  A/D reins  Mouse free look  Shift sprint  Ctrl brake  E mount  F1 telemetry  F2 retry"),FLinearColor::White,24,20,nullptr,1.f);
+    DrawText(TEXT("STEPPE | W/S urge/slow  A/D reins  Mouse free look  Shift sprint  Ctrl brake  E mount  Q target  F1 telemetry  F2 retry"),FLinearColor::White,24,20,nullptr,1.f);
     auto* Debug=GetWorld()->GetSubsystem<USteppeDebugSubsystem>();
     if (!Debug || (!Debug->IsHorseDebugEnabled() && !Debug->IsMovementDebugEnabled())) { return; }
     auto* Mode=GetWorld()->GetAuthGameMode<ASteppeGameMode>();
@@ -27,9 +27,16 @@ void ASteppeHUD::DrawHUD()
         auto* Brain = Wild->Brain.Get();
         if (Debug->IsHorseDebugEnabled())
         {
-            DrawRect(FLinearColor(0,0,0,.65f),18,250,650,110);
-            DrawText(FString::Printf(TEXT("WILD HERD: %d horses | alarm sources %d\nFOCUS: %s | awareness %.0f%% | neighbors %d\nDistance %.1f m | approach %.1f m/s | visible %s\nPath %s | approach slowly, then compare a fast chase."),
+            const auto* Herd=Mode->HerdManager.Get();
+            const int32 TargetIndex=Herd?Mode->WildHorses.IndexOfByKey(Herd->FocusedHorse):-1;
+            const FString TargetLine=Herd && Herd->FocusedHorse
+                ?FString::Printf(TEXT("TARGET: H%d | separation %.1f m | isolate %.0f%%%s"),TargetIndex+1,
+                    Herd->IsolationDistance/100.f,Herd->IsolationProgress*100.f,Herd->bTargetIsolated?TEXT(" | ISOLATED"):TEXT(""))
+                :TEXT("TARGET: none | look toward a horse and press Q");
+            DrawRect(FLinearColor(0,0,0,.65f),18,250,650,138);
+            DrawText(FString::Printf(TEXT("WILD HERD: %d horses | alarm sources %d\n%s\nFOCUS: %s | awareness %.0f%% | neighbors %d\nDistance %.1f m | approach %.1f m/s | visible %s\nPath %s | cut the target away from the herd."),
                 Mode->WildHorses.Num(),Mode->HerdManager?Mode->HerdManager->AlarmSourceCount:0,
+                *TargetLine,
                 *UEnum::GetDisplayValueAsText(Brain->State).ToString(), Brain->Awareness*100.f,
                 Brain->HerdNeighborCount,
                 SteppeUnits::ToMetersPerSecond(Brain->ThreatDistance), SteppeUnits::ToMetersPerSecond(Brain->ApproachSpeed),
@@ -44,9 +51,10 @@ void ASteppeHUD::DrawHUD()
                     && (LabelPosition.X>680.f || LabelPosition.Y>370.f))
                 {
                     const auto MemberState=Member->Brain->State;
-                    const FLinearColor Color=MemberState==EWildHorseState::Fleeing?FLinearColor(1,.25f,.1f):
+                    const bool bTarget=Mode->HerdManager && Mode->HerdManager->FocusedHorse==Member;
+                    const FLinearColor Color=bTarget?FLinearColor(0,1,1):MemberState==EWildHorseState::Fleeing?FLinearColor(1,.25f,.1f):
                         (MemberState==EWildHorseState::Alert?FLinearColor::Yellow:FLinearColor(.55f,.8f,1.f));
-                    DrawText(FString::Printf(TEXT("H%d %s"),Index+1,*UEnum::GetDisplayValueAsText(MemberState).ToString()),
+                    DrawText(FString::Printf(TEXT("%sH%d %s"),bTarget?TEXT("TARGET "):TEXT(""),Index+1,*UEnum::GetDisplayValueAsText(MemberState).ToString()),
                         Color,LabelPosition.X,LabelPosition.Y,nullptr,.9f);
                 }
             }
@@ -62,6 +70,13 @@ void ASteppeHUD::DrawHUD()
                 DrawDebugDirectionalArrow(GetWorld(),Mode->HerdManager->HerdCenter,
                     Mode->HerdManager->HerdCenter+Mode->HerdManager->AverageVelocity.GetSafeNormal2D()*500.f,
                     50,FColor::Purple,false,0,0,4);
+                if (Mode->HerdManager->FocusedHorse)
+                {
+                    const FVector Target=Mode->HerdManager->FocusedHorse->GetActorLocation()+FVector(0,0,120);
+                    const FVector Rest=Mode->HerdManager->RestHerdCenter+FVector(0,0,120);
+                    DrawDebugSphere(GetWorld(),Target,140,16,FColor::Cyan,false,0,0,5);
+                    DrawDebugLine(GetWorld(),Target,Rest,FColor::Cyan,false,0,0,5);
+                }
             }
         }
     }

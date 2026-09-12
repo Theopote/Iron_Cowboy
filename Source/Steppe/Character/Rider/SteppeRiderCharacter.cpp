@@ -87,6 +87,7 @@ void ASteppeRiderCharacter::SetupPlayerInputComponent(UInputComponent* Input)
     if (InputConfig->MountDismount) { Enhanced->BindAction(InputConfig->MountDismount,ETriggerEvent::Started,this,&ASteppeRiderCharacter::Interact); }
     if (InputConfig->Interact) { Enhanced->BindAction(InputConfig->Interact,ETriggerEvent::Started,this,&ASteppeRiderCharacter::Interact); }
     if (InputConfig->RestartTrial) { Enhanced->BindAction(InputConfig->RestartTrial,ETriggerEvent::Started,this,&ASteppeRiderCharacter::RestartTrial); }
+    if (InputConfig->FocusTarget) { Enhanced->BindAction(InputConfig->FocusTarget,ETriggerEvent::Started,this,&ASteppeRiderCharacter::FocusTarget); }
     if (InputConfig->Debug) { Enhanced->BindAction(InputConfig->Debug,ETriggerEvent::Started,this,&ASteppeRiderCharacter::ToggleDebug); }
     RefreshInputContext();
 }
@@ -125,4 +126,5 @@ void ASteppeRiderCharacter::Interact()
     Riding->TryMount(Closest);
 }
 void ASteppeRiderCharacter::ToggleDebug() { if (auto* PC=Cast<ASteppePlayerController>(Controller)) { PC->SteppeToggleDebug(); } }
+void ASteppeRiderCharacter::FocusTarget() { if (auto* PC=Cast<ASteppePlayerController>(Controller)) { PC->SteppeFocusTarget(); } }
 void ASteppeRiderCharacter::RestartTrial() { if (auto* PC=Cast<ASteppePlayerController>(Controller)) { PC->SteppeRestartTrial(); } }

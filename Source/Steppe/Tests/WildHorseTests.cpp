@@ -277,4 +277,51 @@ bool FSmallHerdTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Manager removes destroyed members safely"),Herd->Members.Num(),4);
     return true;
 }
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTargetIsolationTest,"Steppe.P4.TargetSelectionAndIsolation",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FTargetIsolationTest::RunTest(const FString& Parameters)
+{
+    FWildTestWorld Fixture;
+    const FTransform HerdTransform(FRotator::ZeroRotator,FVector(0,0,100));
+    auto* Herd=Fixture.World->SpawnActorDeferred<ASteppeHerdManager>(ASteppeHerdManager::StaticClass(),HerdTransform,
+        nullptr,nullptr,ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+    Herd->HerdSize=5;
+    Herd->HorseClass=ASteppeWildHorseCharacter::StaticClass();
+    Herd->IsolationDistanceRequired=1500.f;
+    Herd->IsolationHoldSeconds=1.f;
+    Herd->FinishSpawning(HerdTransform);
+    Fixture.Begin();
+    if (!TestEqual(TEXT("Isolation test has a complete herd"),Herd->Members.Num(),5)) { return false; }
+
+    Herd->Members[0]->SetActorLocation(FVector(2000,0,100),false,nullptr,ETeleportType::TeleportPhysics);
+    for (int32 Index=1; Index<Herd->Members.Num(); ++Index)
+    {
+        Herd->Members[Index]->SetActorLocation(FVector(0,(Index-2.5f)*300.f,100),false,nullptr,ETeleportType::TeleportPhysics);
+    }
+    for (const auto& Member : Herd->Members) { Member->GetCharacterMovement()->SetComponentTickEnabled(false); }
+    auto* Selected=Herd->SelectFocusHorse(FVector(1000,0,100),FVector::ForwardVector);
+    TestEqual(TEXT("View direction selects the intended horse"),Selected,Herd->Members[0].Get());
+    TestTrue(TEXT("Selected brain drops herd direction pull"),Selected && Selected->Brain->bIsolationFocus);
+
+    Fixture.Step(.6f);
+    TestTrue(TEXT("Sustained separation advances progress"),Herd->IsolationProgress>0.f && Herd->IsolationProgress<1.f);
+    const float ProgressBeforeReturn=Herd->IsolationProgress;
+    Selected->SetActorLocation(FVector(400,0,100),false,nullptr,ETeleportType::TeleportPhysics);
+    Fixture.Step(.4f);
+    TestTrue(TEXT("Returning toward the herd drains progress"),Herd->IsolationProgress<ProgressBeforeReturn);
+
+    Selected->SetActorLocation(FVector(2200,0,100),false,nullptr,ETeleportType::TeleportPhysics);
+    Fixture.Step(1.2f);
+    TestTrue(TEXT("Holding beyond the required distance completes isolation"),Herd->bTargetIsolated);
+    TestEqual(TEXT("Completed isolation keeps a full progress value"),Herd->IsolationProgress,1.f);
+
+    TestNull(TEXT("Pressing target on the same horse toggles focus off"),
+        Herd->SelectFocusHorse(FVector(1000,0,100),FVector::ForwardVector));
+    TestNull(TEXT("Focus clears from manager"),Herd->FocusedHorse.Get());
+    TestFalse(TEXT("Focus clears from horse brain"),Selected->Brain->bIsolationFocus);
+    Herd->SetFocusedHorse(Herd->Members[1]);
+    Herd->Members[1]->Destroy();
+    Fixture.Step(.3f);
+    TestNull(TEXT("Destroyed target is released safely"),Herd->FocusedHorse.Get());
+    return true;
+}
 #endif

@@ -35,6 +35,7 @@ private:
     void Brake(const FInputActionValue& Value);
     void Interact();
     void ToggleDebug();
+    void FocusTarget();
     void RestartTrial();
     void EnsureInputConfig();
     FRidingIntent Intent;

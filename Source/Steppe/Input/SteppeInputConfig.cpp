@@ -16,6 +16,7 @@ void USteppeInputConfig::CreateRuntimeDefaults()
     Interact=MakeAction(TEXT("IA_Interact"),EInputActionValueType::Boolean);
     MountDismount=MakeAction(TEXT("IA_MountDismount"),EInputActionValueType::Boolean);
     Debug=MakeAction(TEXT("IA_Debug"),EInputActionValueType::Boolean);
+    FocusTarget=MakeAction(TEXT("IA_FocusTarget"),EInputActionValueType::Boolean);
     RestartTrial=MakeAction(TEXT("IA_RestartTrial"),EInputActionValueType::Boolean);
     OnFoot=NewObject<UInputMappingContext>(this,TEXT("IMC_OnFoot"));
     Riding=NewObject<UInputMappingContext>(this,TEXT("IMC_Riding"));
@@ -31,6 +32,7 @@ void USteppeInputConfig::CreateRuntimeDefaults()
         Axis(Move,EKeys::D,false,false); Axis(Move,EKeys::A,true,false);
         Axis(Look,EKeys::MouseX,false,false); Axis(Look,EKeys::MouseY,true,true);
         Context->MapKey(Sprint,EKeys::LeftShift); Context->MapKey(Brake,EKeys::LeftControl);
-        Context->MapKey(MountDismount,EKeys::E); Context->MapKey(Debug,EKeys::F1); Context->MapKey(RestartTrial,EKeys::F2);
+        Context->MapKey(MountDismount,EKeys::E); Context->MapKey(FocusTarget,EKeys::Q);
+        Context->MapKey(Debug,EKeys::F1); Context->MapKey(RestartTrial,EKeys::F2);
     }
 }

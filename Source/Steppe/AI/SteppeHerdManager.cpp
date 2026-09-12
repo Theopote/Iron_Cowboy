@@ -52,10 +52,48 @@ void ASteppeHerdManager::SetThreatTarget(AActor* Target)
     }
 }
 
+ASteppeWildHorseCharacter* ASteppeHerdManager::SelectFocusHorse(FVector ObserverLocation, FVector ViewDirection)
+{
+    ViewDirection=ViewDirection.GetSafeNormal2D();
+    ASteppeWildHorseCharacter* Best=nullptr;
+    float BestScore=-BIG_NUMBER;
+    for (const TObjectPtr<ASteppeWildHorseCharacter>& MemberPtr : Members)
+    {
+        auto* Member=MemberPtr.Get();
+        if (!IsValid(Member)) { continue; }
+        const FVector ToMember=Member->GetActorLocation()-ObserverLocation;
+        const float Distance=ToMember.Size2D();
+        const float Facing=FVector::DotProduct(ViewDirection,ToMember.GetSafeNormal2D());
+        if (Distance>FocusSelectionDistance || Facing<FocusSelectionMinDot) { continue; }
+        const float Score=Facing*2.f-Distance/FMath::Max(1.f,FocusSelectionDistance);
+        if (Score>BestScore) { BestScore=Score; Best=Member; }
+    }
+    if (Best==FocusedHorse) { ClearFocusedHorse(); return nullptr; }
+    SetFocusedHorse(Best);
+    return Best;
+}
+
+void ASteppeHerdManager::SetFocusedHorse(ASteppeWildHorseCharacter* Horse)
+{
+    if (IsValid(FocusedHorse)) { FocusedHorse->Brain->bIsolationFocus=false; }
+    FocusedHorse=Members.Contains(Horse)?Horse:nullptr;
+    if (FocusedHorse) { FocusedHorse->Brain->bIsolationFocus=true; }
+    IsolationSeconds=0.f;
+    IsolationProgress=0.f;
+    IsolationDistance=0.f;
+    bTargetIsolated=false;
+}
+
+void ASteppeHerdManager::ClearFocusedHorse()
+{
+    SetFocusedHorse(nullptr);
+}
+
 void ASteppeHerdManager::Tick(float Dt)
 {
     Super::Tick(Dt);
     Members.RemoveAll([](const TObjectPtr<ASteppeWildHorseCharacter>& Horse) { return !IsValid(Horse); });
+    if (FocusedHorse && !Members.Contains(FocusedHorse)) { ClearFocusedHorse(); }
     if (Members.IsEmpty()) { HerdCenter=FVector::ZeroVector; AverageVelocity=FVector::ZeroVector; return; }
 
     HerdCenter=FVector::ZeroVector;
@@ -67,6 +105,27 @@ void ASteppeHerdManager::Tick(float Dt)
     }
     HerdCenter/=Members.Num();
     AverageVelocity/=Members.Num();
+
+    RestHerdCenter=HerdCenter;
+    IsolationDistance=0.f;
+    if (FocusedHorse && Members.Num()>1)
+    {
+        RestHerdCenter=FVector::ZeroVector;
+        int32 RestCount=0;
+        for (const TObjectPtr<ASteppeWildHorseCharacter>& MemberPtr : Members)
+        {
+            if (MemberPtr.Get()!=FocusedHorse) { RestHerdCenter+=MemberPtr->GetActorLocation(); ++RestCount; }
+        }
+        if (RestCount>0) { RestHerdCenter/=RestCount; }
+        IsolationDistance=FVector::Dist2D(FocusedHorse->GetActorLocation(),RestHerdCenter);
+        if (!bTargetIsolated)
+        {
+            IsolationSeconds=IsolationDistance>=IsolationDistanceRequired?IsolationSeconds+Dt:FMath::Max(0.f,IsolationSeconds-Dt*2.f);
+            IsolationProgress=FMath::Clamp(IsolationSeconds/FMath::Max(.1f,IsolationHoldSeconds),0.f,1.f);
+            bTargetIsolated=IsolationProgress>=1.f;
+        }
+        else { IsolationProgress=1.f; }
+    }
 
     TArray<ASteppeWildHorseCharacter*> Sources;
     for (const TObjectPtr<ASteppeWildHorseCharacter>& HorsePtr : Members)
@@ -121,6 +180,7 @@ void ASteppeHerdManager::Tick(float Dt)
 
 void ASteppeHerdManager::EndPlay(const EEndPlayReason::Type Reason)
 {
+    ClearFocusedHorse();
     for (const TObjectPtr<ASteppeWildHorseCharacter>& HorsePtr : Members)
     {
         if (auto* Horse=HorsePtr.Get()) { Horse->Destroy(); }

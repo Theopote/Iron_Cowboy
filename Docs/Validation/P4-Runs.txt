@@ -1,0 +1,4 @@
+[2026.09.12-09.46.26:570][420]LogSteppe: Display: STEPPE_SMOKE: Horse=BP_SteppeHorse_C_0 Speed=1200.0 Mounted=1
+[2026.09.12-09.46.26:570][420]LogSteppe: Display: STEPPE_P2_SMOKE: State=EWildHorseState::Fleeing Awareness=1.00 Visible=1 Speed=294.0 Config=/Game/Steppe/Data/Horses/DA_WildHorse_Default.DA_WildHorse_Default
+[2026.09.12-09.46.26:570][420]LogSteppe: Display: STEPPE_P3_SMOKE: Members=5 Alert=0 Yielding=0 Fleeing=5 Moving=5 Headings=5 Blocked=0 Recovering=0 Sources=5 MinSpacing=448.1 Spread=682.2
+[2026.09.12-09.46.26:570][420]LogSteppe: Display: STEPPE_P4_SMOKE: Focus=H3 Distance=1012.0 Progress=0.00 Isolated=0

@@ -60,3 +60,7 @@ Movement 的物理和体力实现保持共用。Brain 只选择目标与意图�
 ## P3：小规模马群
 
 `ASteppeHerdManager` 集中生成和登记 1–12 匹完整 WildHorse Actor，以 5 Hz 汇总中心、平均速度、邻居和分离向量，并按空间距离传播警报。Brain 将群体摘要与自己的目标方向混合后继续输出 `FHorseMovementIntent`。Manager 不直接移动成员，也不替代每匹马的感知、状态机、避障或 CMC。当前原型规模为 5，详细范围见 P3_SMALL_HERD.md。
+
+## P4：目标切出
+
+Q 输入经 Rider 转发到 PlayerController，再由 GameMode 的 HerdManager 从相机方向选择成员。Manager 持有当前目标，计算目标与其余成员中心的二维距离，并按持续时间推进隔离进度。选中目标的 Brain 关闭凝聚与群体方向对齐，继续应用自身逃跑方向、成员分离、玩家坐骑动态避让和环境探测。完成状态锁存在本次选择中；取消、目标销毁或关卡重试会清理状态。详细范围见 P4_TARGET_ISOLATION.md。
