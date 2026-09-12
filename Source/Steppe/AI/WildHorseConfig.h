@@ -18,8 +18,13 @@ public:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="State", meta=(ClampMin="1")) float YieldSpeed = 220.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Herd", meta=(ClampMin="0")) float CohesionWeight = .3f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Herd", meta=(ClampMin="0")) float AlignmentWeight = .25f;
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Herd", meta=(ClampMin="0")) float SeparationWeight = 1.4f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Herd", meta=(ClampMin="0")) float SeparationWeight = 2.4f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Herd", meta=(ClampMin="0")) float FlightAlignmentWeight = .45f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Herd", meta=(ClampMin="0")) float IndividualSteeringDegrees = 18.f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Herd", meta=(ClampMin="0")) float ReactionTimeVariation = .22f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Steering", meta=(ClampMin="1")) float DynamicAvoidanceDistance = 550.f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Steering", meta=(ClampMin="0")) float DynamicAvoidanceWeight = 1.8f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Steering", meta=(ClampMin="0.1")) float BlockedTurnSeconds = 1.1f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Sensing", meta=(ClampMin="1")) float FastApproachDistance = 2500.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Sensing", meta=(ClampMin="1")) float FastClosingSpeed = 700.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Sensing", meta=(ClampMin="0")) float ThreatMemorySeconds = 3.f;

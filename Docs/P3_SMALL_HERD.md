@@ -20,14 +20,14 @@
 | 参数 | 默认值 | 作用 |
 | --- | ---: | --- |
 | HerdSize | 5 | 原型成员数，限制为 1–12 |
-| FormationSpacing | 450 cm | 初始松散楔形间距 |
+| FormationSpacing | 450 cm | 以锚点为中心的初始松散簇间距 |
 | NeighborRadius | 1800 cm | 统计邻居的范围 |
-| SeparationDistance | 380 cm | 开始相互避让的距离 |
+| SeparationDistance | 550 cm | 开始相互避让的距离 |
 | AlarmPropagationSpeed | 900 cm/s | 报警从受惊个体传播的速度 |
 | AlarmHoldSeconds | 1.5 s | 单次群体警报保持时间 |
 | AlarmStrength | 0.85 | 群体警报提供的警觉强度 |
 
-马群移动权重保存在 WildHorseConfig 属性中：CohesionWeight 0.3、AlignmentWeight 0.25、SeparationWeight 1.4、FlightAlignmentWeight 0.45。新增属性使用 C++ 默认值，不覆盖已有 P2 调参。
+马群移动权重保存在 WildHorseConfig 属性中：CohesionWeight 0.3、AlignmentWeight 0.25、SeparationWeight 2.4、FlightAlignmentWeight 0.45。成员另有最多 ±18° 的个体方向偏好；拥挤时会按该偏好从不同侧面让路。新增属性使用 C++ 默认值，不覆盖已有 P2 调参。
 
 ## 试玩方法
 
@@ -64,3 +64,23 @@ UE 5.8.2 `SteppeEditor Win64 Development` 编译通过。7 项 Steppe 自动测�
 - 所有成员使用相同占位模型与调参，主要依靠状态标签辨认个体。
 - 受惊传播按距离与直接视线工作，尚无声音、风向和遮挡衰减。
 - 本轮没有目标切出、套索、捕获和多人同步。
+
+## P3.1 个体差异与防卡住修复（2026-09-12）
+
+根据试玩反馈，本轮修复了开局同步转向、行为过于一致，以及马群被障碍或玩家坐骑卡住的问题。
+
+根因之一是 HerdManager 原本没有 RootComponent，UE 未应用 GameMode 中 X=4000 的出生变换，马群实际落在世界原点，与 X=200 的玩家坐骑只相距 2 米，开局便触发贴身逃跑。HerdRoot 现在承接完整出生变换；静止玩家验证中焦点野马距离恢复为 38.3 米。
+
+每匹成员现在通过 HerdSeed 与成员编号获得稳定且不同的随机序列，包括漫游目标、初始暂停、±18° 方向偏好及约 ±22% 的反应时间变化。队形改为以锚点为中心的松散簇，避免偏向玩家一侧生成。
+
+环境探测只扫描 WorldStatic / WorldDynamic 地形和障碍物，马匹 Pawn 之间由群体分离处理；玩家及其坐骑通过 5.5 米近距离动态避让影响目标方向。候选方向从 8 个增加到 12 个。所有环境方向都被阻挡时，野马会按个体侧向偏好原地转向约 1.1 秒寻找出口，避免永久停车。对称拥挤导致径向分离相互抵消时，也会加入稳定的侧向让路分量。
+
+最终验证：7 项自动测试通过，0 项失败。静止玩家实际运行记录为 5 匹、5 个不同朝向、4 匹自主移动、0 警戒、0 逃跑、0 阻塞，最小成员间距 418 cm。高速追逐记录为 5 匹全部逃跑、5 个不同朝向、0 阻塞，最小间距 415.6 cm；连续两次场景重试通过。
+
+```powershell
+.\Scripts\RunEditor.ps1 -Tests -ExpectedTests 7 -Commands 'Automation RunTests Steppe.' -LogName P31-FinalTests
+.\Scripts\RunEditor.ps1 -Game -Render -Smoke -HerdIdleSmoke -Commands 'steppe.Debug.Movement 1' -LogName P31-FinalIdle
+.\Scripts\RunEditor.ps1 -Game -Render -Smoke -RetrySmoke -Commands 'steppe.Debug.Movement 1' -LogName P31-FinalChase
+```
+
+证据：`Validation/P31-Results.json`、`P31-Idle-Playground.png`、`P31-Chase-Playground.png`、`P31-Runs.txt`。局部脱困仍不是全局寻路；复杂封闭空间中马匹可能原地寻找出口。

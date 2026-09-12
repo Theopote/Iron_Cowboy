@@ -21,8 +21,9 @@ void UHorseBrainComponent::BeginPlay()
 {
     Super::BeginPlay();
     Home = GetOwner()->GetActorLocation();
-    Random.Initialize(GetConfig().RandomSeed);
-    SetComponentTickInterval(FMath::Max(.02f, GetConfig().DecisionInterval));
+    const int32 Seed=IdentitySeed!=0?IdentitySeed:GetConfig().RandomSeed;
+    Random.Initialize(Seed);
+    SetComponentTickInterval(FMath::Max(.02f, GetConfig().DecisionInterval*IndividualReactionScale));
     if (auto* Horse = Cast<ASteppeHorseCharacter>(GetOwner()))
     {
         Horse->GetCharacterMovement()->AddTickPrerequisiteComponent(this);
@@ -46,6 +47,16 @@ void UHorseBrainComponent::SetThreatTarget(AActor* Target)
     ApproachSpeed = 0.f;
     // Keep the last observed position briefly: losing sight must not instantly cancel a chase.
 }
+void UHorseBrainComponent::SetHerdIdentity(int32 MemberIndex, int32 HerdSeed)
+{
+    HerdMemberIndex=MemberIndex;
+    IdentitySeed=HashCombineFast(static_cast<uint32>(HerdSeed),static_cast<uint32>(MemberIndex+1)*2654435761u);
+    FRandomStream Personality(IdentitySeed);
+    const float Variation=FMath::Clamp(GetConfig().ReactionTimeVariation,0.f,.75f);
+    IndividualReactionScale=Personality.FRandRange(1.f-Variation,1.f+Variation);
+    IndividualSteeringBias=Personality.FRandRange(-GetConfig().IndividualSteeringDegrees,GetConfig().IndividualSteeringDegrees);
+    IndividualPauseScale=Personality.FRandRange(.65f,1.35f);
+}
 void UHorseBrainComponent::ReceiveHerdAlarm(float Strength, float Duration)
 {
     HerdAlarmStrength=FMath::Clamp(Strength,0.f,1.f);
@@ -65,6 +76,7 @@ void UHorseBrainComponent::Sense(float Dt, const ASteppeHorseCharacter& Horse)
     ThreatDistance = 0.f;
     ClosingSpeed = 0.f;
     ApproachSpeed = 0.f;
+    DynamicAvoidance = FVector::ZeroVector;
     if (AActor* Target = ThreatTarget.Get())
     {
         const FVector ToHorse = (Horse.GetActorLocation() - Target->GetActorLocation()).GetSafeNormal2D();
@@ -73,6 +85,12 @@ void UHorseBrainComponent::Sense(float Dt, const ASteppeHorseCharacter& Horse)
         const AActor* MotionSource = Target->GetAttachParentActor() ? Target->GetAttachParentActor() : Target;
         ApproachSpeed = FVector::DotProduct(MotionSource->GetVelocity(), ToHorse);
         ClosingSpeed = FMath::Max(0.f, FVector::DotProduct(MotionSource->GetVelocity() - Horse.GetVelocity(), ToHorse));
+        const FVector FromDynamic=Horse.GetActorLocation()-MotionSource->GetActorLocation();
+        const float DynamicDistance=FromDynamic.Size2D();
+        if (DynamicDistance<GetConfig().DynamicAvoidanceDistance)
+        {
+            DynamicAvoidance=FromDynamic.GetSafeNormal2D()*(1.f-DynamicDistance/FMath::Max(1.f,GetConfig().DynamicAvoidanceDistance));
+        }
         if (ThreatDistance <= FMath::Max(1.f, C.NoticeDistance))
         {
             FCollisionQueryParams Params(SCENE_QUERY_STAT(SteppeThreatSight), false, &Horse);
@@ -106,7 +124,8 @@ void UHorseBrainComponent::ChangeState(EWildHorseState NewState)
     if (State == NewState) { return; }
     State = NewState;
     StateSeconds = 0.f;
-    UE_LOG(LogSteppeHorse, Display, TEXT("%s behavior -> %s (awareness %.2f)"), *GetOwner()->GetName(), *UEnum::GetValueAsString(State), Awareness);
+    UE_LOG(LogSteppeHorse, Display, TEXT("%s behavior -> %s (awareness %.2f distance %.1f approach %.1f herdAlarm %.2f)"),
+        *GetOwner()->GetName(),*UEnum::GetValueAsString(State),Awareness,ThreatDistance,ApproachSpeed,HerdAlarmSeconds);
     if (State == EWildHorseState::Roaming)
     {
         Home = GetOwner()->GetActorLocation();
@@ -118,7 +137,7 @@ void UHorseBrainComponent::ChooseRoamGoal()
     const float Angle = Random.FRandRange(-PI, PI);
     const float Radius = FMath::Max(0.f, GetConfig().RoamRadius) * Random.FRandRange(.3f,1.f);
     Goal = Home + FVector(FMath::Cos(Angle), FMath::Sin(Angle), 0.f) * Radius;
-    PauseRemaining = FMath::Max(0.f, GetConfig().PauseSeconds);
+    PauseRemaining = FMath::Max(0.f, GetConfig().PauseSeconds*IndividualPauseScale*Random.FRandRange(.8f,1.2f));
     RoamGoalSeconds = 0.f;
 }
 bool UHorseBrainComponent::IsDirectionSupported(const ASteppeHorseCharacter& Horse, FVector Direction, float Distance) const
@@ -128,7 +147,10 @@ bool UHorseBrainComponent::IsDirectionSupported(const ASteppeHorseCharacter& Hor
     const FVector Start = Horse.GetActorLocation();
     const float Length = FMath::Max(1.f, Distance);
     FHitResult Hit;
-    if (GetWorld()->SweepSingleByChannel(Hit, Start, Start+Direction*Length, FQuat::Identity, ECC_Pawn,
+    FCollisionObjectQueryParams Environment;
+    Environment.AddObjectTypesToQuery(ECC_WorldStatic);
+    Environment.AddObjectTypesToQuery(ECC_WorldDynamic);
+    if (GetWorld()->SweepSingleByObjectType(Hit, Start, Start+Direction*Length, FQuat::Identity, Environment,
         FCollisionShape::MakeSphere(FMath::Max(1.f,C.ProbeRadius)), Params)) { return false; }
     const int32 Samples = FMath::Clamp(FMath::CeilToInt(Length/FMath::Max(10.f,C.GroundSampleSpacing)),1,32);
     float PreviousGroundZ = Start.Z-Horse.GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
@@ -137,7 +159,7 @@ bool UHorseBrainComponent::IsDirectionSupported(const ASteppeHorseCharacter& Hor
         const FVector Sample = Start+Direction*(Length*Index/Samples);
         const FVector Top(Sample.X,Sample.Y,PreviousGroundZ+Horse.GetCharacterMovement()->MaxStepHeight+10.f);
         const FVector Bottom(Sample.X,Sample.Y,PreviousGroundZ-FMath::Max(1.f,C.GroundProbeDepth));
-        if (!GetWorld()->LineTraceSingleByChannel(Hit,Top,Bottom,ECC_Visibility,Params)
+        if (!GetWorld()->LineTraceSingleByObjectType(Hit,Top,Bottom,Environment,Params)
             || Hit.ImpactNormal.Z<Horse.GetCharacterMovement()->GetWalkableFloorZ()
             || PreviousGroundZ-Hit.ImpactPoint.Z>FMath::Max(0.f,C.MaximumGroundDrop)) { return false; }
         PreviousGroundZ=Hit.ImpactPoint.Z;
@@ -151,7 +173,7 @@ FVector UHorseBrainComponent::FindSafeDirection(const ASteppeHorseCharacter& Hor
     float BestScore = -BIG_NUMBER;
     FVector Best = FVector::ZeroVector;
     // Reject unsafe intermediate ground, even when the far endpoint is supported.
-    for (float Angle : {0.f,45.f,-45.f,90.f,-90.f,135.f,-135.f,180.f})
+    for (float Angle : {0.f,22.5f,-22.5f,45.f,-45.f,67.5f,-67.5f,90.f,-90.f,135.f,-135.f,180.f})
     {
         const FVector Direction = Desired.RotateAngleAxis(Angle, FVector::UpVector);
         const float Score = FVector::DotProduct(Direction, Desired) + .15f * FVector::DotProduct(Direction, SteeringDirection);
@@ -185,16 +207,16 @@ void UHorseBrainComponent::TickComponent(float Dt, ELevelTick TickType, FActorCo
         else if (Awareness >= C.AlertThreshold) { ChangeState(EWildHorseState::Alert); }
         break;
     case EWildHorseState::Alert:
-        if (ImmediateDanger || (Alarm && StateSeconds >= C.MinimumAlertSeconds)) { ChangeState(EWildHorseState::Fleeing); }
-        else if (YieldPressure && StateSeconds >= C.MinimumAlertSeconds) { ChangeState(EWildHorseState::Yielding); }
-        else if (Awareness <= C.CalmThreshold && StateSeconds >= C.MinimumAlertSeconds) { ChangeState(EWildHorseState::Recovering); }
+        if (ImmediateDanger || (Alarm && StateSeconds >= C.MinimumAlertSeconds*IndividualReactionScale)) { ChangeState(EWildHorseState::Fleeing); }
+        else if (YieldPressure && StateSeconds >= C.MinimumAlertSeconds*IndividualReactionScale) { ChangeState(EWildHorseState::Yielding); }
+        else if (Awareness <= C.CalmThreshold && StateSeconds >= C.MinimumAlertSeconds*IndividualReactionScale) { ChangeState(EWildHorseState::Recovering); }
         break;
     case EWildHorseState::Fleeing:
         if (!ImmediateDanger && ReleasedSeconds >= C.PressureReleaseSeconds && (bThreatVisible || UnseenSeconds >= C.ThreatMemorySeconds) && StateSeconds >= C.MinimumFlightSeconds) { ChangeState(EWildHorseState::Recovering); }
         break;
     case EWildHorseState::Yielding:
         if (Alarm) { ChangeState(EWildHorseState::Fleeing); }
-        else if (!YieldPressure && StateSeconds >= C.MinimumAlertSeconds) { ChangeState(EWildHorseState::Alert); }
+        else if (!YieldPressure && StateSeconds >= C.MinimumAlertSeconds*IndividualReactionScale) { ChangeState(EWildHorseState::Alert); }
         break;
     case EWildHorseState::Recovering:
         if (ImmediateDanger) { ChangeState(EWildHorseState::Fleeing); }
@@ -225,7 +247,7 @@ void UHorseBrainComponent::TickComponent(float Dt, ELevelTick TickType, FActorCo
         FVector Desired = (Goal - Horse->GetActorLocation()).GetSafeNormal2D();
         if (HerdNeighborCount>0)
         {
-            FVector Social=Desired+C.SeparationWeight*HerdSeparation;
+            FVector Social=Desired+C.SeparationWeight*HerdSeparation+C.DynamicAvoidanceWeight*DynamicAvoidance;
             if (State==EWildHorseState::Fleeing)
             {
                 Social+=C.FlightAlignmentWeight*HerdVelocity.GetSafeNormal2D();
@@ -237,14 +259,27 @@ void UHorseBrainComponent::TickComponent(float Dt, ELevelTick TickType, FActorCo
             }
             if (!Social.IsNearlyZero()) { Desired=Social.GetSafeNormal2D(); }
         }
+        else if (!DynamicAvoidance.IsNearlyZero())
+        {
+            Desired=(Desired+C.DynamicAvoidanceWeight*DynamicAvoidance).GetSafeNormal2D();
+        }
+        Desired=Desired.RotateAngleAxis(IndividualSteeringBias,FVector::UpVector);
         SteeringDirection = FindSafeDirection(*Horse, Desired);
         const float HeadingError = FMath::FindDeltaAngleDegrees(Horse->GetActorRotation().Yaw, SteeringDirection.Rotation().Yaw);
         Intent.DesiredTurn = FMath::Clamp(HeadingError / FMath::Max(1.f,C.FullTurnAngle), -1.f, 1.f);
         // Turn before charging away when the safe direction is behind us. Existing momentum still brakes through CMC.
         Intent.DesiredSpeed *= FMath::Clamp(FVector::DotProduct(Horse->GetActorForwardVector(), SteeringDirection), 0.f, 1.f);
-        if (bPathBlocked) { Intent.DesiredSpeed = 0.f; Intent.DesiredTurn = 0.f; Intent.BrakeStrength = 1.f; }
+        if (bPathBlocked && RecoveryTurnRemaining<=0.f) { RecoveryTurnRemaining=C.BlockedTurnSeconds; }
     }
     else { SteeringDirection = FVector::ZeroVector; }
+    RecoveryTurnRemaining=FMath::Max(0.f,RecoveryTurnRemaining-Dt);
+    bRecoveringFromBlockage=RecoveryTurnRemaining>0.f;
+    if (bRecoveringFromBlockage)
+    {
+        Intent.DesiredSpeed=0.f;
+        Intent.DesiredTurn=IndividualSteeringBias>=0.f?1.f:-1.f;
+        Intent.BrakeStrength=1.f;
+    }
     if (bBrakingForHazard) { Intent.DesiredSpeed=0.f; Intent.BrakeStrength=1.f; }
     Movement->SetHorseIntent(Intent);
 }

@@ -1,0 +1,183 @@
+﻿{
+	"devices": [
+		{
+			"deviceName": "THEOPOTE",
+			"instance": "8F918F2B4396C0CEDE6F779BBF523812",
+			"instanceName": "THEOPOTE-19280",
+			"platform": "WindowsEditor",
+			"oSVersion": "Windows 11 (25H2) [10.0.26200.9445] ",
+			"model": "Default",
+			"gPU": "NVIDIA GeForce RTX 4070 Ti",
+			"cPUModel": "13th Gen Intel(R) Core(TM) i7-13700KF",
+			"rAMInGB": 64,
+			"renderMode": "SM6",
+			"rHI": "",
+			"appInstanceLog": ""
+		}
+	],
+	"reportCreatedOn": "2026.09.12-09.33.35",
+	"succeeded": 6,
+	"succeededWithWarnings": 1,
+	"failed": 0,
+	"notRun": 0,
+	"inProcess": 0,
+	"totalDuration": 1.844296932220459,
+	"comparisonExported": false,
+	"comparisonExportDirectory": "",
+	"tests": [
+		{
+			"testDisplayName": "MathAndStamina",
+			"fullTestPath": "Steppe.P1.MathAndStamina",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"8F918F2B4396C0CEDE6F779BBF523812"
+			],
+			"duration": 0.0091290026903152466,
+			"dateTime": "2026.09.12-09.33.33",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "WorldMovementAndRiding",
+			"fullTestPath": "Steppe.P1.WorldMovementAndRiding",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"8F918F2B4396C0CEDE6F779BBF523812"
+			],
+			"duration": 0.80156630277633667,
+			"dateTime": "2026.09.12-09.33.33",
+			"entries": [
+				{
+					"event":
+					{
+						"type": "Info",
+						"message": "1s speed=180.0 desired=1200.0 mode=1 location=X=91.500 Y=0.000 Z=97.150 begun=1",
+						"context": "",
+						"artifact": "00000000000000000000000000000000"
+					},
+					"filename": "",
+					"lineNumber": -1,
+					"timestamp": "2026.09.12-09.33.33"
+				},
+				{
+					"event":
+					{
+						"type": "Info",
+						"message": "8s speed=1200.0 desired=1200.0 location=X=6145.558 Y=0.000 Z=97.150",
+						"context": "",
+						"artifact": "00000000000000000000000000000000"
+					},
+					"filename": "",
+					"lineNumber": -1,
+					"timestamp": "2026.09.12-09.33.33"
+				},
+				{
+					"event":
+					{
+						"type": "Warning",
+						"message": "LogSteppeRiding: RiderSeat socket missing on SteppeHorseCharacter_0; using editable fallback seat.",
+						"context": "log",
+						"artifact": "00000000000000000000000000000000"
+					},
+					"filename": "",
+					"lineNumber": -1,
+					"timestamp": "2026.09.12-09.33.34"
+				},
+				{
+					"event":
+					{
+						"type": "Warning",
+						"message": "LogSteppeRiding: RiderSeat socket missing on SteppeHorseCharacter_0; using editable fallback seat.",
+						"context": "log",
+						"artifact": "00000000000000000000000000000000"
+					},
+					"filename": "",
+					"lineNumber": -1,
+					"timestamp": "2026.09.12-09.33.34"
+				}
+			],
+			"warnings": 2,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "MovementOwnershipAndObstacles",
+			"fullTestPath": "Steppe.P2.MovementOwnershipAndObstacles",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"8F918F2B4396C0CEDE6F779BBF523812"
+			],
+			"duration": 0.074940294027328491,
+			"dateTime": "2026.09.12-09.33.34",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "PerceptionAndState",
+			"fullTestPath": "Steppe.P2.PerceptionAndState",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"8F918F2B4396C0CEDE6F779BBF523812"
+			],
+			"duration": 0.36192750930786133,
+			"dateTime": "2026.09.12-09.33.34",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "SlowApproachAndRelease",
+			"fullTestPath": "Steppe.P2.SlowApproachAndRelease",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"8F918F2B4396C0CEDE6F779BBF523812"
+			],
+			"duration": 0.45322111248970032,
+			"dateTime": "2026.09.12-09.33.34",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "StoppingDistanceAndGaps",
+			"fullTestPath": "Steppe.P2.StoppingDistanceAndGaps",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"8F918F2B4396C0CEDE6F779BBF523812"
+			],
+			"duration": 0.022834401577711105,
+			"dateTime": "2026.09.12-09.33.35",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "SmallHerdFormationAndAlarm",
+			"fullTestPath": "Steppe.P3.SmallHerdFormationAndAlarm",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"8F918F2B4396C0CEDE6F779BBF523812"
+			],
+			"duration": 0.12067830562591553,
+			"dateTime": "2026.09.12-09.33.35",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		}
+	]
+}

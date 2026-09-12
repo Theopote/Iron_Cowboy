@@ -1,12 +1,14 @@
 #include "AI/SteppeHerdManager.h"
 #include "AI/HorseBrainComponent.h"
 #include "Character/Horse/SteppeWildHorseCharacter.h"
+#include "Components/SceneComponent.h"
 #include "Engine/World.h"
 
 ASteppeHerdManager::ASteppeHerdManager()
 {
     PrimaryActorTick.bCanEverTick = true;
     PrimaryActorTick.TickInterval = .2f;
+    SetRootComponent(CreateDefaultSubobject<USceneComponent>(TEXT("HerdRoot")));
     HorseClass = ASteppeWildHorseCharacter::StaticClass();
 }
 
@@ -20,18 +22,21 @@ void ASteppeHerdManager::EnsureMembersSpawned()
 {
     if (!Members.IsEmpty()) { return; }
     static const FVector2D Pattern[] = {
-        {0,0}, {1,-1}, {1,1}, {2,-.5f}, {2,.5f}, {3,-1.5f}, {3,1.5f}, {4,-.5f}, {4,.5f}, {5,0}, {5,-2}, {5,2}
+        {0,0}, {-.75f,-1}, {-.75f,1}, {.75f,-.65f}, {.75f,.65f},
+        {-1.5f,-.35f}, {-1.5f,.35f}, {1.5f,-1.25f}, {1.5f,1.25f},
+        {0,-1.75f}, {0,1.75f}, {1.75f,0}
     };
     const int32 Count = FMath::Clamp(HerdSize, 1, UE_ARRAY_COUNT(Pattern));
     for (int32 Index=0; Index<Count; ++Index)
     {
         const FVector LocalOffset(Pattern[Index].X*FormationSpacing,Pattern[Index].Y*FormationSpacing,0.f);
         const FTransform SpawnTransform(GetActorRotation(),GetActorLocation()+GetActorRotation().RotateVector(LocalOffset));
-        FActorSpawnParameters Params;
-        Params.Owner = this;
-        Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-        if (auto* Horse=GetWorld()->SpawnActor<ASteppeWildHorseCharacter>(HorseClass,SpawnTransform,Params))
+        auto* Horse=GetWorld()->SpawnActorDeferred<ASteppeWildHorseCharacter>(HorseClass,SpawnTransform,this,nullptr,
+            ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
+        if (Horse)
         {
+            Horse->Brain->SetHerdIdentity(Index,HerdSeed);
+            Horse->FinishSpawning(SpawnTransform);
             Members.Add(Horse);
             Horse->Brain->SetThreatTarget(ThreatTarget.Get());
         }
@@ -55,6 +60,7 @@ void ASteppeHerdManager::Tick(float Dt)
 
     HerdCenter=FVector::ZeroVector;
     AverageVelocity=FVector::ZeroVector;
+    MinimumMemberSpacing=Members.Num()>1?BIG_NUMBER:0.f;
     for (const TObjectPtr<ASteppeWildHorseCharacter>& HorsePtr : Members)
     {
         const auto* Horse=HorsePtr.Get(); HerdCenter+=Horse->GetActorLocation(); AverageVelocity+=Horse->GetVelocity();
@@ -69,17 +75,28 @@ void ASteppeHerdManager::Tick(float Dt)
         if (Horse->Brain->State==EWildHorseState::Fleeing && Horse->Brain->bThreatVisible) { Sources.Add(Horse); }
         FVector Separation=FVector::ZeroVector;
         int32 Neighbors=0;
+        float StrongestCrowding=0.f;
         for (const TObjectPtr<ASteppeWildHorseCharacter>& OtherPtr : Members)
         {
             const auto* Other=OtherPtr.Get();
             if (Other==Horse) { continue; }
             const FVector Away=Horse->GetActorLocation()-Other->GetActorLocation();
             const float Distance=Away.Size2D();
+            MinimumMemberSpacing=FMath::Min(MinimumMemberSpacing,Distance);
             if (Distance<=NeighborRadius) { ++Neighbors; }
             if (Distance>1.f && Distance<SeparationDistance)
             {
-                Separation+=Away.GetSafeNormal2D()*(1.f-Distance/SeparationDistance);
+                const float Crowding=1.f-Distance/SeparationDistance;
+                Separation+=Away.GetSafeNormal2D()*Crowding;
+                StrongestCrowding=FMath::Max(StrongestCrowding,Crowding);
             }
+        }
+        // Symmetric neighbors can cancel the radial vectors. A stable per-member side
+        // preference gives crowded horses different ways around one another.
+        if (StrongestCrowding>0.f)
+        {
+            const float Side=Horse->Brain->IndividualSteeringBias>=0.f?1.f:-1.f;
+            Separation+=Horse->GetActorRightVector()*Side*StrongestCrowding*.65f;
         }
         Horse->Brain->SetHerdGuidance(HerdCenter,AverageVelocity,Separation,Neighbors);
     }

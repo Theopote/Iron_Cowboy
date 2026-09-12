@@ -119,6 +119,8 @@ bool FWildMovementTest::RunTest(const FString& Parameters)
     Fixture.Step(.3f);
     TestTrue(TEXT("Blocked steering is surfaced"),Wild->Brain->bPathBlocked);
     TestTrue(TEXT("Blocked horse requests braking"),Move->HorseIntent.BrakeStrength>.9f && Move->DesiredSpeed==0.f);
+    TestTrue(TEXT("Fully blocked horse turns in place to search for an exit"),
+        Wild->Brain->bRecoveringFromBlockage && FMath::Abs(Move->HorseIntent.DesiredTurn)>.9f);
     return true;
 }
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FWildHazardTest,"Steppe.P2.StoppingDistanceAndGaps",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
@@ -212,8 +214,33 @@ bool FSmallHerdTest::RunTest(const FString& Parameters)
     Fixture.Begin();
 
     if (!TestEqual(TEXT("Manager spawns requested small herd"),Herd->Members.Num(),5)) { return false; }
-    TestTrue(TEXT("Formation has useful spatial extent"),
-        FVector::Dist2D(Herd->Members[0]->GetActorLocation(),Herd->Members.Last()->GetActorLocation())>500.f);
+    float MaximumFormationDistance=0.f;
+    for (const auto& A : Herd->Members)
+    {
+        for (const auto& B : Herd->Members) { MaximumFormationDistance=FMath::Max(MaximumFormationDistance,FVector::Dist2D(A->GetActorLocation(),B->GetActorLocation())); }
+    }
+    TestTrue(TEXT("Formation has useful spatial extent"),MaximumFormationDistance>500.f);
+    const FVector FirstGoal=(Herd->Members[0]->Brain->Goal-Herd->Members[0]->GetActorLocation()).GetSafeNormal2D();
+    const FVector SecondGoal=(Herd->Members[1]->Brain->Goal-Herd->Members[1]->GetActorLocation()).GetSafeNormal2D();
+    TestFalse(TEXT("Members choose distinct initial roam directions"),FirstGoal.Equals(SecondGoal,.02f));
+    TestNotEqual(TEXT("Members have distinct reaction timing"),
+        Herd->Members[0]->Brain->IndividualReactionScale,Herd->Members[1]->Brain->IndividualReactionScale);
+    TestNotEqual(TEXT("Members have distinct steering bias"),
+        Herd->Members[0]->Brain->IndividualSteeringBias,Herd->Members[1]->Brain->IndividualSteeringBias);
+
+    TArray<FVector> StartLocations;
+    for (const TObjectPtr<ASteppeWildHorseCharacter>& Member : Herd->Members) { StartLocations.Add(Member->GetActorLocation()); }
+    Fixture.Step(4.f);
+    int32 MovingMembers=0;
+    for (int32 Index=0; Index<Herd->Members.Num(); ++Index)
+    {
+        MovingMembers+=FVector::Dist2D(StartLocations[Index],Herd->Members[Index]->GetActorLocation())>20.f;
+    }
+    TestTrue(TEXT("Independent pauses allow most members to begin roaming"),MovingMembers>=3);
+    TestTrue(TEXT("Roaming herd keeps bodies from collapsing into one point"),Herd->MinimumMemberSpacing>100.f);
+
+    const FVector PrimaryLocation=Herd->Members[0]->GetActorLocation();
+    Rider->SetActorLocation(PrimaryLocation-FVector(2000,0,0));
     Rider->GetCharacterMovement()->SetComponentTickEnabled(false);
     Rider->GetCharacterMovement()->Velocity=FVector(1000,0,0);
     for (int32 Index=0; Index<Herd->Members.Num(); ++Index)

@@ -1,0 +1,20 @@
+[2026.09.12-09.33.51:496][210]LogSteppe: Display: STEPPE_P3_SMOKE: Members=5 Alert=0 Yielding=0 Fleeing=0 Moving=4 Headings=5 Blocked=0 Recovering=0 Sources=0 MinSpacing=418.0 Spread=411.6
+[2026.09.12-09.34.13:830][  0]LogSteppe: Display: STEPPE_RETRY_SMOKE: Reload=0 Mounted=1 Awareness=0.00
+[2026.09.12-09.34.15:049][152]LogSteppeHorse: Display: BP_SteppeWildHorse_C_1 behavior -> EWildHorseState::Alert (awareness 0.25 distance 3279.6 approach 273.4 herdAlarm 0.00)
+[2026.09.12-09.34.15:055][154]LogSteppeHorse: Display: BP_SteppeWildHorse_C_2 behavior -> EWildHorseState::Alert (awareness 0.26 distance 3269.4 approach 279.1 herdAlarm 0.00)
+[2026.09.12-09.34.15:199][181]LogSteppe: Display: STEPPE_RETRY_SMOKE: Reload=1 Mounted=1 Awareness=0.00
+[2026.09.12-09.34.15:671][333]LogSteppeHorse: Display: BP_SteppeWildHorse_C_1 behavior -> EWildHorseState::Alert (awareness 0.25 distance 3279.6 approach 273.4 herdAlarm 0.00)
+[2026.09.12-09.34.15:677][335]LogSteppeHorse: Display: BP_SteppeWildHorse_C_2 behavior -> EWildHorseState::Alert (awareness 0.26 distance 3265.4 approach 278.9 herdAlarm 0.00)
+[2026.09.12-09.34.15:788][362]LogSteppe: Display: STEPPE_RETRY_SMOKE: Reload=2 Mounted=1 Awareness=0.00
+[2026.09.12-09.34.16:223][514]LogSteppeHorse: Display: BP_SteppeWildHorse_C_1 behavior -> EWildHorseState::Alert (awareness 0.25 distance 3279.6 approach 273.4 herdAlarm 0.00)
+[2026.09.12-09.34.16:228][516]LogSteppeHorse: Display: BP_SteppeWildHorse_C_2 behavior -> EWildHorseState::Alert (awareness 0.26 distance 3265.4 approach 278.9 herdAlarm 0.00)
+[2026.09.12-09.34.16:400][584]LogSteppeHorse: Display: BP_SteppeWildHorse_C_0 behavior -> EWildHorseState::Alert (awareness 0.29 distance 3119.9 approach 524.4 herdAlarm 0.00)
+[2026.09.12-09.34.16:456][606]LogSteppeHorse: Display: BP_SteppeWildHorse_C_3 behavior -> EWildHorseState::Alert (awareness 0.26 distance 3060.3 approach 602.5 herdAlarm 0.00)
+[2026.09.12-09.34.16:489][620]LogSteppeHorse: Display: BP_SteppeWildHorse_C_4 behavior -> EWildHorseState::Alert (awareness 0.28 distance 3090.2 approach 663.0 herdAlarm 0.00)
+[2026.09.12-09.34.16:516][631]LogSteppeHorse: Display: BP_SteppeWildHorse_C_1 behavior -> EWildHorseState::Fleeing (awareness 0.65 distance 2342.8 approach 701.7 herdAlarm 0.00)
+[2026.09.12-09.34.16:525][635]LogSteppeHorse: Display: BP_SteppeWildHorse_C_2 behavior -> EWildHorseState::Fleeing (awareness 0.67 distance 2275.6 approach 712.9 herdAlarm 0.00)
+[2026.09.12-09.34.16:547][644]LogSteppeHorse: Display: BP_SteppeWildHorse_C_0 behavior -> EWildHorseState::Fleeing (awareness 0.78 distance 2445.2 approach 768.5 herdAlarm 0.00)
+[2026.09.12-09.34.16:556][648]LogSteppeHorse: Display: BP_SteppeWildHorse_C_3 behavior -> EWildHorseState::Fleeing (awareness 0.62 distance 2480.6 approach 779.7 herdAlarm 0.00)
+[2026.09.12-09.34.16:606][669]LogSteppeHorse: Display: BP_SteppeWildHorse_C_4 behavior -> EWildHorseState::Fleeing (awareness 0.99 distance 2403.9 approach 866.5 herdAlarm 1.15)
+[2026.09.12-09.34.16:898][782]LogSteppe: Display: STEPPE_P3_SMOKE: Members=5 Alert=0 Yielding=0 Fleeing=5 Moving=5 Headings=5 Blocked=0 Recovering=0 Sources=5 MinSpacing=415.6 Spread=658.0
+[2026.09.12-09.34.17:578][889]LogSteppeHorse: Display: BP_SteppeWildHorse_C_1 behavior -> EWildHorseState::Recovering (awareness 0.58 distance 2876.2 approach -1174.1 herdAlarm 0.00)

@@ -21,6 +21,7 @@ public:
     UFUNCTION(BlueprintCallable, Category="Wild Horse") void SetThreatTarget(AActor* Target);
     UFUNCTION(BlueprintCallable, Category="Wild Horse") void ReceiveHerdAlarm(float Strength, float Duration);
     void SetHerdGuidance(FVector Center, FVector Velocity, FVector Separation, int32 NeighborCount);
+    void SetHerdIdentity(int32 MemberIndex, int32 HerdSeed);
     UFUNCTION(BlueprintPure, Category="Wild Horse") FGameplayTag GetBehaviorTag() const;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Wild Horse") TObjectPtr<UWildHorseConfig> Config;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") EWildHorseState State = EWildHorseState::Roaming;
@@ -37,6 +38,11 @@ public:
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") float HerdAlarmSeconds = 0.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") int32 HerdNeighborCount = 0;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") FVector HerdSeparation = FVector::ZeroVector;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") FVector DynamicAvoidance = FVector::ZeroVector;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") int32 HerdMemberIndex = INDEX_NONE;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") float IndividualReactionScale = 1.f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") float IndividualSteeringBias = 0.f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") bool bRecoveringFromBlockage = false;
     const UWildHorseConfig& GetConfig() const;
 private:
     void Sense(float Dt, const ASteppeHorseCharacter& Horse);
@@ -53,6 +59,9 @@ private:
     float ReleasedSeconds = 0.f;
     float PauseRemaining = 0.f;
     float RoamGoalSeconds = 0.f;
+    float RecoveryTurnRemaining = 0.f;
+    float IndividualPauseScale = 1.f;
+    int32 IdentitySeed = 0;
     float HerdAlarmStrength = 0.f;
     FVector HerdCenter = FVector::ZeroVector;
     FVector HerdVelocity = FVector::ZeroVector;

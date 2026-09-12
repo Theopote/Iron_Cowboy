@@ -70,6 +70,7 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
         FApp::SetUseFixedTimeStep(true);
         FApp::SetFixedDeltaTime(1.0/60.0);
         NewPlayer->SetControlRotation(FRotator(-12,25,0));
+        const bool bHerdIdleSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeHerdIdleSmoke"));
         // Process-local count is restricted to this opt-in standalone smoke run.
         static int32 RetrySmokeCount=0;
         if (FParse::Param(FCommandLine::Get(),TEXT("SteppeRetrySmoke")))
@@ -85,10 +86,13 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
             }
         }
         FTimerHandle StartHandle,ShotHandle,ExitHandle;
-        GetWorldTimerManager().SetTimer(StartHandle,FTimerDelegate::CreateWeakLambda(Rider,[Rider]()
+        if (!bHerdIdleSmoke)
         {
-            FRidingIntent Intent; Intent.Forward=1; Rider->Riding->SetIntent(Intent);
-        }),1.f,false);
+            GetWorldTimerManager().SetTimer(StartHandle,FTimerDelegate::CreateWeakLambda(Rider,[Rider]()
+            {
+                FRidingIntent Intent; Intent.Forward=1; Rider->Riding->SetIntent(Intent);
+            }),1.f,false);
+        }
         GetWorldTimerManager().SetTimer(ShotHandle,FTimerDelegate::CreateWeakLambda(this,[this]()
         {
             UE_LOG(LogSteppe,Display,TEXT("STEPPE_SMOKE: Horse=%s Speed=%.1f Mounted=%d"),*GetNameSafe(PlaygroundHorse),PlaygroundHorse?PlaygroundHorse->GetVelocity().Size2D():0.f,PlaygroundHorse && PlaygroundHorse->MountedRider.IsValid());
@@ -101,6 +105,8 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
             if (HerdManager)
             {
                 int32 Alert=0,Fleeing=0,Yielding=0;
+                int32 Moving=0,Blocked=0,Recovering=0;
+                TSet<int32> HeadingBuckets;
                 for (const TObjectPtr<ASteppeWildHorseCharacter>& MemberPtr : HerdManager->Members)
                 {
                     const auto* Member=MemberPtr.Get();
@@ -108,13 +114,17 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
                     Alert+=Member->Brain->State==EWildHorseState::Alert;
                     Fleeing+=Member->Brain->State==EWildHorseState::Fleeing;
                     Yielding+=Member->Brain->State==EWildHorseState::Yielding;
+                    Moving+=Member->GetVelocity().Size2D()>10.f;
+                    Blocked+=Member->Brain->bPathBlocked;
+                    Recovering+=Member->Brain->bRecoveringFromBlockage;
+                    HeadingBuckets.Add(FMath::RoundToInt(Member->GetActorRotation().Yaw/10.f));
                 }
-                UE_LOG(LogSteppe,Display,TEXT("STEPPE_P3_SMOKE: Members=%d Alert=%d Yielding=%d Fleeing=%d Sources=%d Spread=%.1f"),
-                    HerdManager->Members.Num(),Alert,Yielding,Fleeing,HerdManager->AlarmSourceCount,
+                UE_LOG(LogSteppe,Display,TEXT("STEPPE_P3_SMOKE: Members=%d Alert=%d Yielding=%d Fleeing=%d Moving=%d Headings=%d Blocked=%d Recovering=%d Sources=%d MinSpacing=%.1f Spread=%.1f"),
+                    HerdManager->Members.Num(),Alert,Yielding,Fleeing,Moving,HeadingBuckets.Num(),Blocked,Recovering,HerdManager->AlarmSourceCount,HerdManager->MinimumMemberSpacing,
                     HerdManager->Members.Num()>1?FVector::Dist2D(HerdManager->Members[0]->GetActorLocation(),HerdManager->Members.Last()->GetActorLocation()):0.f);
             }
             FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeSmoke.png"),true,false);
-        }),3.5f,false);
-        GetWorldTimerManager().SetTimer(ExitHandle,FTimerDelegate::CreateWeakLambda(NewPlayer,[NewPlayer]() { NewPlayer->ConsoleCommand(TEXT("quit")); }),5.5f,false);
+        }),bHerdIdleSmoke?3.5f:7.f,false);
+        GetWorldTimerManager().SetTimer(ExitHandle,FTimerDelegate::CreateWeakLambda(NewPlayer,[NewPlayer]() { NewPlayer->ConsoleCommand(TEXT("quit")); }),bHerdIdleSmoke?5.5f:9.f,false);
     }
 }
