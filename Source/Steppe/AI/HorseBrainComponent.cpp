@@ -62,6 +62,12 @@ void UHorseBrainComponent::ReceiveHerdAlarm(float Strength, float Duration)
     HerdAlarmStrength=FMath::Clamp(Strength,0.f,1.f);
     HerdAlarmSeconds=FMath::Max(HerdAlarmSeconds,FMath::Max(0.f,Duration));
 }
+void UHorseBrainComponent::SetLassoed(bool bNewLassoed)
+{
+    bLassoed=bNewLassoed;
+    if (bLassoed) { ChangeState(EWildHorseState::Lassoed); }
+    else if (State==EWildHorseState::Lassoed) { ChangeState(EWildHorseState::Recovering); }
+}
 void UHorseBrainComponent::SetHerdGuidance(FVector Center, FVector Velocity, FVector Separation, int32 NeighborCount)
 {
     HerdCenter=Center;
@@ -188,6 +194,14 @@ void UHorseBrainComponent::TickComponent(float Dt, ELevelTick TickType, FActorCo
     auto* Horse = Cast<ASteppeHorseCharacter>(GetOwner());
     auto* Movement = Horse ? Cast<UHorseMovementComponent>(Horse->GetCharacterMovement()) : nullptr;
     if (!Movement || Horse->MountedRider.IsValid() || Dt <= 0.f) { return; }
+    if (bLassoed)
+    {
+        FHorseMovementIntent HeldIntent;
+        HeldIntent.BrakeStrength=1.f;
+        Movement->SetHorseIntent(HeldIntent);
+        SteeringDirection=FVector::ZeroVector;
+        return;
+    }
     const auto& C = GetConfig();
     const float Speed = Horse->GetVelocity().Size2D();
     const float BrakeRate = FMath::Max(1.f,Horse->GetLocomotionConfig()->EmergencyBrakeRate);
@@ -222,6 +236,8 @@ void UHorseBrainComponent::TickComponent(float Dt, ELevelTick TickType, FActorCo
         if (ImmediateDanger) { ChangeState(EWildHorseState::Fleeing); }
         else if (bThreatVisible && ApproachSpeed > C.ApproachDeadZone && Awareness >= C.AlertThreshold) { ChangeState(EWildHorseState::Alert); }
         else if (Awareness <= C.CalmThreshold && StateSeconds >= C.RecoverySeconds) { ChangeState(EWildHorseState::Roaming); }
+        break;
+    case EWildHorseState::Lassoed:
         break;
     }
     FHorseMovementIntent Intent;
@@ -291,6 +307,7 @@ FGameplayTag UHorseBrainComponent::GetBehaviorTag() const
     case EWildHorseState::Alert: return SteppeTags::Horse_State_Alert;
     case EWildHorseState::Fleeing: return SteppeTags::Horse_State_Flee;
     case EWildHorseState::Recovering: return SteppeTags::Horse_State_Recovering;
+    case EWildHorseState::Lassoed: return SteppeTags::Horse_State_Lassoed;
     default: return SteppeTags::Horse_State_Roaming;
     }
 }

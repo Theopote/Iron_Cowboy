@@ -9,6 +9,7 @@ class URidingCameraComponent;
 class USpringArmComponent;
 class UCameraComponent;
 class USteppeInputConfig;
+class ULassoComponent;
 struct FInputActionValue;
 UCLASS()
 class STEPPE_API ASteppeRiderCharacter : public ACharacter
@@ -23,6 +24,7 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<USpringArmComponent> CameraBoom;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<UCameraComponent> Camera;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<URidingCameraComponent> RidingCamera;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<ULassoComponent> Lasso;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Input") TObjectPtr<USteppeInputConfig> InputConfig;
     UPROPERTY(EditDefaultsOnly, Category="Input") float LookSensitivity = 1.f;
     void RefreshInputContext();
@@ -36,6 +38,9 @@ private:
     void Interact();
     void ToggleDebug();
     void FocusTarget();
+    void BeginLassoAim();
+    void EndLassoAim();
+    void ThrowLasso();
     void RestartTrial();
     void EnsureInputConfig();
     FRidingIntent Intent;

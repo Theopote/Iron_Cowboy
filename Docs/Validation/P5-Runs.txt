@@ -1,0 +1,3 @@
+[2026.09.12-10.03.23:424][420]LogSteppe: Display: STEPPE_P3_SMOKE: Members=5 Alert=0 Yielding=0 Fleeing=0 Moving=4 Headings=5 Blocked=0 Recovering=0 Sources=0 MinSpacing=574.4 Spread=2597.4
+[2026.09.12-10.03.23:424][420]LogSteppe: Display: STEPPE_P4_SMOKE: Focus=H1 Distance=2152.5 Progress=1.00 Isolated=1
+[2026.09.12-10.03.23:424][420]LogSteppe: Display: STEPPE_P5_SMOKE: State=ELassoState::Attached Target=BP_SteppeWildHorse_C_0 TargetLassoed=1 Feedback=LASSO ATTACHED - Left Mouse to release

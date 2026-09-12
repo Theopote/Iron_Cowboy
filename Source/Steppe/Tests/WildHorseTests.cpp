@@ -7,6 +7,8 @@
 #include "Character/Horse/HorseMovementComponent.h"
 #include "Character/Rider/SteppeRiderCharacter.h"
 #include "Character/Rider/RidingComponent.h"
+#include "Lasso/LassoComponent.h"
+#include "Core/SteppeGameplayTags.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "Engine/StaticMeshActor.h"
@@ -322,6 +324,49 @@ bool FTargetIsolationTest::RunTest(const FString& Parameters)
     Herd->Members[1]->Destroy();
     Fixture.Step(.3f);
     TestNull(TEXT("Destroyed target is released safely"),Herd->FocusedHorse.Get());
+    return true;
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FLassoLoopTest,"Steppe.P5.LassoThrowAttachAndRecovery",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FLassoLoopTest::RunTest(const FString& Parameters)
+{
+    FWildTestWorld Fixture;
+    auto* Rider=Fixture.World->SpawnActor<ASteppeRiderCharacter>(FVector(0,0,100),FRotator::ZeroRotator);
+    auto* Wild=Fixture.World->SpawnActor<ASteppeWildHorseCharacter>(FVector(1000,0,100),FRotator::ZeroRotator);
+    Fixture.Begin();
+    Rider->GetCharacterMovement()->SetComponentTickEnabled(false);
+    Wild->GetCharacterMovement()->SetComponentTickEnabled(false);
+
+    TestFalse(TEXT("Non-isolated target cannot be aimed"),Rider->Lasso->BeginAimForTarget(Wild,false));
+    TestEqual(TEXT("Rejected aim leaves lasso stored"),Rider->Lasso->State,ELassoState::Stored);
+    TestTrue(TEXT("Isolated target enables aiming"),Rider->Lasso->BeginAimForTarget(Wild,true));
+    TestTrue(TEXT("Aimed throw starts"),Rider->Lasso->ThrowFrom(FVector(0,0,170),FVector::ForwardVector));
+    Fixture.Step(.5f);
+    TestEqual(TEXT("Sweep attaches to the intended horse"),Rider->Lasso->State,ELassoState::Attached);
+    TestTrue(TEXT("Attached state exposes its gameplay tag"),Rider->Lasso->GetStateTag()==SteppeTags::Lasso_State_Attached.GetTag());
+    TestTrue(TEXT("Attached horse enters lassoed behavior"),Wild->Brain->bLassoed);
+    TestEqual(TEXT("Lassoed behavior has a distinct state"),Wild->Brain->State,EWildHorseState::Lassoed);
+
+    Rider->Lasso->Release();
+    TestEqual(TEXT("Release starts recovery"),Rider->Lasso->State,ELassoState::Recovering);
+    TestFalse(TEXT("Release frees the horse"),Wild->Brain->bLassoed);
+    Fixture.Step(1.f);
+    TestEqual(TEXT("Recovery returns the lasso to storage"),Rider->Lasso->State,ELassoState::Stored);
+
+    auto* Obstacle=Fixture.Block(FVector(0,800,170),FVector(2,.2f,3));
+    TestTrue(TEXT("Lasso can aim before an obstructed throw"),Rider->Lasso->BeginAimForTarget(Wild,true));
+    TestTrue(TEXT("Obstructed throw starts"),Rider->Lasso->ThrowFrom(FVector(0,0,170),FVector::RightVector));
+    Fixture.Step(.3f);
+    TestEqual(TEXT("World obstacle blocks the lasso"),Rider->Lasso->State,ELassoState::Recovering);
+    TestTrue(TEXT("Blocked throw reports its cause"),Rider->Lasso->Feedback.Contains(TEXT("blocked")));
+    Fixture.Step(1.f);
+    Obstacle->Destroy();
+
+    TestTrue(TEXT("Lasso can be aimed again"),Rider->Lasso->BeginAimForTarget(Wild,true));
+    TestTrue(TEXT("Missed throw starts"),Rider->Lasso->ThrowFrom(FVector(0,0,170),FVector::RightVector));
+    Fixture.Step(1.f);
+    TestEqual(TEXT("Out-of-range miss enters recovery"),Rider->Lasso->State,ELassoState::Recovering);
+    Fixture.Step(1.f);
+    TestEqual(TEXT("Miss recovery completes"),Rider->Lasso->State,ELassoState::Stored);
     return true;
 }
 #endif

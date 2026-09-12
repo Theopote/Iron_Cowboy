@@ -11,10 +11,30 @@
 #include "AI/HorseBrainComponent.h"
 #include "AI/SteppeHerdManager.h"
 #include "GameFramework/PlayerController.h"
+#include "Character/Rider/SteppeRiderCharacter.h"
+#include "Lasso/LassoComponent.h"
+#include "Engine/Canvas.h"
 void ASteppeHUD::DrawHUD()
 {
     Super::DrawHUD();
-    DrawText(TEXT("STEPPE | W/S urge/slow  A/D reins  Mouse free look  Shift sprint  Ctrl brake  E mount  Q target  F1 telemetry  F2 retry"),FLinearColor::White,24,20,nullptr,1.f);
+    DrawText(TEXT("STEPPE | W/S urge/slow  A/D reins  Mouse look  Shift sprint  Ctrl brake  E mount  Q target  RMB aim  LMB throw/release  F1 telemetry  F2 retry"),FLinearColor::White,24,20,nullptr,.9f);
+    auto* Rider=PlayerOwner?Cast<ASteppeRiderCharacter>(PlayerOwner->GetPawn()):nullptr;
+    auto* Lasso=Rider?Rider->Lasso.Get():nullptr;
+    if (Lasso)
+    {
+        const FString LassoText=FString::Printf(TEXT("LASSO %s | %s"),*UEnum::GetDisplayValueAsText(Lasso->State).ToString(),*Lasso->Feedback);
+        const FLinearColor LassoColor=Lasso->State==ELassoState::Attached?FLinearColor(.35f,1.f,.35f):
+            (Lasso->State==ELassoState::Thrown?FLinearColor(1,.55f,.1f):FLinearColor(.5f,1.f,1.f));
+        const float LassoX=FMath::Max(18.f,Canvas->ClipX-570.f);
+        DrawRect(FLinearColor(0,0,0,.6f),LassoX-6,44,558,25);
+        DrawText(LassoText,LassoColor,LassoX,48,nullptr,.95f);
+        if (Lasso->State==ELassoState::Aiming) { DrawText(TEXT("+"),FLinearColor::White,Canvas->ClipX*.5f-5,Canvas->ClipY*.5f-12,nullptr,1.5f); }
+        if (Lasso->State==ELassoState::Thrown || Lasso->State==ELassoState::Attached)
+        {
+            DrawDebugLine(GetWorld(),Lasso->RopeStart,Lasso->LoopLocation,FColor::Orange,false,0,0,6);
+            DrawDebugSphere(GetWorld(),Lasso->LoopLocation,Lasso->CaptureRadius,16,FColor::Yellow,false,0,0,4);
+        }
+    }
     auto* Debug=GetWorld()->GetSubsystem<USteppeDebugSubsystem>();
     if (!Debug || (!Debug->IsHorseDebugEnabled() && !Debug->IsMovementDebugEnabled())) { return; }
     auto* Mode=GetWorld()->GetAuthGameMode<ASteppeGameMode>();
@@ -33,8 +53,8 @@ void ASteppeHUD::DrawHUD()
                 ?FString::Printf(TEXT("TARGET: H%d | separation %.1f m | isolate %.0f%%%s"),TargetIndex+1,
                     Herd->IsolationDistance/100.f,Herd->IsolationProgress*100.f,Herd->bTargetIsolated?TEXT(" | ISOLATED"):TEXT(""))
                 :TEXT("TARGET: none | look toward a horse and press Q");
-            DrawRect(FLinearColor(0,0,0,.65f),18,250,650,138);
-            DrawText(FString::Printf(TEXT("WILD HERD: %d horses | alarm sources %d\n%s\nFOCUS: %s | awareness %.0f%% | neighbors %d\nDistance %.1f m | approach %.1f m/s | visible %s\nPath %s | cut the target away from the herd."),
+            DrawRect(FLinearColor(0,0,0,.65f),18,250,650,158);
+            DrawText(FString::Printf(TEXT("WILD HERD: %d horses | alarm sources %d\n%s\nFOCUS: %s | awareness %.0f%% | neighbors %d\nDistance %.1f m | approach %.1f m/s | visible %s\nPath %s | cut the target away from the herd.\nLASSO: isolate, hold RMB, aim, then LMB."),
                 Mode->WildHorses.Num(),Mode->HerdManager?Mode->HerdManager->AlarmSourceCount:0,
                 *TargetLine,
                 *UEnum::GetDisplayValueAsText(Brain->State).ToString(), Brain->Awareness*100.f,

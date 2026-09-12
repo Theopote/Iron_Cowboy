@@ -64,3 +64,7 @@ Movement 的物理和体力实现保持共用。Brain 只选择目标与意图�
 ## P4：目标切出
 
 Q 输入经 Rider 转发到 PlayerController，再由 GameMode 的 HerdManager 从相机方向选择成员。Manager 持有当前目标，计算目标与其余成员中心的二维距离，并按持续时间推进隔离进度。选中目标的 Brain 关闭凝聚与群体方向对齐，继续应用自身逃跑方向、成员分离、玩家坐骑动态避让和环境探测。完成状态锁存在本次选择中；取消、目标销毁或关卡重试会清理状态。详细范围见 P4_TARGET_ISOLATION.md。
+
+## P5：套索
+
+`ULassoComponent` 属于 Rider，接收 RMB/LMB 输入并维护 Stored、Aiming、Thrown、Attached、Recovering。投掷每帧从上一位置到下一位置作连续球形扫掠，命中只接受 P4 当前隔离目标；HUD 绳线与命中圈不决定结果。Attached 通过 HorseBrain 的 Lassoed 状态向共用 HorseMovement 提交紧急制动意图。主动释放、脱靶、障碍、超长或目标销毁都汇入恢复流程。状态同时通过 Native Gameplay Tags 暴露，便于后续动画、声音和网络表现读取。详细范围见 P5_LASSO.md。

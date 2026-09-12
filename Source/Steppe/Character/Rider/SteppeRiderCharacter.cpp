@@ -17,10 +17,12 @@
 #include "UObject/ConstructorHelpers.h"
 #include "Steppe.h"
 #include "Core/SteppeGameplayTags.h"
+#include "Lasso/LassoComponent.h"
 ASteppeRiderCharacter::ASteppeRiderCharacter()
 {
     PrimaryActorTick.bCanEverTick=false;
     Riding=CreateDefaultSubobject<URidingComponent>(TEXT("Riding"));
+    Lasso=CreateDefaultSubobject<ULassoComponent>(TEXT("Lasso"));
     CameraBoom=CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
     CameraBoom->SetupAttachment(GetRootComponent()); CameraBoom->TargetArmLength=350;
     CameraBoom->bUsePawnControlRotation=true; CameraBoom->bEnableCameraLag=true;
@@ -88,6 +90,13 @@ void ASteppeRiderCharacter::SetupPlayerInputComponent(UInputComponent* Input)
     if (InputConfig->Interact) { Enhanced->BindAction(InputConfig->Interact,ETriggerEvent::Started,this,&ASteppeRiderCharacter::Interact); }
     if (InputConfig->RestartTrial) { Enhanced->BindAction(InputConfig->RestartTrial,ETriggerEvent::Started,this,&ASteppeRiderCharacter::RestartTrial); }
     if (InputConfig->FocusTarget) { Enhanced->BindAction(InputConfig->FocusTarget,ETriggerEvent::Started,this,&ASteppeRiderCharacter::FocusTarget); }
+    if (InputConfig->AimLasso)
+    {
+        Enhanced->BindAction(InputConfig->AimLasso,ETriggerEvent::Started,this,&ASteppeRiderCharacter::BeginLassoAim);
+        Enhanced->BindAction(InputConfig->AimLasso,ETriggerEvent::Completed,this,&ASteppeRiderCharacter::EndLassoAim);
+        Enhanced->BindAction(InputConfig->AimLasso,ETriggerEvent::Canceled,this,&ASteppeRiderCharacter::EndLassoAim);
+    }
+    if (InputConfig->ThrowLasso) { Enhanced->BindAction(InputConfig->ThrowLasso,ETriggerEvent::Started,this,&ASteppeRiderCharacter::ThrowLasso); }
     if (InputConfig->Debug) { Enhanced->BindAction(InputConfig->Debug,ETriggerEvent::Started,this,&ASteppeRiderCharacter::ToggleDebug); }
     RefreshInputContext();
 }
@@ -127,4 +136,7 @@ void ASteppeRiderCharacter::Interact()
 }
 void ASteppeRiderCharacter::ToggleDebug() { if (auto* PC=Cast<ASteppePlayerController>(Controller)) { PC->SteppeToggleDebug(); } }
 void ASteppeRiderCharacter::FocusTarget() { if (auto* PC=Cast<ASteppePlayerController>(Controller)) { PC->SteppeFocusTarget(); } }
+void ASteppeRiderCharacter::BeginLassoAim() { Lasso->BeginAim(); }
+void ASteppeRiderCharacter::EndLassoAim() { Lasso->CancelAim(); }
+void ASteppeRiderCharacter::ThrowLasso() { if (Lasso->State==ELassoState::Attached) { Lasso->Release(); } else { Lasso->Throw(); } }
 void ASteppeRiderCharacter::RestartTrial() { if (auto* PC=Cast<ASteppePlayerController>(Controller)) { PC->SteppeRestartTrial(); } }

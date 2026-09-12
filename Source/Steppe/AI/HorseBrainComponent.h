@@ -7,7 +7,7 @@ class UWildHorseConfig;
 class ASteppeHorseCharacter;
 
 UENUM(BlueprintType)
-enum class EWildHorseState : uint8 { Roaming, Alert, Fleeing, Recovering, Yielding };
+enum class EWildHorseState : uint8 { Roaming, Alert, Fleeing, Recovering, Yielding, Lassoed };
 
 UCLASS(ClassGroup=(Steppe), meta=(BlueprintSpawnableComponent))
 class STEPPE_API UHorseBrainComponent : public UActorComponent
@@ -20,6 +20,7 @@ public:
     virtual void TickComponent(float Dt, ELevelTick TickType, FActorComponentTickFunction* TickFunction) override;
     UFUNCTION(BlueprintCallable, Category="Wild Horse") void SetThreatTarget(AActor* Target);
     UFUNCTION(BlueprintCallable, Category="Wild Horse") void ReceiveHerdAlarm(float Strength, float Duration);
+    UFUNCTION(BlueprintCallable, Category="Wild Horse") void SetLassoed(bool bNewLassoed);
     void SetHerdGuidance(FVector Center, FVector Velocity, FVector Separation, int32 NeighborCount);
     void SetHerdIdentity(int32 MemberIndex, int32 HerdSeed);
     UFUNCTION(BlueprintPure, Category="Wild Horse") FGameplayTag GetBehaviorTag() const;
@@ -44,6 +45,7 @@ public:
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") float IndividualSteeringBias = 0.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") bool bRecoveringFromBlockage = false;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") bool bIsolationFocus = false;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") bool bLassoed = false;
     const UWildHorseConfig& GetConfig() const;
 private:
     void Sense(float Dt, const ASteppeHorseCharacter& Horse);
