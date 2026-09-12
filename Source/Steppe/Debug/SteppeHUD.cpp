@@ -55,8 +55,11 @@ void ASteppeHUD::DrawHUD()
         const FString Mission=FString::Printf(TEXT("MISSION  Capture %d/%d wild horse  |  %02d:%02d  |  SCORE %d"),
             Mode->Trial.Captured,Mode->Trial.RequiredCaptures,Seconds/60,Seconds%60,Mode->Trial.Score);
         const float MissionY=Canvas->ClipY-42.f;
+        const bool bUrgent=Mode->Trial.State==ESteppeTrialState::Running && Mode->Trial.RemainingSeconds<=30.f;
+        const float Pulse=bUrgent && Mode->Trial.RemainingSeconds<=10.f ? .65f+.35f*FMath::Sin(Mode->Trial.ElapsedSeconds*8.f) : 1.f;
+        const FLinearColor MissionColor=bUrgent?FLinearColor(1.f,.2f,.1f,Pulse):FLinearColor(1.f,.88f,.25f);
         DrawRect(FLinearColor(0,0,0,.72f),18,MissionY-6,590,32);
-        DrawText(Mission,FLinearColor(1.f,.88f,.25f),26,MissionY,nullptr,1.05f);
+        DrawText(Mission,MissionColor,26,MissionY,nullptr,1.05f);
         if (Mode->Trial.State==ESteppeTrialState::Running)
         {
             FString Objective;
@@ -92,6 +95,10 @@ void ASteppeHUD::DrawHUD()
                 DrawRect(FLinearColor(0,0,0,.78f*Opacity),Canvas->ClipX*.5f-270,130,540,92);
                 DrawText(TEXT("ROUND START"),FLinearColor(1.f,.88f,.25f,Opacity),Canvas->ClipX*.5f-105,146,nullptr,1.65f);
                 DrawText(TEXT("Capture one wild horse before time expires"),FLinearColor(1,1,1,Opacity),Canvas->ClipX*.5f-205,188,nullptr,1.05f);
+            }
+            if (Mode->Trial.RemainingSeconds<=10.f)
+            {
+                DrawText(TEXT("TIME RUNNING OUT"),FLinearColor(1.f,.15f,.08f,Pulse),Canvas->ClipX*.5f-125,240,nullptr,1.45f);
             }
         }
         else

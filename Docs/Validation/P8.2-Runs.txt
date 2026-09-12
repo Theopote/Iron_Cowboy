@@ -1,0 +1,6 @@
+UE 5.8.2 / SteppeEditor Win64 Development
+Build: Succeeded
+Automation: 12 passed, 0 failed, 1 passed with warnings (existing RiderSeat fallback)
+Success smoke: State=ESteppeTrialState::Success Captured=1 Required=1 Remaining=114.8 Score=2150
+Urgency render: red 00:01 timer and TIME RUNNING OUT visible
+Failure smoke: State=ESteppeTrialState::Failed Captured=0 Required=1 Remaining=0.0 Score=0

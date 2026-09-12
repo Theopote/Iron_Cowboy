@@ -14,6 +14,7 @@ param(
     [switch]$RopeFightSmoke,
     [switch]$CaptureSmoke,
     [switch]$VerticalSliceSmoke,
+    [switch]$VerticalSliceFailureSmoke,
     [ValidateRange(1,10000)][int]$ExpectedTests = 2
 )
 $ErrorActionPreference = 'Stop'
@@ -38,6 +39,11 @@ if ($CaptureSmoke) {
 if ($VerticalSliceSmoke) {
     if (!$Smoke -or !$Game) { throw 'VerticalSliceSmoke requires Game and Smoke.' }
     $editorArgs += '-SteppeLassoSmoke'; $editorArgs += '-SteppeRopeFightSmoke'; $editorArgs += '-SteppeCaptureSmoke'; $editorArgs += '-SteppeVerticalSliceSmoke'
+}
+if ($VerticalSliceFailureSmoke) {
+    if (!$Smoke -or !$Game) { throw 'VerticalSliceFailureSmoke requires Game and Smoke.' }
+    if ($VerticalSliceSmoke) { throw 'Choose either VerticalSliceSmoke or VerticalSliceFailureSmoke.' }
+    $editorArgs += '-SteppeVerticalFailureSmoke'
 }
 if ($RetrySmoke) { if (!$Smoke -or !$Game) { throw 'RetrySmoke requires Game and Smoke.' }; $editorArgs += '-SteppeRetrySmoke' }
 if ($Tests) { $editorArgs += '-TestExit=Automation Test Queue Empty'; $editorArgs += "-ReportExportPath=$PSScriptRoot\..\Saved\Automation" }
@@ -116,5 +122,16 @@ if ($VerticalSliceSmoke) {
         throw "Vertical slice smoke did not complete the timed capture mission with a score; see $logPath"
     }
     Write-Output 'Vertical slice smoke: timed mission completed with one capture and a non-zero score.'
+}
+if ($VerticalSliceFailureSmoke) {
+    $sliceLog = Get-Content $logPath -Raw
+    $urgencyPath = Join-Path $PSScriptRoot '..\Saved\Screenshots\SteppeP8Urgency.png'
+    if (!(Test-Path $urgencyPath) -or (Get-Item $urgencyPath).LastWriteTime -lt $runStarted) {
+        throw "Vertical slice urgency screenshot is missing or stale; see $logPath"
+    }
+    if ($sliceLog -notmatch 'STEPPE_P8_SMOKE: State=ESteppeTrialState::Failed Captured=0 Required=1 Remaining=0\.0 Score=0') {
+        throw "Vertical slice failure smoke did not reach the expected timeout result; see $logPath"
+    }
+    Write-Output 'Vertical slice failure smoke: urgency warning rendered and uncaptured mission timed out.'
 }
 Write-Output "Editor exited successfully. Log: $logPath"

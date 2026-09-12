@@ -17,6 +17,13 @@ P8 将已有的骑乘、驱赶、切出、套索、控绳和捕获串成一轮�
 - HUD 根据实时状态提示下一步：选择目标、切离马群、准备投索、投掷、稳绳或确认捕获。
 - 过程提示位于任务条上方，成功或失败时让位给中央结算层。
 
+## P8.2 超时体验
+
+- 剩余时间进入最后 30 秒时，任务计时由黄色变为红色。
+- 最后 10 秒的任务条产生明暗脉冲，并在画面中显示 `TIME RUNNING OUT`。
+- 超时后计时固定为 `00:00`，任务以 0 分结束，并显示 `TIME EXPIRED` 与 F2 重玩提示。
+- 独立失败烟测使用仅由命令行开启的 3 秒时限，验证紧迫提示和超时结算；正式任务时限仍为 120 秒。
+
 ## 完整试玩流程
 
 1. 骑马接近五匹野马，以 `Q` 选择目标。
@@ -32,8 +39,9 @@ P8 将已有的骑乘、驱赶、切出、套索、控绳和捕获串成一轮�
 ```powershell
 .\Scripts\RunEditor.ps1 -Tests -ExpectedTests 12 -Commands 'Automation RunTests Steppe' -LogName P8-Automation
 .\Scripts\RunEditor.ps1 -Game -Render -Smoke -VerticalSliceSmoke -Commands 'steppe.Debug.Movement 1' -LogName P8-FinalRender
+.\Scripts\RunEditor.ps1 -Game -Render -Smoke -VerticalSliceFailureSmoke -Commands '' -LogName P8_2-FailureRender
 ```
 
-2026-09-13 最终结果：12 passed、0 failed。实际关卡完成投索、控绳和捕获后，任务记录 `Success`、`Captured=1/1`、剩余 114.8 秒、积分 2150；活动马群剩余 4 匹。P8.1 另行验证了无开发遥测的开局/稳绳引导和成功结算画面。证据位于 `Validation/P8.1-Results.json`、`P8.1-Guidance.png`、`P8.1-Result.png` 和 `P8.1-Runs.txt`。
+2026-09-13 最终结果：12 passed、0 failed。成功路线记录 `Success`、`Captured=1/1`、剩余 114.8 秒、积分 2150；失败路线记录 `Failed`、`Captured=0/1`、剩余 0 秒、积分 0。证据位于 `Validation/P8.2-Results.json`、`P8.2-Success.png`、`P8.2-Urgency.png`、`P8.2-Failure.png` 和 `P8.2-Runs.txt`。
 
 当前任务状态仅存在于本轮关卡，不包含跨局存档、马匹品质、奖励经济、营地交付、正式 UI/音效或多人网络。
