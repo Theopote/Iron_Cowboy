@@ -1,0 +1,5 @@
+UE 5.8.2 / SteppeEditor Win64 Development
+Build: Succeeded
+Automation: 12 passed, 0 failed, 1 passed with warnings (existing RiderSeat fallback)
+STEPPE_P7_SMOKE: State=ELassoState::Captured Captured=1 Active=4 TargetState=EWildHorseState::Captured
+STEPPE_P8_SMOKE: State=ESteppeTrialState::Success Captured=1 Required=1 Remaining=114.8 Score=2150

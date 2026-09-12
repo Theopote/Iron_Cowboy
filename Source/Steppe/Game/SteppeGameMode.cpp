@@ -20,11 +20,20 @@
 #include "Lasso/LassoComponent.h"
 ASteppeGameMode::ASteppeGameMode()
 {
+    PrimaryActorTick.bCanEverTick=true;
     PlayerControllerClass = ASteppePlayerController::StaticClass();
     DefaultPawnClass=ASteppeRiderCharacter::StaticClass();
     HUDClass=ASteppeHUD::StaticClass();
     HorseClass=ASteppeHorseCharacter::StaticClass();
     WildHorseClass=ASteppeWildHorseCharacter::StaticClass();
+}
+void ASteppeGameMode::Tick(float DeltaSeconds)
+{
+    Super::Tick(DeltaSeconds);
+    if (bEnableTrial && Trial.State==ESteppeTrialState::Running)
+    {
+        Trial.Advance(DeltaSeconds,HerdManager?HerdManager->CapturedCount:0);
+    }
 }
 void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer)
 {
@@ -65,6 +74,7 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
         if (!WildHorse) { UE_LOG(LogSteppe, Error, TEXT("Wild herd spawn failed; check WildHorseClass and spawn clearance.")); }
     }
     if (bDebugEnabled) { IConsoleManager::Get().FindConsoleVariable(TEXT("steppe.Debug.Horse"))->Set(1,ECVF_SetByCode); }
+    if (bEnableTrial && Trial.State==ESteppeTrialState::NotStarted) { Trial.Start(TrialDurationSeconds,RequiredCaptures); }
     if (FParse::Param(FCommandLine::Get(),TEXT("SteppeSmoke")))
     {
         // Explicit development smoke mode; normal play never injects input or exits.
@@ -76,6 +86,7 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
         const bool bLassoSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeLassoSmoke"));
         const bool bRopeFightSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeRopeFightSmoke"));
         const bool bCaptureSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeCaptureSmoke"));
+        const bool bVerticalSliceSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeVerticalSliceSmoke"));
         // Process-local count is restricted to this opt-in standalone smoke run.
         static int32 RetrySmokeCount=0;
         if (FParse::Param(FCommandLine::Get(),TEXT("SteppeRetrySmoke")))
@@ -132,7 +143,7 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
                 FRidingIntent Intent; Intent.Forward=1; Rider->Riding->SetIntent(Intent);
             }),1.f,false);
         }
-        GetWorldTimerManager().SetTimer(ShotHandle,FTimerDelegate::CreateWeakLambda(this,[this,Rider]()
+        GetWorldTimerManager().SetTimer(ShotHandle,FTimerDelegate::CreateWeakLambda(this,[this,Rider,bVerticalSliceSmoke]()
         {
             UE_LOG(LogSteppe,Display,TEXT("STEPPE_SMOKE: Horse=%s Speed=%.1f Mounted=%d"),*GetNameSafe(PlaygroundHorse),PlaygroundHorse?PlaygroundHorse->GetVelocity().Size2D():0.f,PlaygroundHorse && PlaygroundHorse->MountedRider.IsValid());
             if (WildHorse)
@@ -174,6 +185,11 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
             UE_LOG(LogSteppe,Display,TEXT("STEPPE_P7_SMOKE: State=%s Captured=%d Active=%d TargetState=%s"),
                 *UEnum::GetValueAsString(Rider->Lasso->State),HerdManager?HerdManager->CapturedCount:0,
                 HerdManager?HerdManager->Members.Num():0,*UEnum::GetValueAsString(Rider->Lasso->Target.IsValid()?Rider->Lasso->Target->Brain->State:EWildHorseState::Roaming));
+            if (bVerticalSliceSmoke)
+            {
+                UE_LOG(LogSteppe,Display,TEXT("STEPPE_P8_SMOKE: State=%s Captured=%d Required=%d Remaining=%.1f Score=%d"),
+                    *UEnum::GetValueAsString(Trial.State),Trial.Captured,Trial.RequiredCaptures,Trial.RemainingSeconds,Trial.Score);
+            }
             FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeSmoke.png"),true,false);
         }),bHerdIdleSmoke?3.5f:7.f,false);
         GetWorldTimerManager().SetTimer(ExitHandle,FTimerDelegate::CreateWeakLambda(NewPlayer,[NewPlayer]() { NewPlayer->ConsoleCommand(TEXT("quit")); }),bHerdIdleSmoke?5.5f:9.f,false);

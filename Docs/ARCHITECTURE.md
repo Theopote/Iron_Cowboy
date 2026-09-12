@@ -1,4 +1,4 @@
-# P0 + P1 架构
+# Project STEPPE 架构
 
 ## 意图与运动
 
@@ -76,3 +76,7 @@ Attached 后，LassoComponent 根据绳距和两端沿绳方向的相对速度�
 ## P7：捕获结果
 
 C 输入由 Rider 转给 LassoComponent。只有 Subdued 状态可提交捕获；HerdManager 是活动/捕获成员登记的权威，负责从 Members 移除目标、加入 CapturedHorses、清除焦点并更新计数。HorseBrain 持有 Captured 行为状态并继续通过 HorseMovement 制动。Actor 保留用于本轮结果显示，套索可独立收回。该边界为未来存档或任务系统提供明确的“捕获已发生”事件点，当前没有实现这些上层系统。详见 P7_CAPTURE.md。
+
+## P8：限时垂直切片
+
+GameMode 持有轻量的 `FSteppeTrialProgress`，在玩家与马群完成生成后启动 120 秒任务，并从 HerdManager 的权威捕获计数更新进度。规则结构负责成功/失败、剩余时间冻结和积分计算；HUD 只读取结果并绘制任务条与结算层。F2 仍通过关卡重载重建全部本轮状态。任务层不反向修改骑乘、马群或套索逻辑，因此 P1–P7 玩法可独立测试和继续调参。详见 P8_VERTICAL_SLICE.md。

@@ -48,9 +48,27 @@ void ASteppeHUD::DrawHUD()
             DrawDebugSphere(GetWorld(),Lasso->LoopLocation,Lasso->CaptureRadius,16,FColor::Yellow,false,0,0,4);
         }
     }
+    auto* Mode=GetWorld()->GetAuthGameMode<ASteppeGameMode>();
+    if (Mode && Mode->bEnableTrial && Mode->Trial.State!=ESteppeTrialState::NotStarted)
+    {
+        const int32 Seconds=FMath::CeilToInt(Mode->Trial.RemainingSeconds);
+        const FString Mission=FString::Printf(TEXT("MISSION  Capture %d/%d wild horse  |  %02d:%02d  |  SCORE %d"),
+            Mode->Trial.Captured,Mode->Trial.RequiredCaptures,Seconds/60,Seconds%60,Mode->Trial.Score);
+        const float MissionY=Canvas->ClipY-42.f;
+        DrawRect(FLinearColor(0,0,0,.72f),18,MissionY-6,590,32);
+        DrawText(Mission,FLinearColor(1.f,.88f,.25f),26,MissionY,nullptr,1.05f);
+        if (Mode->Trial.State==ESteppeTrialState::Success || Mode->Trial.State==ESteppeTrialState::Failed)
+        {
+            const bool bSuccess=Mode->Trial.State==ESteppeTrialState::Success;
+            DrawRect(FLinearColor(0,0,0,.78f),Canvas->ClipX*.5f-245,Canvas->ClipY*.5f-52,490,104);
+            DrawText(bSuccess?TEXT("CAPTURE SUCCESS"):TEXT("TIME EXPIRED"),bSuccess?FLinearColor(.25f,1.f,.35f):FLinearColor(1.f,.25f,.15f),
+                Canvas->ClipX*.5f-150,Canvas->ClipY*.5f-30,nullptr,1.8f);
+            DrawText(FString::Printf(TEXT("Score %d  |  F2 replay"),Mode->Trial.Score),FLinearColor::White,
+                Canvas->ClipX*.5f-105,Canvas->ClipY*.5f+12,nullptr,1.1f);
+        }
+    }
     auto* Debug=GetWorld()->GetSubsystem<USteppeDebugSubsystem>();
     if (!Debug || (!Debug->IsHorseDebugEnabled() && !Debug->IsMovementDebugEnabled())) { return; }
-    auto* Mode=GetWorld()->GetAuthGameMode<ASteppeGameMode>();
     auto* Horse=Mode?Mode->PlaygroundHorse.Get():nullptr; if (!IsValid(Horse)) { return; }
     auto* Move=Cast<UHorseMovementComponent>(Horse->GetCharacterMovement()); if (!Move) { return; }
     const auto& C=*Horse->GetLocomotionConfig();

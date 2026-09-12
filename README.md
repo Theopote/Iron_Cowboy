@@ -1,6 +1,6 @@
 # 《套马的汉子》 / Project STEPPE
 
-UE **5.8.2** 的 C++ 骑乘运动原型。当前已完成 P7 捕获闭环；骑手可驱赶马群、切出目标、投掷套索、控制张力并完成捕获。
+UE **5.8.2** 的 C++ 骑乘游戏原型。当前已完成 P8 限时捕获垂直切片；骑手可在 120 秒任务中驱赶马群、切出目标、投掷套索、控制张力、完成捕获并获得积分结算。
 
 ## 打开与试玩
 
@@ -53,4 +53,4 @@ UE **5.8.2** 的 C++ 骑乘运动原型。当前已完成 P7 捕获闭环；骑�
 
 当前构建使用 V7 / Unreal5_8 IncludeOrder；因本机共享 PCH 编译停顿，模块禁用 PCH，构建脚本传入 `-NoUBA` 禁用 detouring。没有修改引擎安装。Editor 开启 Live Coding 时应先保存关闭再运行外部构建。
 
-详见 `Docs/DEVELOPMENT_STATUS.md`（真实结果和逐项验收）、`Docs/ARCHITECTURE.md`、`Docs/EDITOR_SETUP.md`。完整捕获试玩见 `Docs/P7_CAPTURE.md`；尚未实现持久存档、任务经济或多人网络。
+详见 `Docs/DEVELOPMENT_STATUS.md`（真实结果和逐项验收）、`Docs/ARCHITECTURE.md`、`Docs/EDITOR_SETUP.md`。完整任务试玩见 `Docs/P8_VERTICAL_SLICE.md`；尚未实现持久存档、奖励经济或多人网络。

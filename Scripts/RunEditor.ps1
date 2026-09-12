@@ -13,6 +13,7 @@ param(
     [switch]$LassoSmoke,
     [switch]$RopeFightSmoke,
     [switch]$CaptureSmoke,
+    [switch]$VerticalSliceSmoke,
     [ValidateRange(1,10000)][int]$ExpectedTests = 2
 )
 $ErrorActionPreference = 'Stop'
@@ -33,6 +34,10 @@ if ($RopeFightSmoke) {
 if ($CaptureSmoke) {
     if (!$Smoke -or !$Game) { throw 'CaptureSmoke requires Game and Smoke.' }
     $editorArgs += '-SteppeLassoSmoke'; $editorArgs += '-SteppeRopeFightSmoke'; $editorArgs += '-SteppeCaptureSmoke'
+}
+if ($VerticalSliceSmoke) {
+    if (!$Smoke -or !$Game) { throw 'VerticalSliceSmoke requires Game and Smoke.' }
+    $editorArgs += '-SteppeLassoSmoke'; $editorArgs += '-SteppeRopeFightSmoke'; $editorArgs += '-SteppeCaptureSmoke'; $editorArgs += '-SteppeVerticalSliceSmoke'
 }
 if ($RetrySmoke) { if (!$Smoke -or !$Game) { throw 'RetrySmoke requires Game and Smoke.' }; $editorArgs += '-SteppeRetrySmoke' }
 if ($Tests) { $editorArgs += '-TestExit=Automation Test Queue Empty'; $editorArgs += "-ReportExportPath=$PSScriptRoot\..\Saved\Automation" }
@@ -100,5 +105,12 @@ if ($CaptureSmoke) {
         throw "Capture smoke did not register one subdued horse and remove it from the active herd; see $logPath"
     }
     Write-Output 'Capture smoke: one subdued horse was captured and removed from the active herd.'
+}
+if ($VerticalSliceSmoke) {
+    $sliceLog = Get-Content $logPath -Raw
+    if ($sliceLog -notmatch 'STEPPE_P8_SMOKE: State=ESteppeTrialState::Success Captured=1 Required=1 .*Score=[1-9][0-9]*') {
+        throw "Vertical slice smoke did not complete the timed capture mission with a score; see $logPath"
+    }
+    Write-Output 'Vertical slice smoke: timed mission completed with one capture and a non-zero score.'
 }
 Write-Output "Editor exited successfully. Log: $logPath"

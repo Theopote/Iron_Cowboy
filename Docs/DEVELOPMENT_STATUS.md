@@ -1,6 +1,6 @@
 # Current Phase
 
-**P7 — 从追逐到捕获的完整灰盒 Gameplay 闭环已实现，等待人工手感验收。**
+**P8 — 120 秒限时捕获垂直切片已实现并通过自动化与实际渲染验证。**
 
 项目使用 UE 5.8.2。P1 骑乘基础、P2 单匹野马、P2.2 慢速退让、P3 小规模马群和 P3.1 个体差异/防卡住均已通过对应试玩反馈后继续推进。
 
@@ -16,6 +16,7 @@
 - 隔离完成后可按住 RMB 瞄准并以 LMB 投掷；命中、障碍、脱靶、断绳、释放和恢复均有明确状态与 HUD 反馈。
 - 套中后目标会向外挣扎；空格稳绳并维持 20%–85% 张力约 3 秒可进入 Subdued，持续过载或绳距过长会断绳。
 - Subdued 后按 C 完成捕获；目标从活动马群移入捕获登记，HUD 显示活动数、捕获数和 CAPTURE COMPLETE。
+- 一轮任务要求在 120 秒内捕获 1 匹野马；HUD 持续显示进度、倒计时和积分，完成或超时后冻结结果并支持 F2 重玩。
 
 # Build Result
 
@@ -25,17 +26,17 @@ UHT、C++ 编译和链接成功。仍使用已验证的 NoPCHs / -NoUBA 本地�
 
 # Validation
 
-自动测试：**11 passed, 0 failed**，其中 1 项包含既有的 RiderSeat 占位警告。
+自动测试：**12 passed, 0 failed**，其中 1 项包含既有的 RiderSeat 占位警告。
 
-P7 的 `Steppe.P7.CaptureSubduedHorse` 覆盖前置拒绝、捕获登记、状态 Tags、活动成员移除、捕获计数、焦点清理、套索收回和结果持久性。既有 P1–P6 测试继续通过。
+P8 的 `Steppe.P8.TimedMissionRules` 覆盖倒计时、捕获目标、成功/失败、结算冻结、积分和最后一帧捕获。既有 P1–P7 测试继续通过。
 
-实际渲染冒烟完成 H1 捕获，记录为 1 captured、4 active、目标状态 Captured；旧焦点和隔离进度已清理，剩余四匹继续独立活动且 0 阻塞。
+实际渲染冒烟完成 H1 捕获，记录为任务 Success、1/1 captured、4 active、剩余 114.8 秒、积分 2150；成功结算层和任务 HUD 均正常显示。
 
-证据：`Validation/P7-Results.json`、`P7-Playground.png`、`P7-Runs.txt`。原始日志为 `Saved/Logs/P7-Automation.log` 与 `P7-FinalRender.log`。
+证据：`Validation/P8-Results.json`、`P8-Playground.png`、`P8-Runs.txt`。原始日志为 `Saved/Logs/P8-Automation.log` 与 `P8-FinalRender.log`。
 
 # Manual Steps
 
-打开 `Steppe.uproject` → Play。完成 Q 选择、18 米隔离、RMB/LMB 投掷和空格稳绳。CONTROL 100% 出现 Subdued 后按 C，确认 CAPTURE COMPLETE、4 active / 1 captured。左键收绳后可继续选择其余目标；F2 重试。
+打开 `Steppe.uproject` → Play。在 120 秒内完成 Q 选择、18 米隔离、RMB/LMB 投掷和空格稳绳。CONTROL 100% 出现 Subdued 后按 C，确认成功结算、4 active / 1 captured 和积分；F2 重玩。
 
 `steppe.Debug.Movement 1` 显示个体方向、紫色群体中心、青色目标圈和隔离连线。完整规则见 P4_TARGET_ISOLATION.md。
 
@@ -43,6 +44,7 @@ P7 的 `Steppe.P7.CaptureSubduedHorse` 覆盖前置拒绝、捕获登记、状�
 
 - 仅 5 匹近距离完整 Actor 与一个显式玩家目标；没有远距离简化或领头马社会结构。
 - 套索当前使用连续扫掠和调试绳线；没有正式摆绳动画、物理绳、骑手受力、持久捕获存档、奖励经济或多人网络。
+- P8 任务是单目标、固定时限的关卡内状态；尚无任务选择、难度档位、跨局记录或正式结算界面。
 - 仍是灰盒占位模型，没有真实马动画、听觉、鸣叫或最终美术。
 - 局部探测不是全局寻路；复杂封闭空间中仍可能原地寻找出口。
 - 感知和隔离数值是可调的原型初值，并非马术研究结论。
@@ -50,7 +52,7 @@ P7 的 `Steppe.P7.CaptureSubduedHorse` 覆盖前置拒绝、捕获登记、状�
 
 # Next Recommended Work
 
-试玩完整 P7 流程，重点观察各阶段提示是否清楚、捕获一匹后能否自然继续下一匹，以及整轮节奏是否过长。确认后进入 P8 纵向切片，优先补充开局目标、成功结算、简单计时与重开流程。
+进行一轮 120 秒人工试玩，重点记录完成时间、失败原因、各阶段提示是否清楚，以及切出与控绳的节奏。下一轮优先做垂直切片体验打磨：正式任务开场提示、阶段音画反馈、结果界面层级和参数调优。
 
 # Milestones
 
@@ -61,3 +63,4 @@ P7 的 `Steppe.P7.CaptureSubduedHorse` 覆盖前置拒绝、捕获登记、状�
 - 2026-09-12 P5：完成套索瞄准、投掷扫掠、环境阻挡、附着/释放、断绳与失败回收；9 项自动测试及实际渲染冒烟通过。
 - 2026-09-12 P6：完成套中后的挣扎、张力计算、空格稳绳、控制进度、Subdued 与过载断绳；10 项自动测试及实际渲染冒烟通过。
 - 2026-09-12 P7：完成 C 捕获确认、Captured 状态、活动马群移除、捕获登记与 HUD 结果；11 项自动测试及实际渲染冒烟通过。
+- 2026-09-13 P8：完成 120 秒捕获任务、进度/计分 HUD、成功/失败结算和 F2 重玩；12 项自动测试及完整捕获渲染冒烟通过。

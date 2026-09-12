@@ -9,6 +9,7 @@
 #include "Character/Rider/RidingComponent.h"
 #include "Lasso/LassoComponent.h"
 #include "Core/SteppeGameplayTags.h"
+#include "Game/SteppeTrialState.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "Engine/StaticMeshActor.h"
@@ -442,6 +443,38 @@ bool FCaptureTest::RunTest(const FString& Parameters)
     Fixture.Step(1.f);
     TestEqual(TEXT("Lasso can be stored after securing capture"),Rider->Lasso->State,ELassoState::Stored);
     TestTrue(TEXT("Stowing rope does not undo capture"),Wild->Brain->bCaptured);
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FVerticalSliceRulesTest,"Steppe.P8.TimedMissionRules",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FVerticalSliceRulesTest::RunTest(const FString& Parameters)
+{
+    FSteppeTrialProgress Trial;
+    Trial.Start(10.f,2);
+    TestEqual(TEXT("Mission starts running"),Trial.State,ESteppeTrialState::Running);
+    TestEqual(TEXT("Mission stores its capture goal"),Trial.RequiredCaptures,2);
+
+    Trial.Advance(3.f,1);
+    TestEqual(TEXT("Partial capture keeps mission running"),Trial.State,ESteppeTrialState::Running);
+    TestEqual(TEXT("Mission timer advances"),Trial.RemainingSeconds,7.f);
+
+    Trial.Advance(2.f,2);
+    TestEqual(TEXT("Required captures complete the mission"),Trial.State,ESteppeTrialState::Success);
+    TestEqual(TEXT("Score combines captures and remaining time"),Trial.Score,2050);
+    const float CompletionTime=Trial.RemainingSeconds;
+    Trial.Advance(100.f,2);
+    TestEqual(TEXT("Completed mission freezes its timer"),Trial.RemainingSeconds,CompletionTime);
+
+    FSteppeTrialProgress Failed;
+    Failed.Start(5.f,1);
+    Failed.Advance(5.1f,0);
+    TestEqual(TEXT("Expired mission fails without a capture"),Failed.State,ESteppeTrialState::Failed);
+    TestEqual(TEXT("Failed mission has no score"),Failed.Score,0);
+
+    FSteppeTrialProgress LastMoment;
+    LastMoment.Start(1.f,1);
+    LastMoment.Advance(1.f,1);
+    TestEqual(TEXT("Capture on the final tick counts as success"),LastMoment.State,ESteppeTrialState::Success);
     return true;
 }
 #endif
