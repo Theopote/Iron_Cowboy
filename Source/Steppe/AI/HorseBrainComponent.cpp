@@ -46,6 +46,18 @@ void UHorseBrainComponent::SetThreatTarget(AActor* Target)
     ApproachSpeed = 0.f;
     // Keep the last observed position briefly: losing sight must not instantly cancel a chase.
 }
+void UHorseBrainComponent::ReceiveHerdAlarm(float Strength, float Duration)
+{
+    HerdAlarmStrength=FMath::Clamp(Strength,0.f,1.f);
+    HerdAlarmSeconds=FMath::Max(HerdAlarmSeconds,FMath::Max(0.f,Duration));
+}
+void UHorseBrainComponent::SetHerdGuidance(FVector Center, FVector Velocity, FVector Separation, int32 NeighborCount)
+{
+    HerdCenter=Center;
+    HerdVelocity=Velocity;
+    HerdSeparation=Separation;
+    HerdNeighborCount=FMath::Max(0,NeighborCount);
+}
 void UHorseBrainComponent::Sense(float Dt, const ASteppeHorseCharacter& Horse)
 {
     const auto& C = GetConfig();
@@ -86,6 +98,8 @@ void UHorseBrainComponent::Sense(float Dt, const ASteppeHorseCharacter& Horse)
         Awareness = Awareness > Ceiling ? FMath::Max(Ceiling,Awareness-C.AwarenessDecayRate*Dt) : FMath::Min(Ceiling,Next);
     }
     else { Awareness = FMath::Max(0.f, Awareness - FMath::Max(.01f,C.AwarenessDecayRate) * Dt); }
+    HerdAlarmSeconds=FMath::Max(0.f,HerdAlarmSeconds-Dt);
+    if (HerdAlarmSeconds>0.f) { Awareness=FMath::Max(Awareness,HerdAlarmStrength); }
 }
 void UHorseBrainComponent::ChangeState(EWildHorseState NewState)
 {
@@ -162,7 +176,7 @@ void UHorseBrainComponent::TickComponent(float Dt, ELevelTick TickType, FActorCo
     Sense(Dt, *Horse);
     const bool ImmediateDanger = bThreatVisible && (ThreatDistance <= C.PanicDistance ||
         (ThreatDistance <= C.FastApproachDistance && ApproachSpeed >= C.FastClosingSpeed));
-    const bool Alarm = ImmediateDanger || (ApproachSpeed >= C.FastClosingSpeed && Awareness >= C.FlightThreshold);
+    const bool Alarm = ImmediateDanger || HerdAlarmSeconds>0.f || (ApproachSpeed >= C.FastClosingSpeed && Awareness >= C.FlightThreshold);
     const bool YieldPressure = bThreatVisible && ThreatDistance <= C.FlightDistance && ApproachSpeed > C.ApproachDeadZone;
     switch (State)
     {
@@ -208,7 +222,21 @@ void UHorseBrainComponent::TickComponent(float Dt, ELevelTick TickType, FActorCo
     }
     if (Intent.DesiredSpeed > 0.f)
     {
-        const FVector Desired = (Goal - Horse->GetActorLocation()).GetSafeNormal2D();
+        FVector Desired = (Goal - Horse->GetActorLocation()).GetSafeNormal2D();
+        if (HerdNeighborCount>0)
+        {
+            FVector Social=Desired+C.SeparationWeight*HerdSeparation;
+            if (State==EWildHorseState::Fleeing)
+            {
+                Social+=C.FlightAlignmentWeight*HerdVelocity.GetSafeNormal2D();
+            }
+            else
+            {
+                Social+=C.CohesionWeight*(HerdCenter-Horse->GetActorLocation()).GetSafeNormal2D();
+                Social+=C.AlignmentWeight*HerdVelocity.GetSafeNormal2D();
+            }
+            if (!Social.IsNearlyZero()) { Desired=Social.GetSafeNormal2D(); }
+        }
         SteeringDirection = FindSafeDirection(*Horse, Desired);
         const float HeadingError = FMath::FindDeltaAngleDegrees(Horse->GetActorRotation().Yaw, SteeringDirection.Rotation().Yaw);
         Intent.DesiredTurn = FMath::Clamp(HeadingError / FMath::Max(1.f,C.FullTurnAngle), -1.f, 1.f);

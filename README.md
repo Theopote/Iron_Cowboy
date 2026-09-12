@@ -47,4 +47,4 @@ UE **5.8.2** 的 C++ 骑乘运动原型。当前已完成 P1 基础并加入 P2 
 
 当前构建使用 V7 / Unreal5_8 IncludeOrder；因本机共享 PCH 编译停顿，模块禁用 PCH，构建脚本传入 `-NoUBA` 禁用 detouring。没有修改引擎安装。Editor 开启 Live Coding 时应先保存关闭再运行外部构建。
 
-详见 `Docs/DEVELOPMENT_STATUS.md`（真实结果和逐项验收）、`Docs/ARCHITECTURE.md`、`Docs/EDITOR_SETUP.md`。本轮已实现 P2 单匹野马 AI；没有实现马群、套索、捕获或多人网络。P2 试玩及配置见 `Docs/P2_WILD_HORSE.md`。
+详见 `Docs/DEVELOPMENT_STATUS.md`（真实结果和逐项验收）、`Docs/ARCHITECTURE.md`、`Docs/EDITOR_SETUP.md`。当前已实现 P3 的 5 匹小规模马群，试玩与配置见 `Docs/P3_SMALL_HERD.md`；尚未实现目标切出、套索、捕获或多人网络。

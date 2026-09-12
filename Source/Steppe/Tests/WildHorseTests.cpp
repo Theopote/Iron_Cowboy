@@ -2,6 +2,7 @@
 #include "Misc/AutomationTest.h"
 #include "AI/HorseBrainComponent.h"
 #include "AI/WildHorseConfig.h"
+#include "AI/SteppeHerdManager.h"
 #include "Character/Horse/SteppeWildHorseCharacter.h"
 #include "Character/Horse/HorseMovementComponent.h"
 #include "Character/Rider/SteppeRiderCharacter.h"
@@ -190,6 +191,63 @@ bool FWildApproachTest::RunTest(const FString& Parameters)
     Move->SetComponentTickEnabled(true); Fixture.Step(3.f);
     TestTrue(TEXT("Yield moves horse through CMC at a bounded walking speed"),Wild->GetActorLocation().X>30 && Move->CurrentSpeed<=250.f);
     TestTrue(TEXT("Slow physical approach never enters flight"),Wild->Brain->State!=EWildHorseState::Fleeing);
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSmallHerdTest,"Steppe.P3.SmallHerdFormationAndAlarm",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FSmallHerdTest::RunTest(const FString& Parameters)
+{
+    FWildTestWorld Fixture;
+    auto* Rider=Fixture.World->SpawnActor<ASteppeRiderCharacter>(FVector(-2000,0,100),FRotator::ZeroRotator);
+    const FTransform HerdTransform(FRotator::ZeroRotator,FVector(0,0,100));
+    auto* Herd=Fixture.World->SpawnActorDeferred<ASteppeHerdManager>(ASteppeHerdManager::StaticClass(),HerdTransform,
+        nullptr,nullptr,ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+    Herd->HerdSize=5;
+    Herd->FormationSpacing=300.f;
+    Herd->SeparationDistance=500.f;
+    Herd->AlarmPropagationSpeed=900.f;
+    Herd->HorseClass=ASteppeWildHorseCharacter::StaticClass();
+    Herd->SetThreatTarget(Rider);
+    Herd->FinishSpawning(HerdTransform);
+    Fixture.Begin();
+
+    if (!TestEqual(TEXT("Manager spawns requested small herd"),Herd->Members.Num(),5)) { return false; }
+    TestTrue(TEXT("Formation has useful spatial extent"),
+        FVector::Dist2D(Herd->Members[0]->GetActorLocation(),Herd->Members.Last()->GetActorLocation())>500.f);
+    Rider->GetCharacterMovement()->SetComponentTickEnabled(false);
+    Rider->GetCharacterMovement()->Velocity=FVector(1000,0,0);
+    for (int32 Index=0; Index<Herd->Members.Num(); ++Index)
+    {
+        Herd->Members[Index]->GetCharacterMovement()->SetComponentTickEnabled(false);
+        if (Index>0) { Herd->Members[Index]->Brain->SetThreatTarget(nullptr); }
+    }
+
+    Fixture.Step(.2f);
+    TestEqual(TEXT("Nearest directly threatened horse flees first"),Herd->Members[0]->Brain->State,EWildHorseState::Fleeing);
+    int32 SecondaryFleeing=0;
+    for (int32 Index=1; Index<Herd->Members.Num(); ++Index) { SecondaryFleeing+=Herd->Members[Index]->Brain->State==EWildHorseState::Fleeing; }
+    TestEqual(TEXT("Alarm is not broadcast as an instantaneous group state"),SecondaryFleeing,0);
+
+    Fixture.Step(.7f);
+    int32 SecondaryAlert=0;
+    for (int32 Index=1; Index<Herd->Members.Num(); ++Index)
+    {
+        SecondaryAlert+=Herd->Members[Index]->Brain->State==EWildHorseState::Alert;
+    }
+    TestTrue(TEXT("Nearby herd members receive a delayed warning"),SecondaryAlert>0);
+    Fixture.Step(1.5f);
+    SecondaryFleeing=0;
+    for (int32 Index=1; Index<Herd->Members.Num(); ++Index)
+    {
+        SecondaryFleeing+=Herd->Members[Index]->Brain->State==EWildHorseState::Fleeing;
+        TestTrue(TEXT("Manager supplies neighbor context"),Herd->Members[Index]->Brain->HerdNeighborCount>0);
+    }
+    TestEqual(TEXT("Warning eventually propagates through the small herd"),SecondaryFleeing,4);
+    TestTrue(TEXT("Close formation produces separation guidance"),!Herd->Members[1]->Brain->HerdSeparation.IsNearlyZero());
+
+    Herd->Members[0]->Destroy();
+    Fixture.Step(.3f);
+    TestEqual(TEXT("Manager removes destroyed members safely"),Herd->Members.Num(),4);
     return true;
 }
 #endif

@@ -9,6 +9,7 @@
 #include "Engine/World.h"
 #include "Character/Horse/SteppeWildHorseCharacter.h"
 #include "AI/HorseBrainComponent.h"
+#include "AI/SteppeHerdManager.h"
 #include "GameFramework/PlayerController.h"
 void ASteppeHUD::DrawHUD()
 {
@@ -26,17 +27,28 @@ void ASteppeHUD::DrawHUD()
         auto* Brain = Wild->Brain.Get();
         if (Debug->IsHorseDebugEnabled())
         {
-            DrawRect(FLinearColor(0,0,0,.65f),18,250,650,90);
-            DrawText(FString::Printf(TEXT("WILD HORSE: %s | awareness %.0f%%\nDistance %.1f m | approach %.1f m/s | visible %s\nPath %s | approach slowly, then compare a fast chase. Wild horse cannot be mounted."),
+            DrawRect(FLinearColor(0,0,0,.65f),18,250,650,110);
+            DrawText(FString::Printf(TEXT("WILD HERD: %d horses | alarm sources %d\nFOCUS: %s | awareness %.0f%% | neighbors %d\nDistance %.1f m | approach %.1f m/s | visible %s\nPath %s | approach slowly, then compare a fast chase."),
+                Mode->WildHorses.Num(),Mode->HerdManager?Mode->HerdManager->AlarmSourceCount:0,
                 *UEnum::GetDisplayValueAsText(Brain->State).ToString(), Brain->Awareness*100.f,
+                Brain->HerdNeighborCount,
                 SteppeUnits::ToMetersPerSecond(Brain->ThreatDistance), SteppeUnits::ToMetersPerSecond(Brain->ApproachSpeed),
                 Brain->bThreatVisible?TEXT("yes"):TEXT("no"),Brain->bBrakingForHazard?TEXT("hazard braking"):(Brain->bPathBlocked?TEXT("blocked"):TEXT("clear"))),
                 FLinearColor(1,.85f,.3f),26,257,nullptr,1.f);
-            FVector2D LabelPosition;
-            if (PlayerOwner && PlayerOwner->ProjectWorldLocationToScreen(Wild->GetActorLocation()+FVector(0,0,180),LabelPosition)
-                && (LabelPosition.X>680.f || LabelPosition.Y>350.f))
+            for (int32 Index=0; Index<Mode->WildHorses.Num(); ++Index)
             {
-                DrawText(TEXT("WILD HORSE"), FLinearColor::Yellow,LabelPosition.X,LabelPosition.Y,nullptr,1.f);
+                const auto* Member=Mode->WildHorses[Index].Get();
+                if (!Member) { continue; }
+                FVector2D LabelPosition;
+                if (PlayerOwner && PlayerOwner->ProjectWorldLocationToScreen(Member->GetActorLocation()+FVector(0,0,180),LabelPosition)
+                    && (LabelPosition.X>680.f || LabelPosition.Y>370.f))
+                {
+                    const auto MemberState=Member->Brain->State;
+                    const FLinearColor Color=MemberState==EWildHorseState::Fleeing?FLinearColor(1,.25f,.1f):
+                        (MemberState==EWildHorseState::Alert?FLinearColor::Yellow:FLinearColor(.55f,.8f,1.f));
+                    DrawText(FString::Printf(TEXT("H%d %s"),Index+1,*UEnum::GetDisplayValueAsText(MemberState).ToString()),
+                        Color,LabelPosition.X,LabelPosition.Y,nullptr,.9f);
+                }
             }
         }
         if (Debug->IsMovementDebugEnabled())
@@ -44,6 +56,13 @@ void ASteppeHUD::DrawHUD()
             const FVector Start = Wild->GetActorLocation()+FVector(0,0,130);
             DrawDebugDirectionalArrow(GetWorld(), Start, Start+Brain->SteeringDirection*500.f,40,FColor::Orange,false,0,0,4);
             DrawDebugSphere(GetWorld(), Brain->Goal,90,12,FColor::Orange,false,0,0,2);
+            if (Mode->HerdManager)
+            {
+                DrawDebugSphere(GetWorld(),Mode->HerdManager->HerdCenter,90,12,FColor::Purple,false,0,0,4);
+                DrawDebugDirectionalArrow(GetWorld(),Mode->HerdManager->HerdCenter,
+                    Mode->HerdManager->HerdCenter+Mode->HerdManager->AverageVelocity.GetSafeNormal2D()*500.f,
+                    50,FColor::Purple,false,0,0,4);
+            }
         }
     }
     const TCHAR* Stress=Move->TurnStress>=C.StressCritical?TEXT("CRITICAL"):(Move->TurnStress>=C.StressWarning?TEXT("WARNING"):TEXT("SAFE"));

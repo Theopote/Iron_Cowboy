@@ -19,6 +19,8 @@ public:
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
     virtual void TickComponent(float Dt, ELevelTick TickType, FActorComponentTickFunction* TickFunction) override;
     UFUNCTION(BlueprintCallable, Category="Wild Horse") void SetThreatTarget(AActor* Target);
+    UFUNCTION(BlueprintCallable, Category="Wild Horse") void ReceiveHerdAlarm(float Strength, float Duration);
+    void SetHerdGuidance(FVector Center, FVector Velocity, FVector Separation, int32 NeighborCount);
     UFUNCTION(BlueprintPure, Category="Wild Horse") FGameplayTag GetBehaviorTag() const;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Wild Horse") TObjectPtr<UWildHorseConfig> Config;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") EWildHorseState State = EWildHorseState::Roaming;
@@ -32,6 +34,9 @@ public:
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") FVector Goal = FVector::ZeroVector;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") FVector SteeringDirection = FVector::ZeroVector;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") float ApproachSpeed = 0.f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") float HerdAlarmSeconds = 0.f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") int32 HerdNeighborCount = 0;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") FVector HerdSeparation = FVector::ZeroVector;
     const UWildHorseConfig& GetConfig() const;
 private:
     void Sense(float Dt, const ASteppeHorseCharacter& Horse);
@@ -48,4 +53,7 @@ private:
     float ReleasedSeconds = 0.f;
     float PauseRemaining = 0.f;
     float RoamGoalSeconds = 0.f;
+    float HerdAlarmStrength = 0.f;
+    FVector HerdCenter = FVector::ZeroVector;
+    FVector HerdVelocity = FVector::ZeroVector;
 };

@@ -16,6 +16,7 @@
 #include "Character/Horse/SteppeWildHorseCharacter.h"
 #include "AI/HorseBrainComponent.h"
 #include "AI/WildHorseConfig.h"
+#include "AI/SteppeHerdManager.h"
 ASteppeGameMode::ASteppeGameMode()
 {
     PlayerControllerClass = ASteppePlayerController::StaticClass();
@@ -41,14 +42,26 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
     else { UE_LOG(LogSteppe,Error,TEXT("Playground horse could not spawn; check spawn transform/collision.")); }
     if (bSpawnWildHorse)
     {
-        if (!IsValid(WildHorse))
+        if (!IsValid(HerdManager))
         {
-            FActorSpawnParameters Params;
-            Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
-            WildHorse = GetWorld()->SpawnActor<ASteppeWildHorseCharacter>(WildHorseClass, WildHorseSpawnTransform, Params);
+            HerdManager=GetWorld()->SpawnActorDeferred<ASteppeHerdManager>(ASteppeHerdManager::StaticClass(),WildHorseSpawnTransform,
+                nullptr,nullptr,ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+            if (HerdManager)
+            {
+                HerdManager->HorseClass=WildHorseClass;
+                HerdManager->HerdSize=WildHorseCount;
+                HerdManager->SetThreatTarget(Rider);
+                HerdManager->FinishSpawning(WildHorseSpawnTransform);
+                HerdManager->EnsureMembersSpawned();
+            }
         }
-        if (WildHorse) { WildHorse->Brain->SetThreatTarget(Rider); }
-        else { UE_LOG(LogSteppe, Error, TEXT("Wild horse spawn failed; check WildHorseClass and spawn clearance.")); }
+        if (HerdManager)
+        {
+            HerdManager->SetThreatTarget(Rider);
+            WildHorses=HerdManager->Members;
+            WildHorse=WildHorses.IsEmpty()?nullptr:WildHorses[0];
+        }
+        if (!WildHorse) { UE_LOG(LogSteppe, Error, TEXT("Wild herd spawn failed; check WildHorseClass and spawn clearance.")); }
     }
     if (bDebugEnabled) { IConsoleManager::Get().FindConsoleVariable(TEXT("steppe.Debug.Horse"))->Set(1,ECVF_SetByCode); }
     if (FParse::Param(FCommandLine::Get(),TEXT("SteppeSmoke")))
@@ -85,8 +98,23 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
                     *UEnum::GetValueAsString(WildHorse->Brain->State), WildHorse->Brain->Awareness,
                     WildHorse->Brain->bThreatVisible, WildHorse->GetVelocity().Size2D(), *WildHorse->Brain->GetConfig().GetPathName());
             }
+            if (HerdManager)
+            {
+                int32 Alert=0,Fleeing=0,Yielding=0;
+                for (const TObjectPtr<ASteppeWildHorseCharacter>& MemberPtr : HerdManager->Members)
+                {
+                    const auto* Member=MemberPtr.Get();
+                    if (!Member) { continue; }
+                    Alert+=Member->Brain->State==EWildHorseState::Alert;
+                    Fleeing+=Member->Brain->State==EWildHorseState::Fleeing;
+                    Yielding+=Member->Brain->State==EWildHorseState::Yielding;
+                }
+                UE_LOG(LogSteppe,Display,TEXT("STEPPE_P3_SMOKE: Members=%d Alert=%d Yielding=%d Fleeing=%d Sources=%d Spread=%.1f"),
+                    HerdManager->Members.Num(),Alert,Yielding,Fleeing,HerdManager->AlarmSourceCount,
+                    HerdManager->Members.Num()>1?FVector::Dist2D(HerdManager->Members[0]->GetActorLocation(),HerdManager->Members.Last()->GetActorLocation()):0.f);
+            }
             FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeSmoke.png"),true,false);
-        }),7.f,false);
-        GetWorldTimerManager().SetTimer(ExitHandle,FTimerDelegate::CreateWeakLambda(NewPlayer,[NewPlayer]() { NewPlayer->ConsoleCommand(TEXT("quit")); }),9.f,false);
+        }),3.5f,false);
+        GetWorldTimerManager().SetTimer(ExitHandle,FTimerDelegate::CreateWeakLambda(NewPlayer,[NewPlayer]() { NewPlayer->ConsoleCommand(TEXT("quit")); }),5.5f,false);
     }
 }

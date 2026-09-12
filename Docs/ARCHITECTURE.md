@@ -56,3 +56,7 @@ SteppeWildHorseCharacter 继承原有 Horse，添加 HorseBrainComponent 并默�
 Movement 的物理和体力实现保持共用。Brain 只选择目标与意图，不修改位置/旋转；移动 Tick 依赖 Brain Tick。局部探测避开障碍并检查候选方向落脚面，围堵时请求制动，不提供全局寻路。Mounted Rider 的速度从其附着的坐骑读取。
 
 行为参数来自 WildHorseConfig 数据资产，Native Behavior Tags 与已有 Movement/Gait 状态区分。P2 完整范围、限制和验证见 P2_WILD_HORSE.md。
+
+## P3：小规模马群
+
+`ASteppeHerdManager` 集中生成和登记 1–12 匹完整 WildHorse Actor，以 5 Hz 汇总中心、平均速度、邻居和分离向量，并按空间距离传播警报。Brain 将群体摘要与自己的目标方向混合后继续输出 `FHorseMovementIntent`。Manager 不直接移动成员，也不替代每匹马的感知、状态机、避障或 CMC。当前原型规模为 5，详细范围见 P3_SMALL_HERD.md。

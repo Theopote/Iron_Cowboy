@@ -4,6 +4,7 @@
 #include "SteppeGameMode.generated.h"
 class ASteppeHorseCharacter;
 class ASteppeWildHorseCharacter;
+class ASteppeHerdManager;
 UCLASS()
 class STEPPE_API ASteppeGameMode : public AGameModeBase
 {
@@ -21,4 +22,7 @@ public:
     UPROPERTY(EditDefaultsOnly, Category="Wild Horse") FTransform WildHorseSpawnTransform = FTransform(FVector(4000,0,110));
     UPROPERTY(EditDefaultsOnly, Category="Wild Horse") TSubclassOf<ASteppeWildHorseCharacter> WildHorseClass;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") TObjectPtr<ASteppeWildHorseCharacter> WildHorse;
+    UPROPERTY(EditDefaultsOnly, Category="Wild Horse", meta=(ClampMin="1", ClampMax="12")) int32 WildHorseCount = 5;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") TObjectPtr<ASteppeHerdManager> HerdManager;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") TArray<TObjectPtr<ASteppeWildHorseCharacter>> WildHorses;
 };

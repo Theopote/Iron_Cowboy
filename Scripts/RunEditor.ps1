@@ -40,7 +40,12 @@ if ($RetrySmoke) {
             throw "Retry smoke did not confirm reset $reload; see $logPath"
         }
     }
-    if ($retryLog -notmatch 'STEPPE_P2_SMOKE: State=EWildHorseState::Fleeing') {
+    if ($retryLog -match 'STEPPE_P3_SMOKE:') {
+        if ($retryLog -notmatch 'STEPPE_P3_SMOKE: Members=5 .*Fleeing=[1-5]') {
+            throw "P3 smoke did not confirm a five-horse herd with an active fleeing response; see $logPath"
+        }
+    }
+    elseif ($retryLog -notmatch 'STEPPE_P2_SMOKE: State=EWildHorseState::Fleeing') {
         throw "Chase did not resume after retry; see $logPath"
     }
     Write-Output 'Retry smoke: two reloads reset mounted rider and awareness; chase resumed.'

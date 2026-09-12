@@ -1,0 +1,36 @@
+[2026.09.12-09.09.56:081][  0]LogSteppe: Display: STEPPE_RETRY_SMOKE: Reload=0 Mounted=1 Awareness=0.00
+[2026.09.12-09.09.56:881][  7]LogSteppeHorse: Display: BP_SteppeWildHorse_C_0 behavior -> EWildHorseState::Fleeing (awareness 0.00)
+[2026.09.12-09.09.57:190][ 67]LogSteppeHorse: Display: BP_SteppeWildHorse_C_1 behavior -> EWildHorseState::Alert (awareness 0.85)
+[2026.09.12-09.09.57:190][ 67]LogSteppeHorse: Display: BP_SteppeWildHorse_C_2 behavior -> EWildHorseState::Alert (awareness 0.85)
+[2026.09.12-09.09.57:257][ 91]LogSteppeHorse: Display: BP_SteppeWildHorse_C_3 behavior -> EWildHorseState::Alert (awareness 0.85)
+[2026.09.12-09.09.57:257][ 91]LogSteppeHorse: Display: BP_SteppeWildHorse_C_4 behavior -> EWildHorseState::Alert (awareness 0.85)
+[2026.09.12-09.09.57:326][115]LogSteppeHorse: Display: BP_SteppeWildHorse_C_1 behavior -> EWildHorseState::Fleeing (awareness 0.85)
+[2026.09.12-09.09.57:326][115]LogSteppeHorse: Display: BP_SteppeWildHorse_C_2 behavior -> EWildHorseState::Fleeing (awareness 0.85)
+[2026.09.12-09.09.57:399][139]LogSteppeHorse: Display: BP_SteppeWildHorse_C_3 behavior -> EWildHorseState::Fleeing (awareness 0.85)
+[2026.09.12-09.09.57:399][139]LogSteppeHorse: Display: BP_SteppeWildHorse_C_4 behavior -> EWildHorseState::Fleeing (awareness 0.85)
+[2026.09.12-09.09.57:599][181]LogSteppe: Display: STEPPE_RETRY_SMOKE: Reload=1 Mounted=1 Awareness=0.00
+[2026.09.12-09.09.57:601][181]LogSteppeHorse: Display: BP_SteppeWildHorse_C_0 behavior -> EWildHorseState::Fleeing (awareness 0.00)
+[2026.09.12-09.09.57:825][236]LogSteppeHorse: Display: BP_SteppeWildHorse_C_1 behavior -> EWildHorseState::Alert (awareness 0.85)
+[2026.09.12-09.09.57:825][236]LogSteppeHorse: Display: BP_SteppeWildHorse_C_2 behavior -> EWildHorseState::Alert (awareness 0.85)
+[2026.09.12-09.09.57:893][260]LogSteppeHorse: Display: BP_SteppeWildHorse_C_3 behavior -> EWildHorseState::Alert (awareness 0.85)
+[2026.09.12-09.09.57:893][260]LogSteppeHorse: Display: BP_SteppeWildHorse_C_4 behavior -> EWildHorseState::Alert (awareness 0.85)
+[2026.09.12-09.09.57:963][284]LogSteppeHorse: Display: BP_SteppeWildHorse_C_1 behavior -> EWildHorseState::Fleeing (awareness 0.85)
+[2026.09.12-09.09.57:963][284]LogSteppeHorse: Display: BP_SteppeWildHorse_C_2 behavior -> EWildHorseState::Fleeing (awareness 0.85)
+[2026.09.12-09.09.58:032][308]LogSteppeHorse: Display: BP_SteppeWildHorse_C_3 behavior -> EWildHorseState::Fleeing (awareness 0.85)
+[2026.09.12-09.09.58:032][308]LogSteppeHorse: Display: BP_SteppeWildHorse_C_4 behavior -> EWildHorseState::Fleeing (awareness 0.85)
+[2026.09.12-09.09.58:247][362]LogSteppe: Display: STEPPE_RETRY_SMOKE: Reload=2 Mounted=1 Awareness=0.00
+[2026.09.12-09.09.58:254][362]LogSteppeHorse: Display: BP_SteppeWildHorse_C_0 behavior -> EWildHorseState::Fleeing (awareness 0.00)
+[2026.09.12-09.09.58:472][417]LogSteppeHorse: Display: BP_SteppeWildHorse_C_1 behavior -> EWildHorseState::Alert (awareness 0.85)
+[2026.09.12-09.09.58:472][417]LogSteppeHorse: Display: BP_SteppeWildHorse_C_2 behavior -> EWildHorseState::Alert (awareness 0.85)
+[2026.09.12-09.09.58:535][441]LogSteppeHorse: Display: BP_SteppeWildHorse_C_3 behavior -> EWildHorseState::Alert (awareness 0.85)
+[2026.09.12-09.09.58:535][441]LogSteppeHorse: Display: BP_SteppeWildHorse_C_4 behavior -> EWildHorseState::Alert (awareness 0.85)
+[2026.09.12-09.09.58:596][465]LogSteppeHorse: Display: BP_SteppeWildHorse_C_1 behavior -> EWildHorseState::Fleeing (awareness 0.85)
+[2026.09.12-09.09.58:596][465]LogSteppeHorse: Display: BP_SteppeWildHorse_C_2 behavior -> EWildHorseState::Fleeing (awareness 0.85)
+[2026.09.12-09.09.58:656][489]LogSteppeHorse: Display: BP_SteppeWildHorse_C_3 behavior -> EWildHorseState::Fleeing (awareness 0.85)
+[2026.09.12-09.09.58:657][489]LogSteppeHorse: Display: BP_SteppeWildHorse_C_4 behavior -> EWildHorseState::Fleeing (awareness 0.85)
+[2026.09.12-09.09.58:798][543]LogSteppeHorse: Display: BP_SteppeWildHorse_C_0 behavior -> EWildHorseState::Recovering (awareness 0.00)
+[2026.09.12-09.09.58:878][572]LogSteppe: Display: STEPPE_SMOKE: Horse=BP_SteppeHorse_C_0 Speed=480.7 Mounted=1
+[2026.09.12-09.09.58:878][572]LogSteppe: Display: STEPPE_P2_SMOKE: State=EWildHorseState::Recovering Awareness=0.00 Visible=1 Speed=332.7 Config=/Game/Steppe/Data/Horses/DA_WildHorse_Default.DA_WildHorse_Default
+[2026.09.12-09.09.58:878][572]LogSteppe: Display: STEPPE_P3_SMOKE: Members=5 Alert=0 Yielding=0 Fleeing=4 Sources=4 Spread=1544.9
+[2026.09.12-09.09.59:792][651]LogSteppeHorse: Display: BP_SteppeWildHorse_C_1 behavior -> EWildHorseState::Recovering (awareness 0.53)
+[2026.09.12-09.09.59:792][651]LogSteppeHorse: Display: BP_SteppeWildHorse_C_2 behavior -> EWildHorseState::Recovering (awareness 0.53)
