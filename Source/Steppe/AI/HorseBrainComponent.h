@@ -27,6 +27,8 @@ public:
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") float ClosingSpeed = 0.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") bool bThreatVisible = false;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") bool bPathBlocked = false;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") bool bBrakingForHazard = false;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") float StoppingProbeDistance = 0.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") FVector Goal = FVector::ZeroVector;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") FVector SteeringDirection = FVector::ZeroVector;
     const UWildHorseConfig& GetConfig() const;
@@ -34,6 +36,7 @@ private:
     void Sense(float Dt, const ASteppeHorseCharacter& Horse);
     void ChangeState(EWildHorseState NewState);
     FVector FindSafeDirection(const ASteppeHorseCharacter& Horse, FVector Desired);
+    bool IsDirectionSupported(const ASteppeHorseCharacter& Horse, FVector Direction, float Distance) const;
     void ChooseRoamGoal();
     UPROPERTY() TWeakObjectPtr<AActor> ThreatTarget;
     FVector Home = FVector::ZeroVector;

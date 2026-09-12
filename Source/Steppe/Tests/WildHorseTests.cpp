@@ -18,13 +18,13 @@ namespace
     struct FWildTestWorld
     {
         UWorld* World;
-        FWildTestWorld()
+        FWildTestWorld(bool bCreateFloor=true)
         {
             const auto Init = UWorld::InitializationValues().AllowAudioPlayback(false).RequiresHitProxies(false)
                 .CreatePhysicsScene(true).CreateNavigation(false).CreateAISystem(false).ShouldSimulatePhysics(true).SetTransactional(false);
             World = UWorld::CreateWorld(EWorldType::Game,false,NAME_None,nullptr,true,ERHIFeatureLevel::Num,&Init);
             GEngine->CreateNewWorldContext(EWorldType::Game).SetCurrentWorld(World);
-            Block(FVector(0,0,-10),FVector(2000,2000,.2f));
+            if (bCreateFloor) { Block(FVector(0,0,-10),FVector(2000,2000,.2f)); }
         }
         AStaticMeshActor* Block(FVector Position, FVector Scale)
         {
@@ -117,6 +117,35 @@ bool FWildMovementTest::RunTest(const FString& Parameters)
     Fixture.Step(.3f);
     TestTrue(TEXT("Blocked steering is surfaced"),Wild->Brain->bPathBlocked);
     TestTrue(TEXT("Blocked horse requests braking"),Move->HorseIntent.BrakeStrength>.9f && Move->DesiredSpeed==0.f);
+    return true;
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FWildHazardTest,"Steppe.P2.StoppingDistanceAndGaps",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FWildHazardTest::RunTest(const FString& Parameters)
+{
+    for (bool bGap : {false,true})
+    {
+        FWildTestWorld Fixture(!bGap);
+        if (bGap)
+        {
+            // Far endpoint is supported, but a 300 cm gap interrupts the route.
+            Fixture.Block(FVector(-500,0,-10),FVector(14,40,.2f));
+            Fixture.Block(FVector(2000,0,-10),FVector(30,40,.2f));
+        }
+        else { Fixture.Block(FVector(1500,0,200),FVector(1,40,4)); }
+        auto* Wild=Fixture.World->SpawnActor<ASteppeWildHorseCharacter>(FVector(0,0,100),FRotator::ZeroRotator);
+        Fixture.Begin();
+        auto* Move=CastChecked<UHorseMovementComponent>(Wild->GetCharacterMovement());
+        Move->SetComponentTickEnabled(false);
+        Move->SetMovementMode(MOVE_Walking);
+        Move->Velocity=FVector(1200,0,0);
+        Fixture.Step(.2f);
+        TestTrue(TEXT("Probe includes braking distance and decision latency"),Wild->Brain->StoppingProbeDistance>1400.f);
+        TestTrue(bGap?TEXT("Intermediate gap triggers hazard braking"):TEXT("Wall beyond old lookahead triggers early braking"),Wild->Brain->bBrakingForHazard);
+        TestTrue(TEXT("Hazard emits emergency brake intent"),Move->HorseIntent.BrakeStrength>.9f && Move->HorseIntent.DesiredSpeed==0.f);
+        Move->Velocity=FVector(0,1200,0);
+        Fixture.Step(.2f);
+        TestFalse(TEXT("Clear lateral ground releases hazard brake"),Wild->Brain->bBrakingForHazard);
+    }
     return true;
 }
 #endif

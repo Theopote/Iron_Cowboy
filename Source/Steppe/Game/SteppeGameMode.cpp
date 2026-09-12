@@ -57,6 +57,20 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
         FApp::SetUseFixedTimeStep(true);
         FApp::SetFixedDeltaTime(1.0/60.0);
         NewPlayer->SetControlRotation(FRotator(-12,25,0));
+        // Process-local count is restricted to this opt-in standalone smoke run.
+        static int32 RetrySmokeCount=0;
+        if (FParse::Param(FCommandLine::Get(),TEXT("SteppeRetrySmoke")))
+        {
+            UE_LOG(LogSteppe,Display,TEXT("STEPPE_RETRY_SMOKE: Reload=%d Mounted=%d Awareness=%.2f"),
+                RetrySmokeCount,Rider->Riding->IsMounted(),WildHorse?WildHorse->Brain->Awareness:-1.f);
+            if (RetrySmokeCount<2)
+            {
+                ++RetrySmokeCount;
+                FTimerHandle RetryHandle;
+                GetWorldTimerManager().SetTimer(RetryHandle,FTimerDelegate::CreateWeakLambda(NewPlayer,[NewPlayer]()
+                { CastChecked<ASteppePlayerController>(NewPlayer)->SteppeRestartTrial(); }),3.f,false);
+            }
+        }
         FTimerHandle StartHandle,ShotHandle,ExitHandle;
         GetWorldTimerManager().SetTimer(StartHandle,FTimerDelegate::CreateWeakLambda(Rider,[Rider]()
         {

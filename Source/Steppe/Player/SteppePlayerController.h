@@ -8,4 +8,5 @@ class STEPPE_API ASteppePlayerController : public APlayerController
     GENERATED_BODY()
 public:
     UFUNCTION(Exec) void SteppeToggleDebug();
+    UFUNCTION(Exec) void SteppeRestartTrial();
 };

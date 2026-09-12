@@ -1,8 +1,11 @@
 # 文档索引
 
-- MASTER_PROMPT_v0.1.md：用户原始 P0 + P1 需求。
-- ARCHITECTURE.md：已实现的组件职责、意图分层、Tick 顺序与架构调整。
-- EDITOR_SETUP.md：已生成资产、按键映射、参数和人工试玩步骤。
-- DEVELOPMENT_STATUS.md：构建、自动测试、限制和逐项验收。
+- MASTER_PROMPT_v0.1.md：原始 P0 + P1 范围，保留历史版本。
+- P1_BASELINE.md：进入 P2 前的 P1 实现与验证记录。
+- P2_WILD_HORSE.md：已授权 P2 单匹野马的架构、试玩、参数与限制。
+- ARCHITECTURE.md：意图分层、组件职责、Tick 顺序。
+- EDITOR_SETUP.md：资产路径、按键和人工 Editor 步骤。
+- DEVELOPMENT_STATUS.md：当前状态与最新验证。
+- Validation/：实际运行截图与精简结果。
 
-当前引擎为本机 UE 5.8.2；此前缺少引擎的阻塞已解除。不开展 P2。
+当前使用本机 UE 5.8.2。P2 不包含马群、套索、捕获或网络。

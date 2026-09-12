@@ -34,5 +34,8 @@ public:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Steering", meta=(ClampMin="0.1")) float ProbeSeconds = 1.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Steering", meta=(ClampMin="1")) float ProbeRadius = 60.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Steering", meta=(ClampMin="1")) float GroundProbeDepth = 500.f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Steering", meta=(ClampMin="10")) float GroundSampleSpacing = 100.f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Steering", meta=(ClampMin="0")) float MaximumGroundDrop = 60.f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Steering", meta=(ClampMin="0")) float BrakeSafetyDistance = 150.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Roaming") int32 RandomSeed = 1729;
 };

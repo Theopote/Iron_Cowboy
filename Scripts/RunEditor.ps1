@@ -7,6 +7,7 @@ param(
     [switch]$Render,
     [switch]$Tests,
     [switch]$Smoke,
+    [switch]$RetrySmoke,
     [ValidateRange(1,10000)][int]$ExpectedTests = 2
 )
 $ErrorActionPreference = 'Stop'
@@ -17,6 +18,7 @@ $editorArgs = @($projectPath, '-unattended', '-nosplash', '-nosound', "-abslog=$
 if (!$Render) { $editorArgs += '-nullrhi' }
 if ($Game) { $editorArgs += '-game' }
 if ($Smoke) { $editorArgs += '-SteppeSmoke'; $editorArgs += '-windowed'; $editorArgs += '-ResX=1280'; $editorArgs += '-ResY=720' }
+if ($RetrySmoke) { if (!$Smoke -or !$Game) { throw 'RetrySmoke requires Game and Smoke.' }; $editorArgs += '-SteppeRetrySmoke' }
 if ($Tests) { $editorArgs += '-TestExit=Automation Test Queue Empty'; $editorArgs += "-ReportExportPath=$PSScriptRoot\..\Saved\Automation" }
 if ($PythonScript) { $editorArgs += "-ExecutePythonScript=$PythonScript" }
 else { $editorArgs += "-ExecCmds=$Commands" }
@@ -30,5 +32,17 @@ if ($Tests) {
     $passed = $report.succeeded + $report.succeededWithWarnings
     if ($report.failed -gt 0 -or $passed -lt $ExpectedTests -or $report.notRun -gt 0 -or $report.inProcess -gt 0) { throw "Automation incomplete/failed: $passed passed (expected at least $ExpectedTests), $($report.failed) failed; see $logPath" }
     Write-Output "Automation: $passed passed, $($report.failed) failed, $($report.succeededWithWarnings) passed with warnings."
+}
+if ($RetrySmoke) {
+    $retryLog = Get-Content $logPath -Raw
+    foreach ($reload in 0..2) {
+        if ($retryLog -notmatch "STEPPE_RETRY_SMOKE: Reload=$reload Mounted=1 Awareness=0\.00") {
+            throw "Retry smoke did not confirm reset $reload; see $logPath"
+        }
+    }
+    if ($retryLog -notmatch 'STEPPE_P2_SMOKE: State=EWildHorseState::Fleeing') {
+        throw "Chase did not resume after retry; see $logPath"
+    }
+    Write-Output 'Retry smoke: two reloads reset mounted rider and awareness; chase resumed.'
 }
 Write-Output "Editor exited successfully. Log: $logPath"

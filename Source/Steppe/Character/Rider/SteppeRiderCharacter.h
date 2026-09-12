@@ -18,6 +18,7 @@ public:
     ASteppeRiderCharacter();
     virtual void SetupPlayerInputComponent(UInputComponent* Input) override;
     virtual void PawnClientRestart() override;
+    virtual void EndPlay(const EEndPlayReason::Type Reason) override;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<URidingComponent> Riding;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<USpringArmComponent> CameraBoom;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<UCameraComponent> Camera;
@@ -34,6 +35,7 @@ private:
     void Brake(const FInputActionValue& Value);
     void Interact();
     void ToggleDebug();
+    void RestartTrial();
     void EnsureInputConfig();
     FRidingIntent Intent;
 };

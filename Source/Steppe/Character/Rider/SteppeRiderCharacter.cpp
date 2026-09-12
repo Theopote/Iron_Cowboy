@@ -35,6 +35,19 @@ ASteppeRiderCharacter::ASteppeRiderCharacter()
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Shape(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
     if (Shape.Succeeded()) { Body->SetStaticMesh(Shape.Object); }
 }
+void ASteppeRiderCharacter::EndPlay(const EEndPlayReason::Type Reason)
+{
+    auto* PC=Cast<APlayerController>(Controller);
+    if (InputConfig && PC && PC->GetLocalPlayer())
+    {
+        if (auto* Subsystem=ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
+        {
+            if (InputConfig->OnFoot) { Subsystem->RemoveMappingContext(InputConfig->OnFoot); }
+            if (InputConfig->Riding) { Subsystem->RemoveMappingContext(InputConfig->Riding); }
+        }
+    }
+    Super::EndPlay(Reason);
+}
 void ASteppeRiderCharacter::EnsureInputConfig()
 {
     if (!InputConfig) { InputConfig=NewObject<USteppeInputConfig>(this); InputConfig->CreateRuntimeDefaults(); }
@@ -73,6 +86,7 @@ void ASteppeRiderCharacter::SetupPlayerInputComponent(UInputComponent* Input)
     Axis(InputConfig->Sprint,&ASteppeRiderCharacter::Sprint); Axis(InputConfig->Brake,&ASteppeRiderCharacter::Brake);
     if (InputConfig->MountDismount) { Enhanced->BindAction(InputConfig->MountDismount,ETriggerEvent::Started,this,&ASteppeRiderCharacter::Interact); }
     if (InputConfig->Interact) { Enhanced->BindAction(InputConfig->Interact,ETriggerEvent::Started,this,&ASteppeRiderCharacter::Interact); }
+    if (InputConfig->RestartTrial) { Enhanced->BindAction(InputConfig->RestartTrial,ETriggerEvent::Started,this,&ASteppeRiderCharacter::RestartTrial); }
     if (InputConfig->Debug) { Enhanced->BindAction(InputConfig->Debug,ETriggerEvent::Started,this,&ASteppeRiderCharacter::ToggleDebug); }
     RefreshInputContext();
 }
@@ -111,4 +125,4 @@ void ASteppeRiderCharacter::Interact()
     Riding->TryMount(Closest);
 }
 void ASteppeRiderCharacter::ToggleDebug() { if (auto* PC=Cast<ASteppePlayerController>(Controller)) { PC->SteppeToggleDebug(); } }
-
+void ASteppeRiderCharacter::RestartTrial() { if (auto* PC=Cast<ASteppePlayerController>(Controller)) { PC->SteppeRestartTrial(); } }

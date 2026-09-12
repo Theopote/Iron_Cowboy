@@ -47,4 +47,12 @@ SteppeInputConfig 可引用外部 Action/Context。默认没有配置资产时�
 - Debug：World Subsystem、HUD 遥测与向量；不额外创建冗余 HorseDebugComponent。
 - Tests：纯数学/体力与真实 UWorld 的运动、上下马、镜头集成验证。
 
-仅保留 P2 意图入口。未引入 Mass、GAS、AI、绳索或网络实现。
+P1 基线保留了非骑手意图入口。本轮 P2 使用该入口接入 HorseBrainComponent，未引入 Mass、GAS、绳索或网络实现。
+
+## P2：单匹野马
+
+SteppeWildHorseCharacter 继承原有 Horse，添加 HorseBrainComponent 并默认禁止骑乘。GameMode 显式指定玩家 Rider 为威胁来源，无逐帧全局扫描。Brain 以配置频率感知距离、接近速度与视线，在 Roaming/Alert/Fleeing/Recovering 之间转换，向原有 Movement 提交 FHorseMovementIntent。
+
+Movement 的物理和体力实现保持共用。Brain 只选择目标与意图，不修改位置/旋转；移动 Tick 依赖 Brain Tick。局部探测避开障碍并检查候选方向落脚面，围堵时请求制动，不提供全局寻路。Mounted Rider 的速度从其附着的坐骑读取。
+
+行为参数来自 WildHorseConfig 数据资产，Native Behavior Tags 与已有 Movement/Gait 状态区分。P2 完整范围、限制和验证见 P2_WILD_HORSE.md。

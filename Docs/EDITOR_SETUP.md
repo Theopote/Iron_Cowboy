@@ -77,3 +77,7 @@ IA_Interact 是另一个可配置交互入口，默认不绑定键位；不要�
 ```
 
 PythonScriptPlugin 仅对 Editor 启用；Runtime 不依赖 Python。没有伪造 .uasset 或 .umap。
+
+## P2 单匹野马
+
+默认 GameMode 现已生成一匹不可直接骑乘的野马。P1 按键不变；野马的行为资产、出生位置、状态说明与慢/快接近比较见 P2_WILD_HORSE.md。关闭 GameMode 的 SpawnWildHorse 可回到纯 P1 运动场。

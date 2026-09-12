@@ -1,0 +1,5 @@
+[2026.09.12-03.47.27:553][  0]LogSteppe: Display: STEPPE_RETRY_SMOKE: Reload=0 Mounted=1 Awareness=0.00
+[2026.09.12-03.47.28:570][181]LogSteppe: Display: STEPPE_RETRY_SMOKE: Reload=1 Mounted=1 Awareness=0.00
+[2026.09.12-03.47.29:157][362]LogSteppe: Display: STEPPE_RETRY_SMOKE: Reload=2 Mounted=1 Awareness=0.00
+[2026.09.12-03.47.30:138][782]LogSteppe: Display: STEPPE_SMOKE: Horse=BP_SteppeHorse_C_0 Speed=1200.0 Mounted=1
+[2026.09.12-03.47.30:138][782]LogSteppe: Display: STEPPE_P2_SMOKE: State=EWildHorseState::Fleeing Awareness=1.00 Visible=1 Speed=442.7 Config=/Game/Steppe/Data/Horses/DA_WildHorse_Default.DA_WildHorse_Default

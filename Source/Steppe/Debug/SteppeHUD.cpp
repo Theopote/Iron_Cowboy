@@ -13,7 +13,7 @@
 void ASteppeHUD::DrawHUD()
 {
     Super::DrawHUD();
-    DrawText(TEXT("STEPPE | W/S urge/slow  A/D reins  Mouse free look  Shift sprint  Ctrl brake  E mount  F1 telemetry"),FLinearColor::White,24,20,nullptr,1.f);
+    DrawText(TEXT("STEPPE | W/S urge/slow  A/D reins  Mouse free look  Shift sprint  Ctrl brake  E mount  F1 telemetry  F2 retry"),FLinearColor::White,24,20,nullptr,1.f);
     auto* Debug=GetWorld()->GetSubsystem<USteppeDebugSubsystem>();
     if (!Debug || (!Debug->IsHorseDebugEnabled() && !Debug->IsMovementDebugEnabled())) { return; }
     auto* Mode=GetWorld()->GetAuthGameMode<ASteppeGameMode>();
@@ -30,7 +30,7 @@ void ASteppeHUD::DrawHUD()
             DrawText(FString::Printf(TEXT("WILD HORSE: %s | awareness %.0f%%\nDistance %.1f m | closing %.1f m/s | visible %s\nPath %s | approach slowly, then compare a fast chase. Wild horse cannot be mounted."),
                 *UEnum::GetDisplayValueAsText(Brain->State).ToString(), Brain->Awareness*100.f,
                 SteppeUnits::ToMetersPerSecond(Brain->ThreatDistance), SteppeUnits::ToMetersPerSecond(Brain->ClosingSpeed),
-                Brain->bThreatVisible?TEXT("yes"):TEXT("no"),Brain->bPathBlocked?TEXT("blocked"):TEXT("clear")),
+                Brain->bThreatVisible?TEXT("yes"):TEXT("no"),Brain->bBrakingForHazard?TEXT("hazard braking"):(Brain->bPathBlocked?TEXT("blocked"):TEXT("clear"))),
                 FLinearColor(1,.85f,.3f),26,257,nullptr,1.f);
             FVector2D LabelPosition;
             if (PlayerOwner && PlayerOwner->ProjectWorldLocationToScreen(Wild->GetActorLocation()+FVector(0,0,180),LabelPosition)

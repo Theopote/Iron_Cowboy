@@ -1,104 +1,60 @@
 # Current Phase
 
-**P1 — 骑乘灰盒实现与自动验证完成；等待人工手感验收。**
+**P2.1 — 单匹追逐避障、危险制动与 F2 场景重试已实现。**
 
-状态更新：2026-09-11。构建/自动测试与基础渲染证据来自 2026-09-10；调试向量渲染于 2026-09-11 补充验证。停止在 P1，不进入 P2。
+2026-09-11：用户试玩 P1 并反馈基本可用，随后授权按单匹野马计划继续。P1 基线记录保存在 P1_BASELINE.md。原始提示词的 P1 停止条件没有被自动越过，本次 P2 来自后续明确授权。
 
 # Completed
 
-- P0：Steppe C++ 工程、Game/Editor Target、Native Gameplay Tags、日志、Enhanced Input、GameMode/Controller、Debug Subsystem。
-- 已发现并使用 `C:\Program Files\Epic Games\UE_5.8`，Build.version 为 5.8.2。此前“缺少 UE 5.8”的阻塞已解除。
-- P1：Horse/Rider、独立 RiderIntent/HorseIntent、渐进响应、加减速、强制动、速度相关转向、步态滞回、冲刺与体力恢复门槛。
-- 上下马：Socket/fallback 附着、安全落脚检测、高速拒绝下马、占用检查、对象销毁清理。
-- Enhanced Input 自动运行时映射与 OnFoot/Riding Context 切换。
-- 自由观察、速度 FOV/距离、加速与转向镜头偏移、Lag；只读动画数据和运行状态 Tags。
-- HUD 遥测与可开关世界向量。
-- Editor Python 创建真实地图、蓝图、运动 DataAsset 和灰盒材质；2 km 平地、绕桩、25 m 间隔标记与坡道。
-- 补齐 README、架构、Editor 设置与本验收表。
+- 新增 SteppeWildHorseCharacter、HorseBrainComponent、WildHorseConfig。
+- Roaming / Alert / Fleeing / Recovering 四状态，警觉积累、视线遮挡、相对靠近速度、最低状态持续时间与威胁记忆。
+- AI 只生成 FHorseMovementIntent，复用现有 CMC 加减速、转向、体力与碰撞。
+- 局部障碍探测和前方落脚检查；无可行方向时请求制动。
+- 禁止 E 直接骑走野马；原坐骑上下马不受影响。
+- GameMode 默认生成一匹野马，并显式绑定玩家骑手为感知目标。
+- 新增行为遥测与橙色方向/目标显示，避免世界标签遮盖 HUD。
+- Editor 创建真实野马 Blueprint、行为 DataAsset、占位材质，并保存引用到现有 GameMode；不重建已有地图。
 
 # Build Result
 
-**Succeeded — SteppeEditor Win64 Development，UE 5.8.2。**
+**Succeeded — UE 5.8.2 / SteppeEditor Win64 Development。**
 
-使用 Visual Studio 2022 MSVC 14.44 与 Windows SDK 10.0.26100.0。UHT、C++ 编译和链接成功，Editor 加载并正常退出。未验证 Shipping 打包、其他平台或网络运行。
+UHT、C++ 编译和链接成功。仍使用 P1 已验证的 NoPCHs / -NoUBA 本地构建设置，没有修改引擎，没有增加 AIModule、NavigationSystem、Mass 或 GAS 依赖。
 
-兼容修复：V7 build settings + Unreal5_8 include order。共享 PCH 导致本机后续编译停顿，模块改为 NoPCHs，脚本使用 -NoUBA；没有修改引擎文件。Live Coding 打开时外部构建会被拒绝，应先保存关闭 Editor。
+# Validation
 
-# Automated Validation
+自动测试：**5 passed, 0 failed**。
 
-**2 tests passed, 0 failed；其中 1 项带 2 条预期警告。**
+| 测试 | 结果 |
+| --- | --- |
+| Steppe.P1.MathAndStamina | 通过 |
+| Steppe.P1.WorldMovementAndRiding | 通过，2 条预期的占位 RiderSeat fallback 警告 |
+| Steppe.P2.PerceptionAndState | 通过，无警告/错误 |
+| Steppe.P2.MovementOwnershipAndObstacles | 通过，无警告/错误 |
 
-- Steppe.P1.MathAndStamina：速度界限、加速度、制动不倒退、不超调、30/60/120 Hz 数学结果一致、步态滞回、转向曲线、体力上下限、单位转换、意图 Clamp/Reset。
-- Steppe.P1.WorldMovementAndRiding：真实 UWorld/碰撞场景，渐进加速、Gallop、自然滑行与更强制动、冲刺消耗、耗尽限速、高速转向限制与压力、安全上下马、骑手意图传递、速度镜头变化、销毁坐骑释放骑手。
-- 测量：1 秒后 180 cm/s，8 秒后 1200 cm/s。运动不是瞬间匹配输入。
-- 两条警告均为占位马没有 RiderSeat Socket，按设计使用 fallback 座位。此前测试 World 初始化、BeginPlay/帧计数与 EndPlay 清理问题均已修复，最终无这些错误。
+P2 测试覆盖：同距离慢/快接近差异、警觉到逃离、极近威胁、遮挡、短期记忆、恢复、威胁对象销毁、真实渐进加速与远离、AI/Rider 意图分离、野马不可上马、围堵时制动。
 
-实际渲染启动：加载真实地图和 Blueprint GameMode，自动上马，固定 60 Hz 前进；日志记录 `Mounted=1 Speed=1200.0`，截图显示 Gallop、43.2 km/h、正常遥测，游戏正常退出。画面中的未构建光照提示已通过动态灯光和地图设置解决。
+实际游戏已启动并正常退出。记录到野马 Alert → Fleeing，截图时 Awareness=1.00、Visible=1、Speed=442.7 cm/s（仍在加速阶段），玩家坐骑为 Gallop 1200 cm/s。运行日志确认配置来自 `/Game/Steppe/Data/Horses/DA_WildHorse_Default`，不是仅使用代码默认值。HUD、方向向量和浅色野马在实际截图中可见。
 
-证据：
+证据：Docs/Validation/P2-Results.json、P2-Playground.png；原始临时日志在 Saved/Logs/P2-FinalTests.log 与 P2-FinalRender.log。
 
-- `Docs/Validation/P1-Results.json`：精简测试结果与事件。
-- `Docs/Validation/P1-Playground.png`：真实游戏截图。
-- `Docs/Validation/P1-DebugVectors.png`：开启调试向量的真实游戏截图。
-- `Saved/Automation/index.json`：完整临时自动测试报告。
-- `Saved/Logs/P1-FinalTests.log` / `P1-FinalRender.log`：最终运行日志。
+# Manual Steps
 
-引擎启动阶段仍有引擎自身的分析 DLL、非 Windows 平台 SDK、内部测试/编辑器模块日志；它们不计作 Steppe 自动测试成功的证据，也不等同于项目源码报错。最终项目测试结果以报告中的两项 Steppe 测试为准。
+打开 Steppe.uproject → Play。前方约 38 m 的浅色方块是野马。先轻点 W 缓慢接近，再按 F2 重试并按住 W 高速接近，对比反应。拉开距离/遮挡视线后观察平静过程。
 
-# In Progress
+按键继承 P1：W/S、A/D、鼠标、Shift、Ctrl、E、F1。`steppe.Debug.Movement 1` 显示方向；野马不能 E 上马。完整流程与参数见 P2_WILD_HORSE.md。
 
-仅剩人工玩法/手感验收：至少连续骑行 10 分钟，评价速度感、重量、转弯预判、低速控制、冲刺价值和镜头舒适度。当前没有把此项标为完成。
+# Known Limits
 
-# Blocked
-
-无当前构建阻塞。缺少最终马骨架/模型/动画不阻塞灰盒运动验证。
-
-# Manual Editor Steps
-
-打开 Steppe.uproject → 默认测试地图 → Play。无需额外输入资产。按键和具体调参路径见 EDITOR_SETUP.md。以后导入真实马模型、RiderSeat Socket 和 AnimBP；当前占位体是有意保留的原型表现。
-
-# P1 Tuning Parameters
-
-`/Game/Steppe/Data/Horses/DA_HorseLocomotion_Default`：Gaits、ResponseSeconds、EmergencyBrakeRate、SpeedTurnCurve、GaitHysteresis、ExhaustionThreshold、SprintResumeThreshold、SpeedFOVCurve、SpeedDistanceCurve、CameraBlendRate、CameraLagSpeed。
-
-Horse Attributes：MaxSpeed、Acceleration、Deceleration、BaseTurnRate、Agility、MaxStamina、StaminaDrainRate、StaminaRecoveryRate。GameMode：StartMounted、HorseSpawnTransform、DebugEnabled、InfiniteStamina。
-
-# P1 Acceptance Checklist
-
-勾选表示功能已实现并经代码检查/相应自动验证；不替代最后的人工手感验收。向量绘制已通过真实游戏截图验证；实体键鼠完整操作与舒适度仍需 PIE 人工检查。
-
-- [x] Project compiles — Editor Development 成功
-- [x] Rider can mount horse — 集成测试与实际启动
-- [x] Rider input becomes riding intent — 集成测试
-- [x] Horse movement does not directly mirror raw input — 独立响应层与渐进运动
-- [x] Horse accelerates progressively — 1 s / 8 s 测量
-- [x] Horse decelerates progressively — 集成测试
-- [x] Brake works — 集成测试
-- [x] Low-speed turning is responsive — 曲线及实际低速转向率验证，舒适度待人工
-- [x] High-speed turning is limited — 实际转向率比较
-- [x] Gait is calculated — 滞回测试及画面 Gallop
-- [x] Sprint consumes stamina — 集成测试
-- [x] Low stamina limits sprint — 集成测试
-- [x] Camera changes with speed — 集成测试
-- [x] Camera supports free look — 观察与马朝向解耦、偏侧视角渲染；鼠标手感待人工
-- [x] Horse animation data is exposed — Blueprint 只读结构
-- [x] Horse debug information is available — 实际 HUD 截图
-- [x] Debug vectors work — 已通过控制台开启并截图验证，开关与颜色见 README
-- [x] Config is data-driven — 真实数据资产 + 安全默认值
-- [x] No fake .uasset assets were generated — 由 Editor 保存
-- [x] Manual editor work is documented
-- [x] P2 systems were NOT implemented
-- [ ] 连续至少 10 分钟人工骑乘手感验收
-
-# Known Issues / Limits
-
-- 方块马身与圆柱骑手，没有最终马动画、音效、UI 美术或草原生态。
-- 无马骨架 Socket 时输出预期 Warning，使用可调 fallback。
-- 没有倒退、绊倒/摔落玩法、地表材质牵引力或坡度体力惩罚；P1 仅基础 CMC 坡面和落地。
-- 碰撞采用直立胶囊体，尚非马体轮廓；复杂地形需继续 P1 调试。
-- 输入运行时创建，不是独立 Input .uasset；需要可复用编辑器输入资产时按 EDITOR_SETUP 替换。
-- 仅验证 Editor Development 与 Editor -game 渲染；未验证 Shipping 包、多人预测或正式性能指标。
+- 仅单匹野马与一个显式玩家目标；无马群、套索、捕获、多人。
+- 仍是灰盒占位模型，没有真实马动画、听觉、鸣叫或奖励闭环。
+- 局部探测不是全局寻路，复杂地形可能停住或绕行不理想；不保证任意障碍都能绕开。
+- 感知为距离 + 全方向视线 + 靠近速度；数值是可调初值，不是马术研究结论。
+- 用户尚未试玩本轮 P2，不能宣称追逐已经足够有趣。
+- 仅验证 Editor Development 和 Editor -game，没有验证 Shipping 打包或其他平台。
 
 # Next Recommended Work
 
-进行 P1 手感试玩并反馈，继续只调整 P1。核心参数满意后再另行讨论 P2。本次停止功能扩张。
+试玩 P2 并调整感知范围、逃离触发、恢复速度与避障。确认单匹追逐体验后再另行讨论 P3 马群；本次不自动推进 P3。
+
+2026-09-12 P2.1：新增 Steppe.P2.StoppingDistanceAndGaps 测试通过；两次单机场景重载验证通过。新增制动距离探测、沿途地面采样、危险制动 HUD 及 F2 重试。详情见 P2_WILD_HORSE.md 的 P2.1 节；新证据为 Validation/P21-Results.json、P21-Retry-Playground.png。上文 P2 速度和截图为历史记录。

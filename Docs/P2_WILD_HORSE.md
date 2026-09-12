@@ -69,7 +69,7 @@ BP_SteppeGameMode 新增 SpawnWildHorse、WildHorseSpawnTransform、WildHorseCla
 
 ```powershell
 .\Scripts\Build.ps1 -EngineRoot 'C:\Program Files\Epic Games\UE_5.8'
-.\Scripts\RunEditor.ps1 -Commands 'Automation RunTests Steppe.' -Tests -LogName P2-Tests
+.\Scripts\RunEditor.ps1 -Commands 'Automation RunTests Steppe.' -Tests -ExpectedTests 4 -LogName P2-FinalTests
 .\Scripts\RunEditor.ps1 -Game -Render -Smoke -Commands 'steppe.Debug.Movement 1' -LogName P2-Render
 ```
 
@@ -83,3 +83,21 @@ BP_SteppeGameMode 新增 SpawnWildHorse、WildHorseSpawnTransform、WildHorseCla
 - 警觉和恢复时间是否自然？
 
 当前仍是方块占位体，没有马动画、鸣叫、捕获或奖励闭环。本轮停在单匹野马，等待试玩反馈。
+
+## P2.1 单匹追逐完善（2026-09-12）
+
+F2 重载当前单机场景，复位骑手、坐骑、野马状态与计时器；控制台等价命令为 `SteppeRestartTrial`。步行和骑乘均可使用，离开场景会移除旧输入映射。自定义 InputConfig 需配置 RestartTrial 动作；现有原型使用运行时默认配置。
+
+避障按当前速度、紧急制动率、决策间隔及安全余量扩大探测距离，当前运动方向危险时输出紧急制动意图，实际运动仍由 CMC 处理。沿途采样地面，拒绝中途缺地、不可行走坡面和过大落差。默认 GroundSampleSpacing=100 cm、MaximumGroundDrop=60 cm、BrakeSafetyDistance=150 cm，每方向最多 32 个地面样本。HUD 的 Path 区分 clear、blocked、hazard braking。
+
+UE 5.8.2 编译通过，5 项测试通过（骑乘测试保留预期座位占位警告）。新增 StoppingDistanceAndGaps 覆盖高速时旧探测范围之外的墙、中途沟隙、危险制动意图与安全方向解除制动。实际游戏连续重载两次，每次恢复上马和零警觉，随后重新进入 Fleeing。
+
+复现：
+```powershell
+.\Scripts\RunEditor.ps1 -Tests -ExpectedTests 5 -Commands 'Automation RunTests Steppe.' -LogName P21-Tests
+.\Scripts\RunEditor.ps1 -Game -Render -Smoke -RetrySmoke -Commands 'steppe.Debug.Movement 1' -LogName P21-RetryRender
+```
+
+证据：Validation/P21-Results.json、Validation/P21-Retry-Playground.png；日志 Saved/Logs/P21-Tests.log 与 P21-RetryRender.log。自动重试调用与 F2 相同的方法，尚未模拟物理键盘 F2 或单独验证 PIE 重载。
+
+试玩时按 W 接近野马，观察转向与 Path，按 F2 回起点比较慢速和高速接近。复杂障碍仍可能停住，尚无全局寻路；有限采样可能漏掉很窄的沟隙，急坡可能被保守拒绝，不能保证任意速度/地形均及时停下。本轮保持 P2。

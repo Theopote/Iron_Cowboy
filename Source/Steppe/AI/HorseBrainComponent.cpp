@@ -2,6 +2,8 @@
 #include "AI/WildHorseConfig.h"
 #include "Character/Horse/SteppeHorseCharacter.h"
 #include "Character/Horse/HorseMovementComponent.h"
+#include "Character/Horse/HorseLocomotionConfig.h"
+#include "Components/CapsuleComponent.h"
 #include "Core/SteppeGameplayTags.h"
 #include "Engine/World.h"
 #include "Steppe.h"
@@ -95,26 +97,41 @@ void UHorseBrainComponent::ChooseRoamGoal()
     PauseRemaining = FMath::Max(0.f, GetConfig().PauseSeconds);
     RoamGoalSeconds = 0.f;
 }
+bool UHorseBrainComponent::IsDirectionSupported(const ASteppeHorseCharacter& Horse, FVector Direction, float Distance) const
+{
+    const auto& C = GetConfig();
+    FCollisionQueryParams Params(SCENE_QUERY_STAT(SteppeWildSteer), false, &Horse);
+    const FVector Start = Horse.GetActorLocation();
+    const float Length = FMath::Max(1.f, Distance);
+    FHitResult Hit;
+    if (GetWorld()->SweepSingleByChannel(Hit, Start, Start+Direction*Length, FQuat::Identity, ECC_Pawn,
+        FCollisionShape::MakeSphere(FMath::Max(1.f,C.ProbeRadius)), Params)) { return false; }
+    const int32 Samples = FMath::Clamp(FMath::CeilToInt(Length/FMath::Max(10.f,C.GroundSampleSpacing)),1,32);
+    float PreviousGroundZ = Start.Z-Horse.GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+    for (int32 Index=1; Index<=Samples; ++Index)
+    {
+        const FVector Sample = Start+Direction*(Length*Index/Samples);
+        const FVector Top(Sample.X,Sample.Y,PreviousGroundZ+Horse.GetCharacterMovement()->MaxStepHeight+10.f);
+        const FVector Bottom(Sample.X,Sample.Y,PreviousGroundZ-FMath::Max(1.f,C.GroundProbeDepth));
+        if (!GetWorld()->LineTraceSingleByChannel(Hit,Top,Bottom,ECC_Visibility,Params)
+            || Hit.ImpactNormal.Z<Horse.GetCharacterMovement()->GetWalkableFloorZ()
+            || PreviousGroundZ-Hit.ImpactPoint.Z>FMath::Max(0.f,C.MaximumGroundDrop)) { return false; }
+        PreviousGroundZ=Hit.ImpactPoint.Z;
+    }
+    return true;
+}
 FVector UHorseBrainComponent::FindSafeDirection(const ASteppeHorseCharacter& Horse, FVector Desired)
 {
     const auto& C = GetConfig();
-    const float ProbeLength = FMath::Max(C.ProbeDistance, Horse.GetVelocity().Size2D() * FMath::Max(.1f,C.ProbeSeconds));
-    FCollisionQueryParams Params(SCENE_QUERY_STAT(SteppeWildSteer), false, &Horse);
-    const FVector Start = Horse.GetActorLocation();
+    const float ProbeLength = FMath::Max3<float>(C.ProbeDistance, Horse.GetVelocity().Size2D()*FMath::Max(.1f,C.ProbeSeconds),StoppingProbeDistance);
     float BestScore = -BIG_NUMBER;
     FVector Best = FVector::ZeroVector;
-    // Local steering only: probe collision and landing support, without teleporting or pathfinding.
+    // Reject unsafe intermediate ground, even when the far endpoint is supported.
     for (float Angle : {0.f,45.f,-45.f,90.f,-90.f,135.f,-135.f,180.f})
     {
         const FVector Direction = Desired.RotateAngleAxis(Angle, FVector::UpVector);
-        const FVector End = Start + Direction * FMath::Max(1.f,ProbeLength);
-        FHitResult Obstacle, Ground;
-        if (GetWorld()->SweepSingleByChannel(Obstacle, Start, End, FQuat::Identity, ECC_Pawn,
-            FCollisionShape::MakeSphere(FMath::Max(1.f,C.ProbeRadius)), Params)) { continue; }
-        if (!GetWorld()->LineTraceSingleByChannel(Ground, End + FVector(0,0,100), End - FVector(0,0,FMath::Max(1.f,C.GroundProbeDepth)), ECC_Visibility, Params)
-            || Ground.ImpactNormal.Z < Horse.GetCharacterMovement()->GetWalkableFloorZ()) { continue; }
         const float Score = FVector::DotProduct(Direction, Desired) + .15f * FVector::DotProduct(Direction, SteeringDirection);
-        if (Score > BestScore) { BestScore = Score; Best = Direction; }
+        if (Score > BestScore && IsDirectionSupported(Horse,Direction,ProbeLength)) { BestScore = Score; Best = Direction; }
     }
     bPathBlocked = Best.IsNearlyZero();
     return Best;
@@ -126,6 +143,11 @@ void UHorseBrainComponent::TickComponent(float Dt, ELevelTick TickType, FActorCo
     auto* Movement = Horse ? Cast<UHorseMovementComponent>(Horse->GetCharacterMovement()) : nullptr;
     if (!Movement || Horse->MountedRider.IsValid() || Dt <= 0.f) { return; }
     const auto& C = GetConfig();
+    const float Speed = Horse->GetVelocity().Size2D();
+    const float BrakeRate = FMath::Max(1.f,Horse->GetLocomotionConfig()->EmergencyBrakeRate);
+    StoppingProbeDistance = Speed*Speed/(2.f*BrakeRate)+Speed*FMath::Max(.02f,C.DecisionInterval)+FMath::Max(0.f,C.BrakeSafetyDistance);
+    bBrakingForHazard = Movement->IsMovingOnGround() && Speed>10.f
+        && !IsDirectionSupported(*Horse,Horse->GetVelocity().GetSafeNormal2D(),StoppingProbeDistance);
     StateSeconds += Dt;
     Sense(Dt, *Horse);
     const bool ImmediateDanger = bThreatVisible && (ThreatDistance <= C.FlightDistance ||
@@ -179,6 +201,7 @@ void UHorseBrainComponent::TickComponent(float Dt, ELevelTick TickType, FActorCo
         if (bPathBlocked) { Intent.DesiredSpeed = 0.f; Intent.DesiredTurn = 0.f; Intent.BrakeStrength = 1.f; }
     }
     else { SteeringDirection = FVector::ZeroVector; }
+    if (bBrakingForHazard) { Intent.DesiredSpeed=0.f; Intent.BrakeStrength=1.f; }
     Movement->SetHorseIntent(Intent);
 }
 FGameplayTag UHorseBrainComponent::GetBehaviorTag() const

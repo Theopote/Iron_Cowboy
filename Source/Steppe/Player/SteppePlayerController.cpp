@@ -7,3 +7,9 @@ void ASteppePlayerController::SteppeToggleDebug()
         Variable->Set(Variable->GetInt() == 0 ? 1 : 0, ECVF_SetByConsole);
     }
 }
+
+void ASteppePlayerController::SteppeRestartTrial()
+{
+    // Reload the current standalone world so rider, horse, AI and timers reset together.
+    RestartLevel();
+}

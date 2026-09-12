@@ -1,0 +1,47 @@
+{
+  "phase": "P2 single wild horse",
+  "date": "2026-09-11",
+  "engine": "5.8.2",
+  "build": "SteppeEditor Win64 Development: Succeeded",
+  "succeeded": 3,
+  "succeededWithWarnings": 1,
+  "failed": 0,
+  "tests": [
+    {
+      "name": "Steppe.P1.MathAndStamina",
+      "state": "Success",
+      "warnings": 0,
+      "errors": 0,
+      "events": []
+    },
+    {
+      "name": "Steppe.P1.WorldMovementAndRiding",
+      "state": "Success",
+      "warnings": 2,
+      "errors": 0,
+      "events": [
+        "1s speed=180.0 desired=1200.0 mode=1 location=X=91.500 Y=0.000 Z=97.150 begun=1",
+        "8s speed=1200.0 desired=1200.0 location=X=6145.558 Y=0.000 Z=97.150",
+        "LogSteppeRiding: RiderSeat socket missing on SteppeHorseCharacter_0; using editable fallback seat.",
+        "LogSteppeRiding: RiderSeat socket missing on SteppeHorseCharacter_0; using editable fallback seat."
+      ]
+    },
+    {
+      "name": "Steppe.P2.MovementOwnershipAndObstacles",
+      "state": "Success",
+      "warnings": 0,
+      "errors": 0,
+      "events": []
+    },
+    {
+      "name": "Steppe.P2.PerceptionAndState",
+      "state": "Success",
+      "warnings": 0,
+      "errors": 0,
+      "events": []
+    }
+  ],
+  "smoke": "Alert -> Fleeing; Awareness=1.00; Visible=1; Speed=442.7 cm/s",
+  "config": "/Game/Steppe/Data/Horses/DA_WildHorse_Default",
+  "manualP2Playtest": "Pending"
+}

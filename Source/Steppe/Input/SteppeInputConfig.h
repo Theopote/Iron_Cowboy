@@ -18,5 +18,6 @@ public:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) TObjectPtr<UInputAction> Debug;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) TObjectPtr<UInputMappingContext> OnFoot;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) TObjectPtr<UInputMappingContext> Riding;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) TObjectPtr<UInputAction> RestartTrial;
     void CreateRuntimeDefaults();
 };
