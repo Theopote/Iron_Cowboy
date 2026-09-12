@@ -1,5 +1,7 @@
 # Project STEPPE 架构
 
+本文描述已经实现的工程分层。产品范围以 `DESIGN_BASELINE.md` 和 `PROTOTYPE_GDD.md` 为准，跨系统决策以 `DESIGN_DECISIONS.md` 为准。
+
 ## 意图与运动
 
 `Enhanced Input → ASteppeRiderCharacter → FRidingIntent → URidingComponent → UHorseMovementComponent::UpdateResponse → FHorseMovementIntent → CalcVelocity → CharacterMovement 碰撞/地面位移 → FHorseAnimationData → 镜头/未来动画`。

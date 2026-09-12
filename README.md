@@ -53,4 +53,4 @@ UE **5.8.2** 的 C++ 骑乘游戏原型。当前已完成 P8.2 限时捕获垂�
 
 当前构建使用 V7 / Unreal5_8 IncludeOrder；因本机共享 PCH 编译停顿，模块禁用 PCH，构建脚本传入 `-NoUBA` 禁用 detouring。没有修改引擎安装。Editor 开启 Live Coding 时应先保存关闭再运行外部构建。
 
-详见 `Docs/DEVELOPMENT_STATUS.md`（真实结果和逐项验收）、`Docs/ARCHITECTURE.md`、`Docs/EDITOR_SETUP.md`。完整任务试玩见 `Docs/P8_VERTICAL_SLICE.md`；尚未实现持久存档、奖励经济或多人网络。
+后续开发先阅读 `Docs/GAME_DESIGN_VISION.md`、`Docs/DESIGN_BASELINE.md`、`Docs/PROTOTYPE_GDD.md` 和 `Docs/DEVELOPMENT_ROADMAP.md`。真实结果见 `Docs/DEVELOPMENT_STATUS.md`，工程分层见 `Docs/ARCHITECTURE.md`，下一阶段规格见 `Docs/P9_CAPTURE_AFTERMATH_SPEC.md`。

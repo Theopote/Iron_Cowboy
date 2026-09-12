@@ -1,5 +1,26 @@
 # 文档索引
 
+## 建议阅读顺序
+
+1. `GAME_DESIGN_VISION.md`：长期产品方向与设计支柱。
+2. `DESIGN_BASELINE.md`：当前事实、早期设想与现状的差异、文档权威顺序。
+3. `PROTOTYPE_GDD.md`：当前规则与下一版 6–10 分钟完整流程。
+4. `DEVELOPMENT_ROADMAP.md`：P9–P14 的执行顺序和退出条件。
+5. `P9_CAPTURE_AFTERMATH_SPEC.md`：下一阶段可直接实施的详细规格。
+6. `DESIGN_DECISIONS.md`：已确认决策、待决事项和变更记录。
+
+## 当前开发文档
+
+- GAME_DESIGN_VISION.md：玩家幻想、核心循环、三个支柱和长期候选方向。
+- DESIGN_BASELINE.md：当前可玩基线、实现差距和近期目标。
+- PROTOTYPE_GDD.md：玩法规则、完整试玩流程、范围和原型验收指标。
+- DEVELOPMENT_ROADMAP.md：P9–P14 里程碑与验证门。
+- P9_CAPTURE_AFTERMATH_SPEC.md：捕获后的安全接近与第一次接触规格。
+- DESIGN_DECISIONS.md：跨系统技术与产品决策。
+- References/：两份早期讨论 PDF 原件及使用说明。
+
+## 实现与历史记录
+
 - MASTER_PROMPT_v0.1.md：原始 P0 + P1 范围，保留历史版本。
 - P1_BASELINE.md：进入 P2 前的 P1 实现与验证记录。
 - P2_WILD_HORSE.md：已授权 P2 单匹野马的架构、试玩、参数与限制。
