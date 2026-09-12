@@ -12,6 +12,7 @@ param(
     [switch]$IsolationSmoke,
     [switch]$LassoSmoke,
     [switch]$RopeFightSmoke,
+    [switch]$CaptureSmoke,
     [ValidateRange(1,10000)][int]$ExpectedTests = 2
 )
 $ErrorActionPreference = 'Stop'
@@ -28,6 +29,10 @@ if ($LassoSmoke) { if (!$Smoke -or !$Game) { throw 'LassoSmoke requires Game and
 if ($RopeFightSmoke) {
     if (!$Smoke -or !$Game) { throw 'RopeFightSmoke requires Game and Smoke.' }
     $editorArgs += '-SteppeLassoSmoke'; $editorArgs += '-SteppeRopeFightSmoke'
+}
+if ($CaptureSmoke) {
+    if (!$Smoke -or !$Game) { throw 'CaptureSmoke requires Game and Smoke.' }
+    $editorArgs += '-SteppeLassoSmoke'; $editorArgs += '-SteppeRopeFightSmoke'; $editorArgs += '-SteppeCaptureSmoke'
 }
 if ($RetrySmoke) { if (!$Smoke -or !$Game) { throw 'RetrySmoke requires Game and Smoke.' }; $editorArgs += '-SteppeRetrySmoke' }
 if ($Tests) { $editorArgs += '-TestExit=Automation Test Queue Empty'; $editorArgs += "-ReportExportPath=$PSScriptRoot\..\Saved\Automation" }
@@ -88,5 +93,12 @@ if ($RopeFightSmoke) {
         throw "Rope fight smoke did not subdue the target under steady tension; see $logPath"
     }
     Write-Output 'Rope fight smoke: steady bracing subdued the lassoed target.'
+}
+if ($CaptureSmoke) {
+    $captureLog = Get-Content $logPath -Raw
+    if ($captureLog -notmatch 'STEPPE_P7_SMOKE: State=ELassoState::Captured Captured=1 Active=4 TargetState=EWildHorseState::Captured') {
+        throw "Capture smoke did not register one subdued horse and remove it from the active herd; see $logPath"
+    }
+    Write-Output 'Capture smoke: one subdued horse was captured and removed from the active herd.'
 }
 Write-Output "Editor exited successfully. Log: $logPath"

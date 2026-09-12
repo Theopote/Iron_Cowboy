@@ -74,6 +74,16 @@ void UHorseBrainComponent::SetLassoConstraint(FVector Anchor, float Tension, boo
     LassoTension=FMath::Clamp(Tension,0.f,1.5f);
     bLassoBraced=bBraced;
 }
+void UHorseBrainComponent::SetCaptured(bool bNewCaptured)
+{
+    bCaptured=bNewCaptured;
+    if (bCaptured)
+    {
+        bLassoed=true;
+        ChangeState(EWildHorseState::Captured);
+    }
+    else if (State==EWildHorseState::Captured) { ChangeState(EWildHorseState::Recovering); }
+}
 void UHorseBrainComponent::SetHerdGuidance(FVector Center, FVector Velocity, FVector Separation, int32 NeighborCount)
 {
     HerdCenter=Center;
@@ -200,6 +210,14 @@ void UHorseBrainComponent::TickComponent(float Dt, ELevelTick TickType, FActorCo
     auto* Horse = Cast<ASteppeHorseCharacter>(GetOwner());
     auto* Movement = Horse ? Cast<UHorseMovementComponent>(Horse->GetCharacterMovement()) : nullptr;
     if (!Movement || Horse->MountedRider.IsValid() || Dt <= 0.f) { return; }
+    if (bCaptured)
+    {
+        FHorseMovementIntent CapturedIntent;
+        CapturedIntent.BrakeStrength=1.f;
+        Movement->SetHorseIntent(CapturedIntent);
+        SteeringDirection=FVector::ZeroVector;
+        return;
+    }
     if (bLassoed)
     {
         FHorseMovementIntent StruggleIntent;
@@ -256,6 +274,7 @@ void UHorseBrainComponent::TickComponent(float Dt, ELevelTick TickType, FActorCo
         else if (Awareness <= C.CalmThreshold && StateSeconds >= C.RecoverySeconds) { ChangeState(EWildHorseState::Roaming); }
         break;
     case EWildHorseState::Lassoed:
+    case EWildHorseState::Captured:
         break;
     }
     FHorseMovementIntent Intent;
@@ -326,6 +345,7 @@ FGameplayTag UHorseBrainComponent::GetBehaviorTag() const
     case EWildHorseState::Fleeing: return SteppeTags::Horse_State_Flee;
     case EWildHorseState::Recovering: return SteppeTags::Horse_State_Recovering;
     case EWildHorseState::Lassoed: return SteppeTags::Horse_State_Lassoed;
+    case EWildHorseState::Captured: return SteppeTags::Horse_State_Captured;
     default: return SteppeTags::Horse_State_Roaming;
     }
 }

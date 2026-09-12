@@ -20,6 +20,7 @@ public:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) TObjectPtr<UInputAction> AimLasso;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) TObjectPtr<UInputAction> ThrowLasso;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) TObjectPtr<UInputAction> BraceLasso;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) TObjectPtr<UInputAction> CaptureHorse;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) TObjectPtr<UInputMappingContext> OnFoot;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) TObjectPtr<UInputMappingContext> Riding;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) TObjectPtr<UInputAction> RestartTrial;

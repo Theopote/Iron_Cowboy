@@ -401,4 +401,47 @@ bool FRopeFightTest::RunTest(const FString& Parameters)
     TestFalse(TEXT("Broken rope releases the horse"),Wild->Brain->bLassoed);
     return true;
 }
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCaptureTest,"Steppe.P7.CaptureSubduedHorse",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FCaptureTest::RunTest(const FString& Parameters)
+{
+    FWildTestWorld Fixture;
+    auto* Rider=Fixture.World->SpawnActor<ASteppeRiderCharacter>(FVector(0,0,100),FRotator::ZeroRotator);
+    const FTransform HerdTransform(FRotator::ZeroRotator,FVector(1000,0,100));
+    auto* Herd=Fixture.World->SpawnActorDeferred<ASteppeHerdManager>(ASteppeHerdManager::StaticClass(),HerdTransform,
+        nullptr,nullptr,ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+    Herd->HerdSize=1;
+    Herd->HorseClass=ASteppeWildHorseCharacter::StaticClass();
+    Herd->FinishSpawning(HerdTransform);
+    Fixture.Begin();
+    if (!TestEqual(TEXT("Capture fixture has one active horse"),Herd->Members.Num(),1)) { return false; }
+    auto* Wild=Herd->Members[0].Get();
+    Wild->SetActorLocation(FVector(1000,0,100),false,nullptr,ETeleportType::TeleportPhysics);
+    Rider->GetCharacterMovement()->SetComponentTickEnabled(false);
+    Wild->GetCharacterMovement()->SetComponentTickEnabled(false);
+    Herd->SetFocusedHorse(Wild);
+
+    TestFalse(TEXT("Capture is rejected before subduing"),Rider->Lasso->CaptureWithHerd(Herd));
+    TestTrue(TEXT("Capture setup aims"),Rider->Lasso->BeginAimForTarget(Wild,true));
+    TestTrue(TEXT("Capture setup throws"),Rider->Lasso->ThrowFrom(FVector(0,0,170),FVector::ForwardVector));
+    Fixture.Step(.5f);
+    Rider->Lasso->SetBracing(true);
+    Fixture.Step(3.4f);
+    if (!TestEqual(TEXT("Capture prerequisite reaches Subdued"),Rider->Lasso->State,ELassoState::Subdued)) { return false; }
+
+    TestTrue(TEXT("Subdued horse can be captured"),Rider->Lasso->CaptureWithHerd(Herd));
+    TestEqual(TEXT("Lasso exposes captured result"),Rider->Lasso->State,ELassoState::Captured);
+    TestEqual(TEXT("Captured lasso state exposes tag"),Rider->Lasso->GetStateTag(),SteppeTags::Lasso_State_Captured.GetTag());
+    TestTrue(TEXT("Horse retains captured gameplay state"),Wild->Brain->bCaptured && Wild->Brain->State==EWildHorseState::Captured);
+    TestEqual(TEXT("Horse exposes captured behavior tag"),Wild->Brain->GetBehaviorTag(),SteppeTags::Horse_State_Captured.GetTag());
+    TestEqual(TEXT("Captured horse leaves active herd"),Herd->Members.Num(),0);
+    TestEqual(TEXT("Capture result increments manager count"),Herd->CapturedCount,1);
+    TestEqual(TEXT("Captured horse remains registered for result display"),Herd->CapturedHorses.Num(),1);
+    TestNull(TEXT("Capture clears old focus"),Herd->FocusedHorse.Get());
+
+    Rider->Lasso->Release();
+    Fixture.Step(1.f);
+    TestEqual(TEXT("Lasso can be stored after securing capture"),Rider->Lasso->State,ELassoState::Stored);
+    TestTrue(TEXT("Stowing rope does not undo capture"),Wild->Brain->bCaptured);
+    return true;
+}
 #endif

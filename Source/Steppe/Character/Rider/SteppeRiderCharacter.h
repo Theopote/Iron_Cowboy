@@ -42,6 +42,7 @@ private:
     void EndLassoAim();
     void ThrowLasso();
     void BraceLasso(const FInputActionValue& Value);
+    void CaptureHorse();
     void RestartTrial();
     void EnsureInputConfig();
     FRidingIntent Intent;

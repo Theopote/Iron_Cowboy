@@ -7,6 +7,7 @@ namespace SteppeTags
     UE_DEFINE_GAMEPLAY_TAG(Horse_State_Flee, "Horse.State.Flee");
     UE_DEFINE_GAMEPLAY_TAG(Horse_State_Recovering, "Horse.State.Recovering");
     UE_DEFINE_GAMEPLAY_TAG(Horse_State_Lassoed, "Horse.State.Lassoed");
+    UE_DEFINE_GAMEPLAY_TAG(Horse_State_Captured, "Horse.State.Captured");
     UE_DEFINE_GAMEPLAY_TAG(Horse_State_Idle, "Horse.State.Idle");
     UE_DEFINE_GAMEPLAY_TAG(Horse_State_Moving, "Horse.State.Moving");
     UE_DEFINE_GAMEPLAY_TAG(Horse_State_Stumbling, "Horse.State.Stumbling");
@@ -28,4 +29,5 @@ namespace SteppeTags
     UE_DEFINE_GAMEPLAY_TAG(Lasso_State_Attached, "Lasso.State.Attached");
     UE_DEFINE_GAMEPLAY_TAG(Lasso_State_Recovering, "Lasso.State.Recovering");
     UE_DEFINE_GAMEPLAY_TAG(Lasso_State_Subdued, "Lasso.State.Subdued");
+    UE_DEFINE_GAMEPLAY_TAG(Lasso_State_Captured, "Lasso.State.Captured");
 }

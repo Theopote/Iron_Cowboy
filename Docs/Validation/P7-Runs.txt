@@ -1,0 +1,5 @@
+[2026.09.12-14.46.02:409][420]LogSteppe: Display: STEPPE_P3_SMOKE: Members=4 Alert=0 Yielding=0 Fleeing=0 Moving=4 Headings=4 Blocked=0 Recovering=0 Sources=0 MinSpacing=583.9 Spread=1373.8
+[2026.09.12-14.46.02:409][420]LogSteppe: Display: STEPPE_P4_SMOKE: Focus=None Distance=0.0 Progress=0.00 Isolated=0
+[2026.09.12-14.46.02:409][420]LogSteppe: Display: STEPPE_P5_SMOKE: State=ELassoState::Captured Target=BP_SteppeWildHorse_C_0 TargetLassoed=1 Feedback=CAPTURED | LMB stow lasso
+[2026.09.12-14.46.02:409][420]LogSteppe: Display: STEPPE_P6_SMOKE: State=ELassoState::Captured Tension=0.00 Control=1.00 Bracing=0
+[2026.09.12-14.46.02:409][420]LogSteppe: Display: STEPPE_P7_SMOKE: State=ELassoState::Captured Captured=1 Active=4 TargetState=EWildHorseState::Captured

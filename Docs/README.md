@@ -7,9 +7,10 @@
 - P4_TARGET_ISOLATION.md：P4 视线选马、目标切出进度与验证。
 - P5_LASSO.md：P5 套索瞄准、投掷、命中与失败回收。
 - P6_ROPE_FIGHT.md：P6 套中后的张力管理、稳绳与控马完成。
+- P7_CAPTURE.md：P7 捕获确认、马群移除、计数与结果状态。
 - ARCHITECTURE.md：意图分层、组件职责、Tick 顺序。
 - EDITOR_SETUP.md：资产路径、按键和人工 Editor 步骤。
 - DEVELOPMENT_STATUS.md：当前状态与最新验证。
 - Validation/：实际运行截图与精简结果。
 
-当前使用本机 UE 5.8.2。已实现 P6 绳索对抗；不包含 P7 捕获结果或网络。
+当前使用本机 UE 5.8.2。已实现 P7 捕获结果；不包含持久存档、任务经济或网络。

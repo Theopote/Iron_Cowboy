@@ -72,3 +72,7 @@ Q 输入经 Rider 转发到 PlayerController，再由 GameMode 的 HerdManager �
 ## P6：绳索对抗
 
 Attached 后，LassoComponent 根据绳距和两端沿绳方向的相对速度计算张力。Rider 的空格输入设置 Bracing；Brain 接收锚点、张力与稳绳状态，并继续通过 HorseMovement 产生向外挣扎或受控制动。LassoComponent 在有效张力区间累计 ControlProgress，过载则断绳，完成后进入 Subdued。该分层让未来的绳索网格、动画或物理表现读取同一状态，而不接管判定。P6 不生成捕获奖励或移除野马，详细范围见 P6_ROPE_FIGHT.md。
+
+## P7：捕获结果
+
+C 输入由 Rider 转给 LassoComponent。只有 Subdued 状态可提交捕获；HerdManager 是活动/捕获成员登记的权威，负责从 Members 移除目标、加入 CapturedHorses、清除焦点并更新计数。HorseBrain 持有 Captured 行为状态并继续通过 HorseMovement 制动。Actor 保留用于本轮结果显示，套索可独立收回。该边界为未来存档或任务系统提供明确的“捕获已发生”事件点，当前没有实现这些上层系统。详见 P7_CAPTURE.md。

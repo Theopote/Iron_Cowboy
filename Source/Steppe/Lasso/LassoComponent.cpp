@@ -24,7 +24,7 @@ bool ULassoComponent::BeginAim()
 
 bool ULassoComponent::BeginAimForTarget(ASteppeWildHorseCharacter* NewTarget, bool bIsolated)
 {
-    if (State==ELassoState::Attached || State==ELassoState::Subdued) { Feedback=TEXT("Release the attached lasso first"); return false; }
+    if (State==ELassoState::Attached || State==ELassoState::Subdued || State==ELassoState::Captured) { Feedback=TEXT("Release the attached lasso first"); return false; }
     if (State==ELassoState::Thrown || State==ELassoState::Recovering) { return false; }
     if (!IsValid(NewTarget)) { Feedback=TEXT("Select a target with Q"); return false; }
     if (!bIsolated) { Feedback=TEXT("Isolate the target before throwing"); return false; }
@@ -83,7 +83,30 @@ void ULassoComponent::StartRecovery(const TCHAR* Message)
 
 void ULassoComponent::Release()
 {
-    if (State==ELassoState::Attached || State==ELassoState::Subdued) { StartRecovery(TEXT("Lasso released")); }
+    if (State==ELassoState::Attached || State==ELassoState::Subdued || State==ELassoState::Captured)
+    {
+        StartRecovery(State==ELassoState::Captured?TEXT("Capture secured - lasso recovering"):TEXT("Lasso released"));
+    }
+}
+
+bool ULassoComponent::Capture()
+{
+    auto* Mode=GetWorld()?GetWorld()->GetAuthGameMode<ASteppeGameMode>():nullptr;
+    return CaptureWithHerd(Mode?Mode->HerdManager.Get():nullptr);
+}
+
+bool ULassoComponent::CaptureWithHerd(ASteppeHerdManager* Herd)
+{
+    auto* Horse=Target.Get();
+    if (State!=ELassoState::Subdued || !Horse || !Herd) { Feedback=TEXT("Subdue the target before capture"); return false; }
+    if (!Herd->RegisterCapturedHorse(Horse)) { Feedback=TEXT("Capture registration failed"); return false; }
+    Horse->Brain->SetCaptured(true);
+    State=ELassoState::Captured;
+    bBracing=false;
+    Tension=0.f;
+    ControlProgress=1.f;
+    Feedback=FString::Printf(TEXT("CAPTURED | herd secured %d | LMB stow"),Herd->CapturedCount);
+    return true;
 }
 
 FGameplayTag ULassoComponent::GetStateTag() const
@@ -95,6 +118,7 @@ FGameplayTag ULassoComponent::GetStateTag() const
     case ELassoState::Attached: return SteppeTags::Lasso_State_Attached;
     case ELassoState::Recovering: return SteppeTags::Lasso_State_Recovering;
     case ELassoState::Subdued: return SteppeTags::Lasso_State_Subdued;
+    case ELassoState::Captured: return SteppeTags::Lasso_State_Captured;
     default: return SteppeTags::Lasso_State_Stored;
     }
 }
@@ -102,7 +126,7 @@ FGameplayTag ULassoComponent::GetStateTag() const
 void ULassoComponent::TickComponent(float Dt, ELevelTick TickType, FActorComponentTickFunction* TickFunction)
 {
     Super::TickComponent(Dt,TickType,TickFunction);
-    if (State==ELassoState::Thrown || State==ELassoState::Attached || State==ELassoState::Subdued)
+    if (State==ELassoState::Thrown || State==ELassoState::Attached || State==ELassoState::Subdued || State==ELassoState::Captured)
     {
         RopeStart=GetOwner()->GetActorLocation()+GetOwner()->GetActorForwardVector()*55.f+GetOwner()->GetActorRightVector()*40.f+FVector(0,0,115);
     }
@@ -112,12 +136,18 @@ void ULassoComponent::TickComponent(float Dt, ELevelTick TickType, FActorCompone
         if (RecoveryRemaining<=0.f) { State=ELassoState::Stored; Feedback=TEXT("Lasso ready"); }
         return;
     }
-    if (State==ELassoState::Attached || State==ELassoState::Subdued)
+    if (State==ELassoState::Attached || State==ELassoState::Subdued || State==ELassoState::Captured)
     {
         if (auto* Horse=Target.Get())
         {
             LoopLocation=Horse->GetActorLocation()+FVector(0,0,90);
             const float Distance=FVector::Dist(RopeStart,LoopLocation);
+            if (State==ELassoState::Captured)
+            {
+                Horse->Brain->SetCaptured(true);
+                Feedback=TEXT("CAPTURED | LMB stow lasso");
+                return;
+            }
             if (State==ELassoState::Subdued)
             {
                 Horse->Brain->SetLassoConstraint(RopeStart,1.f,true);
@@ -184,7 +214,7 @@ void ULassoComponent::TickComponent(float Dt, ELevelTick TickType, FActorCompone
 
 void ULassoComponent::EndPlay(const EEndPlayReason::Type Reason)
 {
-    if (auto* Horse=Target.Get()) { Horse->Brain->SetLassoed(false); }
+    if (auto* Horse=Target.Get()) { Horse->Brain->SetCaptured(false); Horse->Brain->SetLassoed(false); }
     Target.Reset();
     Super::EndPlay(Reason);
 }

@@ -20,6 +20,7 @@ public:
     UFUNCTION(BlueprintCallable, Category="Herd") ASteppeWildHorseCharacter* SelectFocusHorse(FVector ObserverLocation, FVector ViewDirection);
     UFUNCTION(BlueprintCallable, Category="Herd") void SetFocusedHorse(ASteppeWildHorseCharacter* Horse);
     UFUNCTION(BlueprintCallable, Category="Herd") void ClearFocusedHorse();
+    UFUNCTION(BlueprintCallable, Category="Capture") bool RegisterCapturedHorse(ASteppeWildHorseCharacter* Horse);
     void EnsureMembersSpawned();
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Herd", meta=(ClampMin="1", ClampMax="12")) int32 HerdSize = 5;
@@ -46,6 +47,8 @@ public:
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Isolation") float IsolationDistance = 0.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Isolation") float IsolationProgress = 0.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Isolation") bool bTargetIsolated = false;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Capture") TArray<TObjectPtr<ASteppeWildHorseCharacter>> CapturedHorses;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Capture") int32 CapturedCount = 0;
 
 private:
     UPROPERTY() TWeakObjectPtr<AActor> ThreatTarget;

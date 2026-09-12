@@ -6,9 +6,10 @@
 #include "LassoComponent.generated.h"
 
 class ASteppeWildHorseCharacter;
+class ASteppeHerdManager;
 
 UENUM(BlueprintType)
-enum class ELassoState : uint8 { Stored, Aiming, Thrown, Attached, Recovering, Subdued };
+enum class ELassoState : uint8 { Stored, Aiming, Thrown, Attached, Recovering, Subdued, Captured };
 
 UCLASS(ClassGroup=(Steppe), meta=(BlueprintSpawnableComponent))
 class STEPPE_API ULassoComponent : public UActorComponent
@@ -26,6 +27,8 @@ public:
     bool ThrowFrom(FVector Origin, FVector Direction);
     UFUNCTION(BlueprintCallable, Category="Lasso") void Release();
     UFUNCTION(BlueprintCallable, Category="Lasso") void SetBracing(bool bNewBracing) { bBracing=bNewBracing; }
+    UFUNCTION(BlueprintCallable, Category="Capture") bool Capture();
+    bool CaptureWithHerd(ASteppeHerdManager* Herd);
     UFUNCTION(BlueprintPure, Category="Lasso") FGameplayTag GetStateTag() const;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lasso", meta=(ClampMin="100")) float ThrowSpeed = 3200.f;

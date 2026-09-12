@@ -89,6 +89,18 @@ void ASteppeHerdManager::ClearFocusedHorse()
     SetFocusedHorse(nullptr);
 }
 
+bool ASteppeHerdManager::RegisterCapturedHorse(ASteppeWildHorseCharacter* Horse)
+{
+    if (!IsValid(Horse) || !Members.Contains(Horse)) { return false; }
+    if (FocusedHorse==Horse) { ClearFocusedHorse(); }
+    Members.RemoveSingle(Horse);
+    AlarmTravelSeconds.Remove(Horse);
+    CapturedHorses.AddUnique(Horse);
+    CapturedCount=CapturedHorses.Num();
+    Horse->Brain->bIsolationFocus=false;
+    return true;
+}
+
 void ASteppeHerdManager::Tick(float Dt)
 {
     Super::Tick(Dt);
@@ -185,7 +197,12 @@ void ASteppeHerdManager::EndPlay(const EEndPlayReason::Type Reason)
     {
         if (auto* Horse=HorsePtr.Get()) { Horse->Destroy(); }
     }
+    for (const TObjectPtr<ASteppeWildHorseCharacter>& HorsePtr : CapturedHorses)
+    {
+        if (auto* Horse=HorsePtr.Get()) { Horse->Destroy(); }
+    }
     Members.Reset();
+    CapturedHorses.Reset();
     AlarmTravelSeconds.Reset();
     Super::EndPlay(Reason);
 }
