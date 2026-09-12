@@ -68,3 +68,7 @@ Q 输入经 Rider 转发到 PlayerController，再由 GameMode 的 HerdManager �
 ## P5：套索
 
 `ULassoComponent` 属于 Rider，接收 RMB/LMB 输入并维护 Stored、Aiming、Thrown、Attached、Recovering。投掷每帧从上一位置到下一位置作连续球形扫掠，命中只接受 P4 当前隔离目标；HUD 绳线与命中圈不决定结果。Attached 通过 HorseBrain 的 Lassoed 状态向共用 HorseMovement 提交紧急制动意图。主动释放、脱靶、障碍、超长或目标销毁都汇入恢复流程。状态同时通过 Native Gameplay Tags 暴露，便于后续动画、声音和网络表现读取。详细范围见 P5_LASSO.md。
+
+## P6：绳索对抗
+
+Attached 后，LassoComponent 根据绳距和两端沿绳方向的相对速度计算张力。Rider 的空格输入设置 Bracing；Brain 接收锚点、张力与稳绳状态，并继续通过 HorseMovement 产生向外挣扎或受控制动。LassoComponent 在有效张力区间累计 ControlProgress，过载则断绳，完成后进入 Subdued。该分层让未来的绳索网格、动画或物理表现读取同一状态，而不接管判定。P6 不生成捕获奖励或移除野马，详细范围见 P6_ROPE_FIGHT.md。

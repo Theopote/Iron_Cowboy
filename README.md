@@ -1,6 +1,6 @@
 # 《套马的汉子》 / Project STEPPE
 
-UE **5.8.2** 的 C++ 骑乘运动原型。当前已完成 P5 套索；骑手可驱赶五匹小规模马群、切出目标并瞄准投掷套索。
+UE **5.8.2** 的 C++ 骑乘运动原型。当前已完成 P6 绳索对抗；骑手可驱赶马群、切出目标、投掷套索并通过张力控制将目标制服。
 
 ## 打开与试玩
 
@@ -29,6 +29,7 @@ UE **5.8.2** 的 C++ 骑乘运动原型。当前已完成 P5 套索；骑手可�
 | Q | 选择视线前方的野马；再次选择同一匹可取消 |
 | 鼠标右键 | 隔离目标后按住瞄准套索 |
 | 鼠标左键 | 瞄准时投掷；附着后释放 |
+| 空格 | 套中后按住稳绳，在有效张力区间累计控制进度 |
 | F1 | 显示 / 隐藏马遥测 |
 | F2 | 重试当前场景 |
 
@@ -51,4 +52,4 @@ UE **5.8.2** 的 C++ 骑乘运动原型。当前已完成 P5 套索；骑手可�
 
 当前构建使用 V7 / Unreal5_8 IncludeOrder；因本机共享 PCH 编译停顿，模块禁用 PCH，构建脚本传入 `-NoUBA` 禁用 detouring。没有修改引擎安装。Editor 开启 Live Coding 时应先保存关闭再运行外部构建。
 
-详见 `Docs/DEVELOPMENT_STATUS.md`（真实结果和逐项验收）、`Docs/ARCHITECTURE.md`、`Docs/EDITOR_SETUP.md`。P5 试玩和验证见 `Docs/P5_LASSO.md`；尚未实现驯服、捕获奖励或多人网络。
+详见 `Docs/DEVELOPMENT_STATUS.md`（真实结果和逐项验收）、`Docs/ARCHITECTURE.md`、`Docs/EDITOR_SETUP.md`。P6 试玩和验证见 `Docs/P6_ROPE_FIGHT.md`；尚未实现 P7 捕获结果或多人网络。

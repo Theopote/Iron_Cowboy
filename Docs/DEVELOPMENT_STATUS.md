@@ -1,6 +1,6 @@
 # Current Phase
 
-**P5 — 套索瞄准、投掷、命中与失败回收已实现，等待人工手感验收。**
+**P6 — 绳索张力、稳绳、断绳与 Subdued 结果已实现，等待人工手感验收。**
 
 项目使用 UE 5.8.2。P1 骑乘基础、P2 单匹野马、P2.2 慢速退让、P3 小规模马群和 P3.1 个体差异/防卡住均已通过对应试玩反馈后继续推进。
 
@@ -14,6 +14,7 @@
 - 目标距其余马群中心至少 18 米并保持 2 秒后完成隔离；HUD 显示编号、距离、进度和 ISOLATED。
 - F2 重试会重置骑手、坐骑、马群、目标与隔离进度。
 - 隔离完成后可按住 RMB 瞄准并以 LMB 投掷；命中、障碍、脱靶、断绳、释放和恢复均有明确状态与 HUD 反馈。
+- 套中后目标会向外挣扎；空格稳绳并维持 20%–85% 张力约 3 秒可进入 Subdued，持续过载或绳距过长会断绳。
 
 # Build Result
 
@@ -23,24 +24,24 @@ UHT、C++ 编译和链接成功。仍使用已验证的 NoPCHs / -NoUBA 本地�
 
 # Validation
 
-自动测试：**9 passed, 0 failed**，其中 1 项包含既有的 RiderSeat 占位警告。
+自动测试：**10 passed, 0 failed**，其中 1 项包含既有的 RiderSeat 占位警告。
 
-P5 的 `Steppe.P5.LassoThrowAttachAndRecovery` 覆盖隔离门槛、瞄准、命中扫掠、Lassoed 状态、Gameplay Tag、释放、脱靶和自动恢复。既有 P1–P4 测试继续通过。
+P6 的 `Steppe.P6.RopeFightTensionAndSubdue` 覆盖稳绳、有效张力、Subdued、Gameplay Tag、释放重用和过长断绳。P5 测试也新增环境障碍阻挡断言；既有 P1–P5 测试继续通过。
 
-实际渲染冒烟中 H1 距其余群体中心 2152.5 cm，超过正式 1800 cm 阈值并完成隔离；套索成功进入 Attached，目标进入 Lassoed。其余马群保持 5 个方向组、0 阻塞。
+实际渲染冒烟中 H1 距其余群体中心 2152.5 cm；套索张力稳定在 33%，控制进度达到 100%，状态进入 Subdued，目标保持 Lassoed。其余马群保持 5 个方向组、0 阻塞。
 
-证据：`Validation/P5-Results.json`、`P5-Playground.png`、`P5-Runs.txt`。原始日志为 `Saved/Logs/P5-FinalTests.log` 与 `P5-FinalRender.log`。
+证据：`Validation/P6-Results.json`、`P6-Playground.png`、`P6-Runs.txt`。原始日志为 `Saved/Logs/P6-Automation.log` 与 `P6-FinalRender.log`。
 
 # Manual Steps
 
-打开 `Steppe.uproject` → Play。用 Q 选择并切出一匹野马，看到 ISOLATED 后靠近到 26 米内。按住 RMB，用中心准星对准目标后按 LMB；命中后再次按 LMB 释放。向旁边投掷可检查脱靶回收，障碍也会阻挡套索。F2 可重试。
+打开 `Steppe.uproject` → Play。完成隔离并套中目标后立即按住空格。通过靠近或拉开调整张力，让右上角保持绿色 STEADY，直到 CONTROL 达到 100%。左键可释放；快速远离可验证断绳。F2 可重试。
 
 `steppe.Debug.Movement 1` 显示个体方向、紫色群体中心、青色目标圈和隔离连线。完整规则见 P4_TARGET_ISOLATION.md。
 
 # Known Limits
 
 - 仅 5 匹近距离完整 Actor 与一个显式玩家目标；没有远距离简化或领头马社会结构。
-- 套索当前使用连续扫掠和调试绳线；没有正式摆绳动画、绳圈网格、物理绳摆动、拖拽对抗、驯服、捕获奖励或多人网络。
+- 套索当前使用连续扫掠和调试绳线；没有正式摆绳动画、绳圈网格、物理绳摆动、骑手受力、P7 捕获奖励或多人网络。
 - 仍是灰盒占位模型，没有真实马动画、听觉、鸣叫或最终美术。
 - 局部探测不是全局寻路；复杂封闭空间中仍可能原地寻找出口。
 - 感知和隔离数值是可调的原型初值，并非马术研究结论。
@@ -48,7 +49,7 @@ P5 的 `Steppe.P5.LassoThrowAttachAndRecovery` 覆盖隔离门槛、瞄准、命
 
 # Next Recommended Work
 
-试玩 P5，重点判断 26 米射程、80 cm 命中宽容、RMB/LMB 操作和 0.75 秒失败回收是否顺手。确认后可进入套中后的短时控马对抗与捕获结果，或先制作更清晰的摆绳和绳圈表现。
+试玩 P6，重点判断 20%–85% 有效区、3 秒控制时间、空格稳绳和断绳压力是否容易理解且有操作感。确认后进入 P7 捕获结果，或先调整张力窗口与挣扎速度。
 
 # Milestones
 
@@ -57,3 +58,4 @@ P5 的 `Steppe.P5.LassoThrowAttachAndRecovery` 覆盖隔离门槛、瞄准、命
 - 2026-09-12 P3–P3.1：完成五匹马群、延迟警报、个体差异、正确出生位置、动态避让与脱困；用户确认行为正常。
 - 2026-09-12 P4：完成视线选马与目标切出闭环；8 项自动测试及实际渲染冒烟通过。
 - 2026-09-12 P5：完成套索瞄准、投掷扫掠、环境阻挡、附着/释放、断绳与失败回收；9 项自动测试及实际渲染冒烟通过。
+- 2026-09-12 P6：完成套中后的挣扎、张力计算、空格稳绳、控制进度、Subdued 与过载断绳；10 项自动测试及实际渲染冒烟通过。
