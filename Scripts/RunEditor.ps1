@@ -11,6 +11,7 @@ param(
     [switch]$HerdIdleSmoke,
     [switch]$IsolationSmoke,
     [switch]$LassoSmoke,
+    [switch]$RopeFightSmoke,
     [ValidateRange(1,10000)][int]$ExpectedTests = 2
 )
 $ErrorActionPreference = 'Stop'
@@ -24,6 +25,10 @@ if ($Smoke) { $editorArgs += '-SteppeSmoke'; $editorArgs += '-windowed'; $editor
 if ($HerdIdleSmoke) { if (!$Smoke -or !$Game) { throw 'HerdIdleSmoke requires Game and Smoke.' }; $editorArgs += '-SteppeHerdIdleSmoke' }
 if ($IsolationSmoke) { if (!$Smoke -or !$Game) { throw 'IsolationSmoke requires Game and Smoke.' }; $editorArgs += '-SteppeIsolationSmoke' }
 if ($LassoSmoke) { if (!$Smoke -or !$Game) { throw 'LassoSmoke requires Game and Smoke.' }; $editorArgs += '-SteppeLassoSmoke' }
+if ($RopeFightSmoke) {
+    if (!$Smoke -or !$Game) { throw 'RopeFightSmoke requires Game and Smoke.' }
+    $editorArgs += '-SteppeLassoSmoke'; $editorArgs += '-SteppeRopeFightSmoke'
+}
 if ($RetrySmoke) { if (!$Smoke -or !$Game) { throw 'RetrySmoke requires Game and Smoke.' }; $editorArgs += '-SteppeRetrySmoke' }
 if ($Tests) { $editorArgs += '-TestExit=Automation Test Queue Empty'; $editorArgs += "-ReportExportPath=$PSScriptRoot\..\Saved\Automation" }
 if ($PythonScript) { $editorArgs += "-ExecutePythonScript=$PythonScript" }
@@ -76,5 +81,12 @@ if ($LassoSmoke) {
         throw "Lasso smoke did not attach to and hold the isolated target; see $logPath"
     }
     Write-Output 'Lasso smoke: isolated target was hit and entered the lassoed state.'
+}
+if ($RopeFightSmoke) {
+    $fightLog = Get-Content $logPath -Raw
+    if ($fightLog -notmatch 'STEPPE_P6_SMOKE: State=ELassoState::Subdued .*Control=1\.00 Bracing=1') {
+        throw "Rope fight smoke did not subdue the target under steady tension; see $logPath"
+    }
+    Write-Output 'Rope fight smoke: steady bracing subdued the lassoed target.'
 }
 Write-Output "Editor exited successfully. Log: $logPath"

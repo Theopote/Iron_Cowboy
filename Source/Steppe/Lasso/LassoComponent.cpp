@@ -24,7 +24,7 @@ bool ULassoComponent::BeginAim()
 
 bool ULassoComponent::BeginAimForTarget(ASteppeWildHorseCharacter* NewTarget, bool bIsolated)
 {
-    if (State==ELassoState::Attached) { Feedback=TEXT("Release the attached lasso first"); return false; }
+    if (State==ELassoState::Attached || State==ELassoState::Subdued) { Feedback=TEXT("Release the attached lasso first"); return false; }
     if (State==ELassoState::Thrown || State==ELassoState::Recovering) { return false; }
     if (!IsValid(NewTarget)) { Feedback=TEXT("Select a target with Q"); return false; }
     if (!bIsolated) { Feedback=TEXT("Isolate the target before throwing"); return false; }
@@ -61,6 +61,9 @@ bool ULassoComponent::ThrowFrom(FVector Origin, FVector Direction)
     LoopLocation=Origin;
     ThrowDirection=Direction.GetSafeNormal();
     TravelDistance=0.f;
+    ControlProgress=0.f;
+    Tension=0.f;
+    OverTensionSeconds=0.f;
     State=ELassoState::Thrown;
     Feedback=TEXT("Lasso in flight");
     return true;
@@ -70,6 +73,9 @@ void ULassoComponent::StartRecovery(const TCHAR* Message)
 {
     if (auto* Horse=Target.Get()) { Horse->Brain->SetLassoed(false); }
     Target.Reset();
+    bBracing=false;
+    Tension=0.f;
+    ControlProgress=0.f;
     State=ELassoState::Recovering;
     RecoveryRemaining=FMath::Max(.1f,RecoverySeconds);
     Feedback=Message;
@@ -77,7 +83,7 @@ void ULassoComponent::StartRecovery(const TCHAR* Message)
 
 void ULassoComponent::Release()
 {
-    if (State==ELassoState::Attached) { StartRecovery(TEXT("Lasso released")); }
+    if (State==ELassoState::Attached || State==ELassoState::Subdued) { StartRecovery(TEXT("Lasso released")); }
 }
 
 FGameplayTag ULassoComponent::GetStateTag() const
@@ -88,6 +94,7 @@ FGameplayTag ULassoComponent::GetStateTag() const
     case ELassoState::Thrown: return SteppeTags::Lasso_State_Thrown;
     case ELassoState::Attached: return SteppeTags::Lasso_State_Attached;
     case ELassoState::Recovering: return SteppeTags::Lasso_State_Recovering;
+    case ELassoState::Subdued: return SteppeTags::Lasso_State_Subdued;
     default: return SteppeTags::Lasso_State_Stored;
     }
 }
@@ -95,7 +102,7 @@ FGameplayTag ULassoComponent::GetStateTag() const
 void ULassoComponent::TickComponent(float Dt, ELevelTick TickType, FActorComponentTickFunction* TickFunction)
 {
     Super::TickComponent(Dt,TickType,TickFunction);
-    if (State==ELassoState::Thrown || State==ELassoState::Attached)
+    if (State==ELassoState::Thrown || State==ELassoState::Attached || State==ELassoState::Subdued)
     {
         RopeStart=GetOwner()->GetActorLocation()+GetOwner()->GetActorForwardVector()*55.f+GetOwner()->GetActorRightVector()*40.f+FVector(0,0,115);
     }
@@ -105,12 +112,37 @@ void ULassoComponent::TickComponent(float Dt, ELevelTick TickType, FActorCompone
         if (RecoveryRemaining<=0.f) { State=ELassoState::Stored; Feedback=TEXT("Lasso ready"); }
         return;
     }
-    if (State==ELassoState::Attached)
+    if (State==ELassoState::Attached || State==ELassoState::Subdued)
     {
         if (auto* Horse=Target.Get())
         {
             LoopLocation=Horse->GetActorLocation()+FVector(0,0,90);
-            if (FVector::Dist(RopeStart,LoopLocation)>MaximumRange*1.1f) { StartRecovery(TEXT("Rope broke - recovering")); }
+            const float Distance=FVector::Dist(RopeStart,LoopLocation);
+            if (State==ELassoState::Subdued)
+            {
+                Horse->Brain->SetLassoConstraint(RopeStart,1.f,true);
+                Feedback=TEXT("SUBDUED - ready for capture in P7 | LMB release");
+                return;
+            }
+            const FVector RopeDirection=(LoopLocation-RopeStart).GetSafeNormal();
+            FVector AnchorVelocity=GetOwner()->GetVelocity();
+            if (const auto* Rider=Cast<ASteppeRiderCharacter>(GetOwner()))
+            {
+                if (Rider->Riding && Rider->Riding->GetHorse()) { AnchorVelocity=Rider->Riding->GetHorse()->GetVelocity(); }
+            }
+            const float SeparatingSpeed=FVector::DotProduct(Horse->GetVelocity()-AnchorVelocity,RopeDirection);
+            Tension=FMath::Clamp((Distance-RopeLength)/FMath::Max(10.f,TensionRange)+FMath::Max(0.f,SeparatingSpeed)/1200.f,0.f,1.5f);
+            Horse->Brain->SetLassoConstraint(RopeStart,Tension,bBracing);
+            const bool bUseful=bBracing && Tension>=UsefulTensionMin && Tension<=UsefulTensionMax;
+            ControlProgress=FMath::Clamp(ControlProgress+(bUseful?Dt:-Dt*.6f)/FMath::Max(.1f,SubdueSeconds),0.f,1.f);
+            OverTensionSeconds=Tension>1.f?OverTensionSeconds+Dt:FMath::Max(0.f,OverTensionSeconds-Dt*2.f);
+            if (Distance>MaximumRange*1.1f || OverTensionSeconds>=BreakHoldSeconds) { StartRecovery(TEXT("Rope broke - recovering")); }
+            else if (ControlProgress>=1.f)
+            {
+                State=ELassoState::Subdued;
+                Feedback=TEXT("SUBDUED - ready for capture in P7 | LMB release");
+            }
+            else { Feedback=bUseful?TEXT("Tension steady - hold Space"):bBracing?TEXT("Adjust distance into the green tension band"):TEXT("Hold Space to brace"); }
         }
         else { StartRecovery(TEXT("Target lost")); }
         return;
@@ -137,6 +169,8 @@ void ULassoComponent::TickComponent(float Dt, ELevelTick TickType, FActorCompone
         if (Hit.GetActor()==Target.Get())
         {
             State=ELassoState::Attached;
+            RopeLength=FMath::Max(200.f,FVector::Dist(RopeStart,LoopLocation)-120.f);
+            Tension=120.f/FMath::Max(10.f,TensionRange);
             Target->Brain->SetLassoed(true);
             Feedback=TEXT("LASSO ATTACHED - Left Mouse to release");
         }

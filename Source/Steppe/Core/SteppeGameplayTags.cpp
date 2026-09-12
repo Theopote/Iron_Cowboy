@@ -27,4 +27,5 @@ namespace SteppeTags
     UE_DEFINE_GAMEPLAY_TAG(Lasso_State_Thrown, "Lasso.State.Thrown");
     UE_DEFINE_GAMEPLAY_TAG(Lasso_State_Attached, "Lasso.State.Attached");
     UE_DEFINE_GAMEPLAY_TAG(Lasso_State_Recovering, "Lasso.State.Recovering");
+    UE_DEFINE_GAMEPLAY_TAG(Lasso_State_Subdued, "Lasso.State.Subdued");
 }

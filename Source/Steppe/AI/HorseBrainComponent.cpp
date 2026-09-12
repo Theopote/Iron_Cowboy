@@ -68,6 +68,12 @@ void UHorseBrainComponent::SetLassoed(bool bNewLassoed)
     if (bLassoed) { ChangeState(EWildHorseState::Lassoed); }
     else if (State==EWildHorseState::Lassoed) { ChangeState(EWildHorseState::Recovering); }
 }
+void UHorseBrainComponent::SetLassoConstraint(FVector Anchor, float Tension, bool bBraced)
+{
+    LassoAnchor=Anchor;
+    LassoTension=FMath::Clamp(Tension,0.f,1.5f);
+    bLassoBraced=bBraced;
+}
 void UHorseBrainComponent::SetHerdGuidance(FVector Center, FVector Velocity, FVector Separation, int32 NeighborCount)
 {
     HerdCenter=Center;
@@ -196,10 +202,22 @@ void UHorseBrainComponent::TickComponent(float Dt, ELevelTick TickType, FActorCo
     if (!Movement || Horse->MountedRider.IsValid() || Dt <= 0.f) { return; }
     if (bLassoed)
     {
-        FHorseMovementIntent HeldIntent;
-        HeldIntent.BrakeStrength=1.f;
-        Movement->SetHorseIntent(HeldIntent);
-        SteeringDirection=FVector::ZeroVector;
+        FHorseMovementIntent StruggleIntent;
+        if (bLassoBraced)
+        {
+            StruggleIntent.DesiredSpeed=LassoTension>.85f?0.f:40.f;
+            StruggleIntent.BrakeStrength=LassoTension>.85f?1.f:.6f;
+        }
+        else
+        {
+            const FVector Away=(Horse->GetActorLocation()-LassoAnchor).GetSafeNormal2D();
+            const float HeadingError=FMath::FindDeltaAngleDegrees(Horse->GetActorRotation().Yaw,Away.Rotation().Yaw);
+            StruggleIntent.DesiredSpeed=600.f;
+            StruggleIntent.DesiredTurn=FMath::Clamp(HeadingError/45.f,-1.f,1.f);
+            StruggleIntent.RequestedGait=EHorseGait::Canter;
+            SteeringDirection=Away;
+        }
+        Movement->SetHorseIntent(StruggleIntent);
         return;
     }
     const auto& C = GetConfig();

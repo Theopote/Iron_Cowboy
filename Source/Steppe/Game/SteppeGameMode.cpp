@@ -74,6 +74,7 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
         const bool bHerdIdleSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeHerdIdleSmoke"));
         const bool bIsolationSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeIsolationSmoke"));
         const bool bLassoSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeLassoSmoke"));
+        const bool bRopeFightSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeRopeFightSmoke"));
         // Process-local count is restricted to this opt-in standalone smoke run.
         static int32 RetrySmokeCount=0;
         if (FParse::Param(FCommandLine::Get(),TEXT("SteppeRetrySmoke")))
@@ -88,7 +89,7 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
                 { CastChecked<ASteppePlayerController>(NewPlayer)->SteppeRestartTrial(); }),3.f,false);
             }
         }
-        FTimerHandle StartHandle,FocusHandle,LassoSetupHandle,LassoThrowHandle,ShotHandle,ExitHandle;
+        FTimerHandle StartHandle,FocusHandle,LassoSetupHandle,LassoThrowHandle,BraceHandle,ShotHandle,ExitHandle;
         if (bIsolationSmoke)
         {
             GetWorldTimerManager().SetTimer(FocusHandle,FTimerDelegate::CreateWeakLambda(NewPlayer,[NewPlayer]()
@@ -112,6 +113,11 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
                 const FVector Origin=Rider->GetActorLocation()+FVector(0,0,100);
                 Rider->Lasso->ThrowFrom(Origin,(Target->GetActorLocation()+FVector(0,0,70)-Origin).GetSafeNormal());
             }),1.3f,false);
+            if (bRopeFightSmoke)
+            {
+                GetWorldTimerManager().SetTimer(BraceHandle,FTimerDelegate::CreateWeakLambda(Rider,[Rider]()
+                { Rider->Lasso->SetBracing(true); }),1.55f,false);
+            }
         }
         if (!bHerdIdleSmoke && !bLassoSmoke)
         {
@@ -157,6 +163,8 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
             UE_LOG(LogSteppe,Display,TEXT("STEPPE_P5_SMOKE: State=%s Target=%s TargetLassoed=%d Feedback=%s"),
                 *UEnum::GetValueAsString(Rider->Lasso->State),*GetNameSafe(Rider->Lasso->Target.Get()),
                 Rider->Lasso->Target.IsValid() && Rider->Lasso->Target->Brain->bLassoed,*Rider->Lasso->Feedback);
+            UE_LOG(LogSteppe,Display,TEXT("STEPPE_P6_SMOKE: State=%s Tension=%.2f Control=%.2f Bracing=%d"),
+                *UEnum::GetValueAsString(Rider->Lasso->State),Rider->Lasso->Tension,Rider->Lasso->ControlProgress,Rider->Lasso->bBracing);
             FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeSmoke.png"),true,false);
         }),bHerdIdleSmoke?3.5f:7.f,false);
         GetWorldTimerManager().SetTimer(ExitHandle,FTimerDelegate::CreateWeakLambda(NewPlayer,[NewPlayer]() { NewPlayer->ConsoleCommand(TEXT("quit")); }),bHerdIdleSmoke?5.5f:9.f,false);

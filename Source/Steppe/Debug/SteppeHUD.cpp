@@ -17,7 +17,7 @@
 void ASteppeHUD::DrawHUD()
 {
     Super::DrawHUD();
-    DrawText(TEXT("STEPPE | W/S urge/slow  A/D reins  Mouse look  Shift sprint  Ctrl brake  E mount  Q target  RMB aim  LMB throw/release  F1 telemetry  F2 retry"),FLinearColor::White,24,20,nullptr,.9f);
+    DrawText(TEXT("STEPPE | W/S urge/slow  A/D reins  Mouse look  Shift sprint  Ctrl brake  E mount  Q target  RMB aim  LMB throw/release  Space brace  F1/F2"),FLinearColor::White,24,20,nullptr,.9f);
     auto* Rider=PlayerOwner?Cast<ASteppeRiderCharacter>(PlayerOwner->GetPawn()):nullptr;
     auto* Lasso=Rider?Rider->Lasso.Get():nullptr;
     if (Lasso)
@@ -28,6 +28,16 @@ void ASteppeHUD::DrawHUD()
         const float LassoX=FMath::Max(18.f,Canvas->ClipX-570.f);
         DrawRect(FLinearColor(0,0,0,.6f),LassoX-6,44,558,25);
         DrawText(LassoText,LassoColor,LassoX,48,nullptr,.95f);
+        if (Lasso->State==ELassoState::Attached || Lasso->State==ELassoState::Subdued)
+        {
+            const bool bGreen=Lasso->Tension>=Lasso->UsefulTensionMin && Lasso->Tension<=Lasso->UsefulTensionMax;
+            const FLinearColor TensionColor=bGreen?FLinearColor(.3f,1.f,.3f):FLinearColor(1.f,.3f,.15f);
+            DrawRect(FLinearColor(0,0,0,.6f),LassoX-6,73,558,43);
+            DrawText(FString::Printf(TEXT("TENSION %.0f%% %s | CONTROL %.0f%%"),Lasso->Tension*100.f,
+                bGreen?TEXT("STEADY"):TEXT("ADJUST"),Lasso->ControlProgress*100.f),TensionColor,LassoX,78,nullptr,1.f);
+            DrawRect(FLinearColor(.12f,.12f,.12f,1),LassoX,99,520,8);
+            DrawRect(FLinearColor(.3f,.8f,1.f,1),LassoX,99,520*Lasso->ControlProgress,8);
+        }
         if (Lasso->State==ELassoState::Aiming) { DrawText(TEXT("+"),FLinearColor::White,Canvas->ClipX*.5f-5,Canvas->ClipY*.5f-12,nullptr,1.5f); }
         if (Lasso->State==ELassoState::Thrown || Lasso->State==ELassoState::Attached)
         {
@@ -54,7 +64,7 @@ void ASteppeHUD::DrawHUD()
                     Herd->IsolationDistance/100.f,Herd->IsolationProgress*100.f,Herd->bTargetIsolated?TEXT(" | ISOLATED"):TEXT(""))
                 :TEXT("TARGET: none | look toward a horse and press Q");
             DrawRect(FLinearColor(0,0,0,.65f),18,250,650,158);
-            DrawText(FString::Printf(TEXT("WILD HERD: %d horses | alarm sources %d\n%s\nFOCUS: %s | awareness %.0f%% | neighbors %d\nDistance %.1f m | approach %.1f m/s | visible %s\nPath %s | cut the target away from the herd.\nLASSO: isolate, hold RMB, aim, then LMB."),
+            DrawText(FString::Printf(TEXT("WILD HERD: %d horses | alarm sources %d\n%s\nFOCUS: %s | awareness %.0f%% | neighbors %d\nDistance %.1f m | approach %.1f m/s | visible %s\nPath %s | cut the target away from the herd.\nLASSO: isolate, RMB aim, LMB throw, then hold Space."),
                 Mode->WildHorses.Num(),Mode->HerdManager?Mode->HerdManager->AlarmSourceCount:0,
                 *TargetLine,
                 *UEnum::GetDisplayValueAsText(Brain->State).ToString(), Brain->Awareness*100.f,

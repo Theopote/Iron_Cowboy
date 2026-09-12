@@ -28,4 +28,5 @@ namespace SteppeTags
     STEPPE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Lasso_State_Thrown);
     STEPPE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Lasso_State_Attached);
     STEPPE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Lasso_State_Recovering);
+    STEPPE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Lasso_State_Subdued);
 }

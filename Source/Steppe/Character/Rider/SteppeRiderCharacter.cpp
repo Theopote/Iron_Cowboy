@@ -97,6 +97,7 @@ void ASteppeRiderCharacter::SetupPlayerInputComponent(UInputComponent* Input)
         Enhanced->BindAction(InputConfig->AimLasso,ETriggerEvent::Canceled,this,&ASteppeRiderCharacter::EndLassoAim);
     }
     if (InputConfig->ThrowLasso) { Enhanced->BindAction(InputConfig->ThrowLasso,ETriggerEvent::Started,this,&ASteppeRiderCharacter::ThrowLasso); }
+    Axis(InputConfig->BraceLasso,&ASteppeRiderCharacter::BraceLasso);
     if (InputConfig->Debug) { Enhanced->BindAction(InputConfig->Debug,ETriggerEvent::Started,this,&ASteppeRiderCharacter::ToggleDebug); }
     RefreshInputContext();
 }
@@ -138,5 +139,6 @@ void ASteppeRiderCharacter::ToggleDebug() { if (auto* PC=Cast<ASteppePlayerContr
 void ASteppeRiderCharacter::FocusTarget() { if (auto* PC=Cast<ASteppePlayerController>(Controller)) { PC->SteppeFocusTarget(); } }
 void ASteppeRiderCharacter::BeginLassoAim() { Lasso->BeginAim(); }
 void ASteppeRiderCharacter::EndLassoAim() { Lasso->CancelAim(); }
-void ASteppeRiderCharacter::ThrowLasso() { if (Lasso->State==ELassoState::Attached) { Lasso->Release(); } else { Lasso->Throw(); } }
+void ASteppeRiderCharacter::ThrowLasso() { if (Lasso->State==ELassoState::Attached || Lasso->State==ELassoState::Subdued) { Lasso->Release(); } else { Lasso->Throw(); } }
+void ASteppeRiderCharacter::BraceLasso(const FInputActionValue& Value) { Lasso->SetBracing(Value.Get<bool>()); }
 void ASteppeRiderCharacter::RestartTrial() { if (auto* PC=Cast<ASteppePlayerController>(Controller)) { PC->SteppeRestartTrial(); } }

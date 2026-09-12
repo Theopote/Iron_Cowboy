@@ -21,6 +21,7 @@ public:
     UFUNCTION(BlueprintCallable, Category="Wild Horse") void SetThreatTarget(AActor* Target);
     UFUNCTION(BlueprintCallable, Category="Wild Horse") void ReceiveHerdAlarm(float Strength, float Duration);
     UFUNCTION(BlueprintCallable, Category="Wild Horse") void SetLassoed(bool bNewLassoed);
+    void SetLassoConstraint(FVector Anchor, float Tension, bool bBraced);
     void SetHerdGuidance(FVector Center, FVector Velocity, FVector Separation, int32 NeighborCount);
     void SetHerdIdentity(int32 MemberIndex, int32 HerdSeed);
     UFUNCTION(BlueprintPure, Category="Wild Horse") FGameplayTag GetBehaviorTag() const;
@@ -46,6 +47,7 @@ public:
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") bool bRecoveringFromBlockage = false;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") bool bIsolationFocus = false;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") bool bLassoed = false;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") float LassoTension = 0.f;
     const UWildHorseConfig& GetConfig() const;
 private:
     void Sense(float Dt, const ASteppeHorseCharacter& Horse);
@@ -68,4 +70,6 @@ private:
     float HerdAlarmStrength = 0.f;
     FVector HerdCenter = FVector::ZeroVector;
     FVector HerdVelocity = FVector::ZeroVector;
+    FVector LassoAnchor = FVector::ZeroVector;
+    bool bLassoBraced = false;
 };

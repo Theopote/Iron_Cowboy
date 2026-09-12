@@ -19,6 +19,7 @@ void USteppeInputConfig::CreateRuntimeDefaults()
     FocusTarget=MakeAction(TEXT("IA_FocusTarget"),EInputActionValueType::Boolean);
     AimLasso=MakeAction(TEXT("IA_AimLasso"),EInputActionValueType::Boolean);
     ThrowLasso=MakeAction(TEXT("IA_ThrowLasso"),EInputActionValueType::Boolean);
+    BraceLasso=MakeAction(TEXT("IA_BraceLasso"),EInputActionValueType::Boolean);
     RestartTrial=MakeAction(TEXT("IA_RestartTrial"),EInputActionValueType::Boolean);
     OnFoot=NewObject<UInputMappingContext>(this,TEXT("IMC_OnFoot"));
     Riding=NewObject<UInputMappingContext>(this,TEXT("IMC_Riding"));
@@ -36,6 +37,7 @@ void USteppeInputConfig::CreateRuntimeDefaults()
         Context->MapKey(Sprint,EKeys::LeftShift); Context->MapKey(Brake,EKeys::LeftControl);
         Context->MapKey(MountDismount,EKeys::E); Context->MapKey(FocusTarget,EKeys::Q);
         Context->MapKey(AimLasso,EKeys::RightMouseButton); Context->MapKey(ThrowLasso,EKeys::LeftMouseButton);
+        Context->MapKey(BraceLasso,EKeys::SpaceBar);
         Context->MapKey(Debug,EKeys::F1); Context->MapKey(RestartTrial,EKeys::F2);
     }
 }

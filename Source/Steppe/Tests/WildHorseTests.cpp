@@ -369,4 +369,36 @@ bool FLassoLoopTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Miss recovery completes"),Rider->Lasso->State,ELassoState::Stored);
     return true;
 }
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FRopeFightTest,"Steppe.P6.RopeFightTensionAndSubdue",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FRopeFightTest::RunTest(const FString& Parameters)
+{
+    FWildTestWorld Fixture;
+    auto* Rider=Fixture.World->SpawnActor<ASteppeRiderCharacter>(FVector(0,0,100),FRotator::ZeroRotator);
+    auto* Wild=Fixture.World->SpawnActor<ASteppeWildHorseCharacter>(FVector(1000,0,100),FRotator::ZeroRotator);
+    Fixture.Begin();
+    Rider->GetCharacterMovement()->SetComponentTickEnabled(false);
+    Wild->GetCharacterMovement()->SetComponentTickEnabled(false);
+
+    TestTrue(TEXT("Fight setup accepts isolated target"),Rider->Lasso->BeginAimForTarget(Wild,true));
+    TestTrue(TEXT("Fight setup throws toward target"),Rider->Lasso->ThrowFrom(FVector(0,0,170),FVector::ForwardVector));
+    Fixture.Step(.5f);
+    if (!TestEqual(TEXT("Rope fight begins attached"),Rider->Lasso->State,ELassoState::Attached)) { return false; }
+    Rider->Lasso->SetBracing(true);
+    Fixture.Step(3.4f);
+    TestEqual(TEXT("Steady useful tension subdues the horse"),Rider->Lasso->State,ELassoState::Subdued);
+    TestEqual(TEXT("Subdued state exposes its gameplay tag"),Rider->Lasso->GetStateTag(),SteppeTags::Lasso_State_Subdued.GetTag());
+    TestTrue(TEXT("Control progress completes"),Rider->Lasso->ControlProgress>=1.f);
+    TestTrue(TEXT("Subdued horse remains lassoed"),Wild->Brain->bLassoed);
+
+    Rider->Lasso->Release();
+    Fixture.Step(1.f);
+    TestTrue(TEXT("A second rope fight can begin"),Rider->Lasso->BeginAimForTarget(Wild,true));
+    TestTrue(TEXT("Second throw starts"),Rider->Lasso->ThrowFrom(FVector(0,0,170),FVector::ForwardVector));
+    Fixture.Step(.5f);
+    Rider->SetActorLocation(FVector(-4000,0,100),false,nullptr,ETeleportType::TeleportPhysics);
+    Fixture.Step(.1f);
+    TestEqual(TEXT("Excess rope length breaks the rope"),Rider->Lasso->State,ELassoState::Recovering);
+    TestFalse(TEXT("Broken rope releases the horse"),Wild->Brain->bLassoed);
+    return true;
+}
 #endif
