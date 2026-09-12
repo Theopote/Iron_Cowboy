@@ -108,6 +108,10 @@ if ($CaptureSmoke) {
 }
 if ($VerticalSliceSmoke) {
     $sliceLog = Get-Content $logPath -Raw
+    $guidancePath = Join-Path $PSScriptRoot '..\Saved\Screenshots\SteppeP8Guidance.png'
+    if (!(Test-Path $guidancePath) -or (Get-Item $guidancePath).LastWriteTime -lt $runStarted) {
+        throw "Vertical slice guidance screenshot is missing or stale; see $logPath"
+    }
     if ($sliceLog -notmatch 'STEPPE_P8_SMOKE: State=ESteppeTrialState::Success Captured=1 Required=1 .*Score=[1-9][0-9]*') {
         throw "Vertical slice smoke did not complete the timed capture mission with a score; see $logPath"
     }

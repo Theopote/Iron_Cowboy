@@ -101,7 +101,7 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
                 { CastChecked<ASteppePlayerController>(NewPlayer)->SteppeRestartTrial(); }),3.f,false);
             }
         }
-        FTimerHandle StartHandle,FocusHandle,LassoSetupHandle,LassoThrowHandle,BraceHandle,CaptureHandle,ShotHandle,ExitHandle;
+        FTimerHandle StartHandle,FocusHandle,LassoSetupHandle,LassoThrowHandle,BraceHandle,CaptureHandle,GuidanceShotHandle,ShotHandle,ExitHandle;
         if (bIsolationSmoke)
         {
             GetWorldTimerManager().SetTimer(FocusHandle,FTimerDelegate::CreateWeakLambda(NewPlayer,[NewPlayer]()
@@ -142,6 +142,13 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
             {
                 FRidingIntent Intent; Intent.Forward=1; Rider->Riding->SetIntent(Intent);
             }),1.f,false);
+        }
+        if (bVerticalSliceSmoke)
+        {
+            GetWorldTimerManager().SetTimer(GuidanceShotHandle,FTimerDelegate::CreateWeakLambda(this,[]()
+            {
+                FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeP8Guidance.png"),true,false);
+            }),2.5f,false);
         }
         GetWorldTimerManager().SetTimer(ShotHandle,FTimerDelegate::CreateWeakLambda(this,[this,Rider,bVerticalSliceSmoke]()
         {

@@ -17,6 +17,7 @@
 - 套中后目标会向外挣扎；空格稳绳并维持 20%–85% 张力约 3 秒可进入 Subdued，持续过载或绳距过长会断绳。
 - Subdued 后按 C 完成捕获；目标从活动马群移入捕获登记，HUD 显示活动数、捕获数和 CAPTURE COMPLETE。
 - 一轮任务要求在 120 秒内捕获 1 匹野马；HUD 持续显示进度、倒计时和积分，完成或超时后冻结结果并支持 F2 重玩。
+- 默认试玩使用精简 HUD，开局说明本轮目标，并按实时状态提示选马、切出、投索、稳绳和捕获；F1 保留完整开发遥测。
 
 # Build Result
 
@@ -32,7 +33,7 @@ P8 的 `Steppe.P8.TimedMissionRules` 覆盖倒计时、捕获目标、成功/失
 
 实际渲染冒烟完成 H1 捕获，记录为任务 Success、1/1 captured、4 active、剩余 114.8 秒、积分 2150；成功结算层和任务 HUD 均正常显示。
 
-证据：`Validation/P8-Results.json`、`P8-Playground.png`、`P8-Runs.txt`。原始日志为 `Saved/Logs/P8-Automation.log` 与 `P8-FinalRender.log`。
+证据：`Validation/P8.1-Results.json`、`P8.1-Guidance.png`、`P8.1-Result.png`、`P8.1-Runs.txt`。原始日志为 `Saved/Logs/P8_1-Automation.log` 与 `P8_1-FinalRender.log`。
 
 # Manual Steps
 
@@ -64,3 +65,4 @@ P8 的 `Steppe.P8.TimedMissionRules` 覆盖倒计时、捕获目标、成功/失
 - 2026-09-12 P6：完成套中后的挣扎、张力计算、空格稳绳、控制进度、Subdued 与过载断绳；10 项自动测试及实际渲染冒烟通过。
 - 2026-09-12 P7：完成 C 捕获确认、Captured 状态、活动马群移除、捕获登记与 HUD 结果；11 项自动测试及实际渲染冒烟通过。
 - 2026-09-13 P8：完成 120 秒捕获任务、进度/计分 HUD、成功/失败结算和 F2 重玩；12 项自动测试及完整捕获渲染冒烟通过。
+- 2026-09-13 P8.1：增加开局目标、实时阶段引导和精简默认 HUD；12 项回归测试及过程/结算双截图验证通过。

@@ -57,7 +57,44 @@ void ASteppeHUD::DrawHUD()
         const float MissionY=Canvas->ClipY-42.f;
         DrawRect(FLinearColor(0,0,0,.72f),18,MissionY-6,590,32);
         DrawText(Mission,FLinearColor(1.f,.88f,.25f),26,MissionY,nullptr,1.05f);
-        if (Mode->Trial.State==ESteppeTrialState::Success || Mode->Trial.State==ESteppeTrialState::Failed)
+        if (Mode->Trial.State==ESteppeTrialState::Running)
+        {
+            FString Objective;
+            if (!Lasso || Lasso->State==ELassoState::Stored)
+            {
+                const auto* Herd=Mode->HerdManager.Get();
+                if (!Herd || !Herd->FocusedHorse) { Objective=TEXT("NEXT  Look toward a wild horse and press Q"); }
+                else if (!Herd->bTargetIsolated)
+                {
+                    Objective=FString::Printf(TEXT("NEXT  Drive the target away from the herd  %.0f%%"),Herd->IsolationProgress*100.f);
+                }
+                else { Objective=TEXT("NEXT  Hold RMB to ready the lasso"); }
+            }
+            else
+            {
+                switch (Lasso->State)
+                {
+                case ELassoState::Aiming: Objective=TEXT("NEXT  LMB to throw  |  release RMB to cancel"); break;
+                case ELassoState::Thrown: Objective=TEXT("LOOP IN FLIGHT  Keep the target in line"); break;
+                case ELassoState::Attached: Objective=TEXT("NEXT  Hold Space and keep tension in the green zone"); break;
+                case ELassoState::Subdued: Objective=TEXT("NEXT  Press C to secure the horse"); break;
+                case ELassoState::Recovering: Objective=TEXT("LASSO RECOVERING  Prepare another throw"); break;
+                case ELassoState::Captured: Objective=TEXT("HORSE SECURED"); break;
+                default: break;
+                }
+            }
+            DrawRect(FLinearColor(0,0,0,.68f),18,MissionY-42,590,30);
+            DrawText(Objective,FLinearColor(.55f,1.f,1.f),26,MissionY-36,nullptr,1.f);
+
+            if (Mode->Trial.ElapsedSeconds<4.f)
+            {
+                const float Opacity=FMath::Clamp(4.f-Mode->Trial.ElapsedSeconds,0.f,1.f);
+                DrawRect(FLinearColor(0,0,0,.78f*Opacity),Canvas->ClipX*.5f-270,130,540,92);
+                DrawText(TEXT("ROUND START"),FLinearColor(1.f,.88f,.25f,Opacity),Canvas->ClipX*.5f-105,146,nullptr,1.65f);
+                DrawText(TEXT("Capture one wild horse before time expires"),FLinearColor(1,1,1,Opacity),Canvas->ClipX*.5f-205,188,nullptr,1.05f);
+            }
+        }
+        else
         {
             const bool bSuccess=Mode->Trial.State==ESteppeTrialState::Success;
             DrawRect(FLinearColor(0,0,0,.78f),Canvas->ClipX*.5f-245,Canvas->ClipY*.5f-52,490,104);

@@ -15,7 +15,7 @@ public:
     virtual void Tick(float DeltaSeconds) override;
     virtual void HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer) override;
     UPROPERTY(EditDefaultsOnly, Category="Playground") bool bStartMounted = true;
-    UPROPERTY(EditDefaultsOnly, Category="Playground") bool bDebugEnabled = true;
+    UPROPERTY(EditDefaultsOnly, Category="Playground") bool bDebugEnabled = false;
     UPROPERTY(EditDefaultsOnly, Category="Playground") bool bInfiniteStamina = false;
     UPROPERTY(EditDefaultsOnly, Category="Playground") FTransform HorseSpawnTransform = FTransform(FVector(200,0,110));
     UPROPERTY(EditDefaultsOnly, Category="Playground") TSubclassOf<ASteppeHorseCharacter> HorseClass;

@@ -8,10 +8,10 @@
 - P5_LASSO.md：P5 套索瞄准、投掷、命中与失败回收。
 - P6_ROPE_FIGHT.md：P6 套中后的张力管理、稳绳与控马完成。
 - P7_CAPTURE.md：P7 捕获确认、马群移除、计数与结果状态。
-- P8_VERTICAL_SLICE.md：P8 限时任务、成功/失败结算、积分与整轮重试。
+- P8_VERTICAL_SLICE.md：P8/P8.1 限时任务、阶段引导、成功/失败结算、积分与整轮重试。
 - ARCHITECTURE.md：意图分层、组件职责、Tick 顺序。
 - EDITOR_SETUP.md：资产路径、按键和人工 Editor 步骤。
 - DEVELOPMENT_STATUS.md：当前状态与最新验证。
 - Validation/：实际运行截图与精简结果。
 
-当前使用本机 UE 5.8.2。已实现 P8 限时捕获垂直切片；不包含持久存档、奖励经济或网络。
+当前使用本机 UE 5.8.2。已实现 P8.1 限时捕获垂直切片与阶段引导；不包含持久存档、奖励经济或网络。
