@@ -19,7 +19,7 @@
 void ASteppeHUD::DrawHUD()
 {
     Super::DrawHUD();
-    DrawText(TEXT("STEPPE | W/S urge/slow  A/D reins  Mouse look  Shift sprint  Ctrl brake  E mount  Q target  RMB aim  LMB throw/release  Space brace  C capture  F1/F2"),FLinearColor::White,24,20,nullptr,.85f);
+    DrawText(TEXT("STEPPE | W/S urge/slow  A/D reins  Mouse look  Shift sprint  Ctrl brake  E mount  Q target  RMB swing  LMB throw/release  Space brace  C capture  F1/F2"),FLinearColor::White,24,20,nullptr,.85f);
     auto* Rider=PlayerOwner?Cast<ASteppeRiderCharacter>(PlayerOwner->GetPawn()):nullptr;
     auto* Lasso=Rider?Rider->Lasso.Get():nullptr;
     if (Lasso)
@@ -30,6 +30,16 @@ void ASteppeHUD::DrawHUD()
         const float LassoX=FMath::Max(18.f,Canvas->ClipX-570.f);
         DrawRect(FLinearColor(0,0,0,.6f),LassoX-6,44,558,25);
         DrawText(LassoText,LassoColor,LassoX,48,nullptr,.95f);
+        if (Lasso->State==ELassoState::Aiming)
+        {
+            const bool bStable=Lasso->SwingStability>=.8f;
+            const FLinearColor SwingColor=bStable?FLinearColor(.3f,1.f,.3f):FLinearColor(1.f,.75f,.15f);
+            DrawRect(FLinearColor(0,0,0,.6f),LassoX-6,73,558,43);
+            DrawText(FString::Printf(TEXT("SWING %.0f%% | OPEN %.0f%% %s"),Lasso->SwingPhase*100.f,Lasso->SwingStability*100.f,
+                bStable?TEXT("THROW"):TEXT("WAIT")),SwingColor,LassoX,78,nullptr,1.f);
+            DrawRect(FLinearColor(.12f,.12f,.12f,1),LassoX,99,520,8);
+            DrawRect(SwingColor,LassoX,99,520*Lasso->SwingStability,8);
+        }
         if (Lasso->State==ELassoState::Attached || Lasso->State==ELassoState::Subdued || Lasso->State==ELassoState::Captured)
         {
             const bool bCaptureComplete=Lasso->State==ELassoState::Captured;
@@ -37,19 +47,24 @@ void ASteppeHUD::DrawHUD()
             const FLinearColor TensionColor=bGreen?FLinearColor(.3f,1.f,.3f):FLinearColor(1.f,.3f,.15f);
             DrawRect(FLinearColor(0,0,0,.6f),LassoX-6,73,558,43);
             const FString FightText=bCaptureComplete?TEXT("CAPTURE COMPLETE | LMB stow lasso"):
-                FString::Printf(TEXT("TENSION %.0f%% %s | CONTROL %.0f%%"),Lasso->Tension*100.f,
+                FString::Printf(TEXT("%s | TENSION %.0f%% %s | CONTROL %.0f%%"),
+                    *UEnum::GetDisplayValueAsText(Lasso->HitZone).ToString().ToUpper(),Lasso->Tension*100.f,
                     bGreen?TEXT("STEADY"):TEXT("ADJUST"),Lasso->ControlProgress*100.f);
             DrawText(FightText,TensionColor,LassoX,78,nullptr,1.f);
             DrawRect(FLinearColor(.12f,.12f,.12f,1),LassoX,99,520,8);
             DrawRect(FLinearColor(.3f,.8f,1.f,1),LassoX,99,520*Lasso->ControlProgress,8);
         }
-        if (Lasso->State==ELassoState::Aiming) { DrawText(TEXT("+"),FLinearColor::White,Canvas->ClipX*.5f-5,Canvas->ClipY*.5f-12,nullptr,1.5f); }
+        if (Lasso->State==ELassoState::Aiming)
+        {
+            const FLinearColor ReticleColor=Lasso->SwingStability>=.8f?FLinearColor(.3f,1.f,.3f):FLinearColor::White;
+            DrawText(TEXT("+"),ReticleColor,Canvas->ClipX*.5f-5,Canvas->ClipY*.5f-12,nullptr,1.5f);
+        }
         if (Lasso->State==ELassoState::Thrown || Lasso->State==ELassoState::Attached || Lasso->State==ELassoState::Subdued || Lasso->State==ELassoState::Captured)
         {
             DrawDebugLine(GetWorld(),Lasso->RopeStart,Lasso->LoopLocation,FColor::Orange,false,0,0,6);
             if (Lasso->State!=ELassoState::Captured)
             {
-                DrawDebugSphere(GetWorld(),Lasso->LoopLocation,Lasso->CaptureRadius,16,FColor::Yellow,false,0,0,4);
+                DrawDebugSphere(GetWorld(),Lasso->LoopLocation,Lasso->EffectiveCaptureRadius,16,FColor::Yellow,false,0,0,4);
             }
         }
     }
@@ -117,7 +132,7 @@ void ASteppeHUD::DrawHUD()
             {
                 switch (Lasso->State)
                 {
-                case ELassoState::Aiming: Objective=TEXT("NEXT  LMB to throw  |  release RMB to cancel"); break;
+                case ELassoState::Aiming: Objective=Lasso->SwingStability>=.8f?TEXT("THROW  Stable loop - press LMB now"):TEXT("WAIT  Build the swing and watch OPEN"); break;
                 case ELassoState::Thrown: Objective=TEXT("LOOP IN FLIGHT  Keep the target in line"); break;
                 case ELassoState::Attached: Objective=TEXT("NEXT  Hold Space and keep tension in the green zone"); break;
                 case ELassoState::Subdued: Objective=TEXT("NEXT  Press C to secure the horse"); break;

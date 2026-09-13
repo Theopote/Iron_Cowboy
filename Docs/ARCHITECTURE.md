@@ -94,3 +94,7 @@ GameMode 持有轻量的 `FSteppeTrialProgress`，在玩家与马群完成生成
 ## P11：可感知马匹原型
 
 `FWildHorseArchetypeProfile` 汇总身份文案、灰盒识别色，以及速度、体力、力量、敏捷、恐惧、挣扎和接近规则倍率。HerdManager 按成员编号确定性选择可编辑 Profile，并在 Actor 完成生成后调用 WildHorse 的幂等应用入口。WildHorse 将最终值分别写入 HorseAttribute、HorseBrain 和 HorseTrust；LassoComponent 查询目标的控制抗性计算实际压制时间。运动、AI、套索和信任组件仍只负责各自规则，HUD 与 Horse Card 读取结果但不参与判定。详见 P11_HORSE_ARCHETYPES_SPEC.md。
+
+## P12 第一增量：摆绳与命中区域
+
+LassoComponent 在 Aiming 内累计时间，并用可编辑周期计算 SwingPhase 与 SwingStability。Throw 锁定 Stability，再得到本次 EffectiveCaptureRadius、EffectiveThrowSpeed 和 EffectiveMaximumRange；连续 Sweep 仍是唯一命中判定，稳定性不修改瞄准方向。命中目标后按 Actor 局部高度记录 Head、Neck 或 Torso，区域倍率进入张力和实际 SubdueSeconds。HUD 只读取稳定性、命中区与既有状态。未来替换为骨骼碰撞体时可改写区域分类，不需要修改绳索对抗接口。详见 P12_LASSO_SKILL_SPEC.md。

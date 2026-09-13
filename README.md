@@ -1,6 +1,6 @@
 # 《套马的汉子》 / Project STEPPE
 
-UE **5.8.2** 的 C++ 骑乘游戏原型。当前已完成 P11：骑手可驱赶具有 Fast、Strong、Nervous 实际行为差异的马群，切出目标、投掷套索、控制张力、下马安抚、牵回营地，并通过 Horse Card 命名完成结算。
+UE **5.8.2** 的 C++ 骑乘游戏原型。当前已完成 P12 第一增量：骑手可驱赶具有 Fast、Strong、Nervous 行为差异的马群，切出目标，在摆绳稳定窗口投掷并选择 Head/Neck/Torso 命中区域，随后控制张力、下马安抚、牵回营地并命名。
 
 ## 打开与试玩
 
@@ -27,8 +27,8 @@ UE **5.8.2** 的 C++ 骑乘游戏原型。当前已完成 P11：骑手可驱赶�
 | 左 Ctrl | 强制动 |
 | E | 上马 / 下马；捕获后完成第一次接触，再按一次 E 建立牵行 |
 | Q | 选择视线前方的野马；再次选择同一匹可取消 |
-| 鼠标右键 | 隔离目标后按住瞄准套索 |
-| 鼠标左键 | 瞄准时投掷；附着后释放 |
+| 鼠标右键 | 隔离目标后按住摆绳；观察 OPEN 稳定窗口 |
+| 鼠标左键 | 摆绳时投掷；附着后释放 |
 | 空格 | 套中后按住稳绳，在有效张力区间累计控制进度 |
 | C | 目标达到 Subdued 后确认捕获 |
 | F1 | 显示 / 隐藏马遥测 |
@@ -45,14 +45,13 @@ UE **5.8.2** 的 C++ 骑乘游戏原型。当前已完成 P11：骑手可驱赶�
 ## 验证
 
 ```powershell
-.\Scripts\RunEditor.ps1 -Tests -ExpectedTests 15 -Commands 'Automation RunTests Steppe' -LogName P11-FinalAutomation
-.\Scripts\RunEditor.ps1 -Game -Render -Smoke -ArchetypeSmoke -Commands '' -LogName P11-ArchetypeRender
-.\Scripts\RunEditor.ps1 -Game -Render -Smoke -FullLoopSmoke -Commands '' -LogName P11-FullLoopRegression
-.\Scripts\RunEditor.ps1 -Game -Render -Smoke -VerticalSliceFailureSmoke -Commands '' -LogName P11-FailureRegression
+.\Scripts\RunEditor.ps1 -Tests -ExpectedTests 16 -Commands 'Automation RunTests Steppe' -LogName P12-FinalAutomation
+.\Scripts\RunEditor.ps1 -Game -Render -Smoke -LassoSkillSmoke -Commands '' -LogName P12-LassoSkillRender
+.\Scripts\RunEditor.ps1 -Game -Render -Smoke -FullLoopSmoke -Commands '' -LogName P12-FullLoopRegression
 ```
 
-第一条运行全部数学和真实 UWorld 集成测试，报告位于 `Saved/Automation/index.json`。第二条同屏验证三类原型与运行时参数；第三条自动走完捕获、接近、牵行、交付和命名；第四条验证紧迫提示与超时失败。这些烟测不用于人工试玩。
+第一条运行全部数学和真实 UWorld 集成测试，报告位于 `Saved/Automation/index.json`。第二条验证摆绳稳定窗口、有效环口/射程和 Neck 命中反馈；第三条自动走完捕获、接近、牵行、交付和命名。这些烟测不用于人工试玩。
 
 当前构建使用 V7 / Unreal5_8 IncludeOrder；因本机共享 PCH 编译停顿，模块禁用 PCH，构建脚本传入 `-NoUBA` 禁用 detouring。没有修改引擎安装。Editor 开启 Live Coding 时应先保存关闭再运行外部构建。
 
-后续开发先阅读 `Docs/GAME_DESIGN_VISION.md`、`Docs/DESIGN_BASELINE.md`、`Docs/PROTOTYPE_GDD.md` 和 `Docs/DEVELOPMENT_ROADMAP.md`。真实结果见 `Docs/DEVELOPMENT_STATUS.md`，工程分层见 `Docs/ARCHITECTURE.md`，P11 规格与验证依据见 `Docs/P11_HORSE_ARCHETYPES_SPEC.md`；下一阶段按路线图进入 P12 套索技巧与失控后果。
+后续开发先阅读 `Docs/GAME_DESIGN_VISION.md`、`Docs/DESIGN_BASELINE.md`、`Docs/PROTOTYPE_GDD.md` 和 `Docs/DEVELOPMENT_ROADMAP.md`。真实结果见 `Docs/DEVELOPMENT_STATUS.md`，工程分层见 `Docs/ARCHITECTURE.md`，P12 规格与验证依据见 `Docs/P12_LASSO_SKILL_SPEC.md`；下一步继续实现 Rider Balance、落马与短距离拖行。

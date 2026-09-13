@@ -359,7 +359,7 @@ bool FLassoLoopTest::RunTest(const FString& Parameters)
     auto* Obstacle=Fixture.Block(FVector(0,800,170),FVector(2,.2f,3));
     TestTrue(TEXT("Lasso can aim before an obstructed throw"),Rider->Lasso->BeginAimForTarget(Wild,true));
     TestTrue(TEXT("Obstructed throw starts"),Rider->Lasso->ThrowFrom(FVector(0,0,170),FVector::RightVector));
-    Fixture.Step(.3f);
+    Fixture.Step(.4f);
     TestEqual(TEXT("World obstacle blocks the lasso"),Rider->Lasso->State,ELassoState::Recovering);
     TestTrue(TEXT("Blocked throw reports its cause"),Rider->Lasso->Feedback.Contains(TEXT("blocked")));
     Fixture.Step(1.f);
@@ -371,6 +371,49 @@ bool FLassoLoopTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Out-of-range miss enters recovery"),Rider->Lasso->State,ELassoState::Recovering);
     Fixture.Step(1.f);
     TestEqual(TEXT("Miss recovery completes"),Rider->Lasso->State,ELassoState::Stored);
+    return true;
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FLassoSkillTest,"Steppe.P12.SwingTimingAndHitZones",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FLassoSkillTest::RunTest(const FString& Parameters)
+{
+    FWildTestWorld Fixture;
+    auto* Rider=Fixture.World->SpawnActor<ASteppeRiderCharacter>(FVector(0,0,100),FRotator::ZeroRotator);
+    auto* Wild=Fixture.World->SpawnActor<ASteppeWildHorseCharacter>(FVector(1000,0,100),FRotator::ZeroRotator);
+    Fixture.Begin();
+    Rider->GetCharacterMovement()->SetComponentTickEnabled(false);
+    Wild->GetCharacterMovement()->SetComponentTickEnabled(false);
+
+    TestTrue(TEXT("Rushed throw can still be attempted"),Rider->Lasso->BeginAimForTarget(Wild,true));
+    TestTrue(TEXT("Rushed throw starts"),Rider->Lasso->ThrowFrom(FVector(0,0,170),FVector::RightVector));
+    const float RushedRadius=Rider->Lasso->EffectiveCaptureRadius;
+    const float RushedRange=Rider->Lasso->EffectiveMaximumRange;
+    TestTrue(TEXT("Rushed throw locks low stability"),Rider->Lasso->LastThrowStability<.3f);
+    Fixture.Step(1.f);
+    Fixture.Step(1.f);
+
+    TestTrue(TEXT("Lasso can prepare a stable swing"),Rider->Lasso->BeginAimForTarget(Wild,true));
+    Fixture.Step(.6f);
+    TestTrue(TEXT("Mid-cycle swing exposes a stable window"),Rider->Lasso->SwingStability>.9f);
+    TestTrue(TEXT("Stable throw starts"),Rider->Lasso->ThrowFrom(FVector(0,0,170),FVector::ForwardVector));
+    TestTrue(TEXT("Stable throw opens a larger loop"),Rider->Lasso->EffectiveCaptureRadius>RushedRadius);
+    TestTrue(TEXT("Stable throw reaches farther"),Rider->Lasso->EffectiveMaximumRange>RushedRange);
+    const float LockedStability=Rider->Lasso->LastThrowStability;
+    Fixture.Step(.5f);
+    TestEqual(TEXT("Stable neck throw attaches"),Rider->Lasso->State,ELassoState::Attached);
+    TestEqual(TEXT("Greybox center-height hit is classified as neck"),Rider->Lasso->HitZone,ELassoHitZone::Neck);
+    TestTrue(TEXT("Throw stability stays locked after release"),FMath::IsNearlyEqual(Rider->Lasso->LastThrowStability,LockedStability));
+
+    TestEqual(TEXT("High local impact is head"),Rider->Lasso->ClassifyHitZone(Wild,Wild->GetActorLocation()+FVector(0,0,90)),ELassoHitZone::Head);
+    TestEqual(TEXT("Middle local impact is neck"),Rider->Lasso->ClassifyHitZone(Wild,Wild->GetActorLocation()+FVector(0,0,60)),ELassoHitZone::Neck);
+    TestEqual(TEXT("Low local impact is torso"),Rider->Lasso->ClassifyHitZone(Wild,Wild->GetActorLocation()),ELassoHitZone::Torso);
+    Rider->Lasso->HitZone=ELassoHitZone::Neck;
+    const float NeckSeconds=Rider->Lasso->GetEffectiveSubdueSeconds(Wild);
+    Rider->Lasso->HitZone=ELassoHitZone::Head;
+    const float HeadSeconds=Rider->Lasso->GetEffectiveSubdueSeconds(Wild);
+    const float HeadTension=Rider->Lasso->GetHitZoneTensionMultiplier();
+    Rider->Lasso->HitZone=ELassoHitZone::Torso;
+    TestTrue(TEXT("Neck controls faster than head and torso"),NeckSeconds<HeadSeconds && NeckSeconds<Rider->Lasso->GetEffectiveSubdueSeconds(Wild));
+    TestTrue(TEXT("Head amplifies tension more than torso"),HeadTension>Rider->Lasso->GetHitZoneTensionMultiplier());
     return true;
 }
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FRopeFightTest,"Steppe.P6.RopeFightTensionAndSubdue",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)

@@ -30,7 +30,11 @@ bool ULassoComponent::BeginAimForTarget(ASteppeWildHorseCharacter* NewTarget, bo
     if (!bIsolated) { Feedback=TEXT("Isolate the target before throwing"); return false; }
     Target=NewTarget;
     State=ELassoState::Aiming;
-    Feedback=TEXT("Aim and press Left Mouse to throw");
+    AimSeconds=0.f;
+    SwingPhase=0.f;
+    SwingStability=0.f;
+    HitZone=ELassoHitZone::None;
+    Feedback=TEXT("Build the swing, then throw in the stable window");
     return true;
 }
 
@@ -40,6 +44,9 @@ void ULassoComponent::CancelAim()
     {
         State=ELassoState::Stored;
         Target.Reset();
+        AimSeconds=0.f;
+        SwingPhase=0.f;
+        SwingStability=0.f;
         Feedback=TEXT("Lasso stored");
     }
 }
@@ -60,12 +67,17 @@ bool ULassoComponent::ThrowFrom(FVector Origin, FVector Direction)
     RopeStart=Origin;
     LoopLocation=Origin;
     ThrowDirection=Direction.GetSafeNormal();
+    LastThrowStability=FMath::Clamp(SwingStability,0.f,1.f);
+    EffectiveCaptureRadius=CaptureRadius*FMath::Lerp(UnstableRadiusMultiplier,1.f,LastThrowStability);
+    EffectiveThrowSpeed=ThrowSpeed*FMath::Lerp(UnstableSpeedMultiplier,1.f,LastThrowStability);
+    EffectiveMaximumRange=MaximumRange*FMath::Lerp(UnstableRangeMultiplier,1.f,LastThrowStability);
     TravelDistance=0.f;
     ControlProgress=0.f;
     Tension=0.f;
     OverTensionSeconds=0.f;
+    HitZone=ELassoHitZone::None;
     State=ELassoState::Thrown;
-    Feedback=TEXT("Lasso in flight");
+    Feedback=FString::Printf(TEXT("Lasso in flight | stability %.0f%%"),LastThrowStability*100.f);
     return true;
 }
 
@@ -76,6 +88,7 @@ void ULassoComponent::StartRecovery(const TCHAR* Message)
     bBracing=false;
     Tension=0.f;
     ControlProgress=0.f;
+    HitZone=ELassoHitZone::None;
     State=ELassoState::Recovering;
     RecoveryRemaining=FMath::Max(.1f,RecoverySeconds);
     Feedback=Message;
@@ -125,12 +138,40 @@ FGameplayTag ULassoComponent::GetStateTag() const
 
 float ULassoComponent::GetEffectiveSubdueSeconds(const ASteppeWildHorseCharacter* Horse) const
 {
-    return FMath::Max(.1f,SubdueSeconds*(Horse?Horse->SubdueResistance:1.f));
+    const float ZoneMultiplier=HitZone==ELassoHitZone::Neck?.85f:(HitZone==ELassoHitZone::Torso?1.25f:(HitZone==ELassoHitZone::Head?1.05f:1.f));
+    return FMath::Max(.1f,SubdueSeconds*(Horse?Horse->SubdueResistance:1.f)*ZoneMultiplier);
+}
+
+ELassoHitZone ULassoComponent::ClassifyHitZone(const ASteppeWildHorseCharacter* Horse, FVector HitLocation) const
+{
+    if (!Horse) { return ELassoHitZone::None; }
+    const float LocalHeight=Horse->GetActorTransform().InverseTransformPosition(HitLocation).Z;
+    return LocalHeight>85.f?ELassoHitZone::Head:(LocalHeight>=35.f?ELassoHitZone::Neck:ELassoHitZone::Torso);
+}
+
+float ULassoComponent::GetHitZoneTensionMultiplier() const
+{
+    return HitZone==ELassoHitZone::Head?1.15f:(HitZone==ELassoHitZone::Torso?.9f:1.f);
+}
+
+void ULassoComponent::UpdateSwing(float Dt)
+{
+    AimSeconds+=FMath::Max(0.f,Dt);
+    SwingPhase=FMath::Fmod(AimSeconds/FMath::Max(.2f,SwingPeriod),1.f);
+    const float Ready=FMath::Clamp(AimSeconds/FMath::Max(.1f,ReadySeconds),0.f,1.f);
+    const float Timing=1.f-FMath::Abs(SwingPhase-.5f)*2.f;
+    SwingStability=Ready*FMath::Lerp(.25f,1.f,FMath::Clamp(Timing,0.f,1.f));
+    Feedback=SwingStability>=.8f?TEXT("Stable window - throw now"):TEXT("Swinging - wait for the loop to open");
 }
 
 void ULassoComponent::TickComponent(float Dt, ELevelTick TickType, FActorComponentTickFunction* TickFunction)
 {
     Super::TickComponent(Dt,TickType,TickFunction);
+    if (State==ELassoState::Aiming)
+    {
+        UpdateSwing(Dt);
+        return;
+    }
     if (State==ELassoState::Thrown || State==ELassoState::Attached || State==ELassoState::Subdued || State==ELassoState::Captured)
     {
         RopeStart=GetOwner()->GetActorLocation()+GetOwner()->GetActorForwardVector()*55.f+GetOwner()->GetActorRightVector()*40.f+FVector(0,0,115);
@@ -156,7 +197,7 @@ void ULassoComponent::TickComponent(float Dt, ELevelTick TickType, FActorCompone
             if (State==ELassoState::Subdued)
             {
                 Horse->Brain->SetLassoConstraint(RopeStart,1.f,true);
-                Feedback=TEXT("SUBDUED - ready for capture in P7 | LMB release");
+                Feedback=FString::Printf(TEXT("%s LOOP | SUBDUED - press C"),*UEnum::GetDisplayValueAsText(HitZone).ToString().ToUpper());
                 return;
             }
             const FVector RopeDirection=(LoopLocation-RopeStart).GetSafeNormal();
@@ -166,7 +207,7 @@ void ULassoComponent::TickComponent(float Dt, ELevelTick TickType, FActorCompone
                 if (Rider->Riding && Rider->Riding->GetHorse()) { AnchorVelocity=Rider->Riding->GetHorse()->GetVelocity(); }
             }
             const float SeparatingSpeed=FVector::DotProduct(Horse->GetVelocity()-AnchorVelocity,RopeDirection);
-            Tension=FMath::Clamp((Distance-RopeLength)/FMath::Max(10.f,TensionRange)+FMath::Max(0.f,SeparatingSpeed)/1200.f,0.f,1.5f);
+            Tension=FMath::Clamp(((Distance-RopeLength)/FMath::Max(10.f,TensionRange)+FMath::Max(0.f,SeparatingSpeed)/1200.f)*GetHitZoneTensionMultiplier(),0.f,1.5f);
             Horse->Brain->SetLassoConstraint(RopeStart,Tension,bBracing);
             const bool bUseful=bBracing && Tension>=UsefulTensionMin && Tension<=UsefulTensionMax;
             ControlProgress=FMath::Clamp(ControlProgress+(bUseful?Dt:-Dt*.6f)/GetEffectiveSubdueSeconds(Horse),0.f,1.f);
@@ -175,9 +216,13 @@ void ULassoComponent::TickComponent(float Dt, ELevelTick TickType, FActorCompone
             else if (ControlProgress>=1.f)
             {
                 State=ELassoState::Subdued;
-                Feedback=TEXT("SUBDUED - ready for capture in P7 | LMB release");
+                Feedback=FString::Printf(TEXT("%s LOOP | SUBDUED - press C"),*UEnum::GetDisplayValueAsText(HitZone).ToString().ToUpper());
             }
-            else { Feedback=bUseful?TEXT("Tension steady - hold Space"):bBracing?TEXT("Adjust distance into the green tension band"):TEXT("Hold Space to brace"); }
+            else
+            {
+                const TCHAR* FightHint=bUseful?TEXT("tension steady"):bBracing?TEXT("adjust into green tension"):TEXT("hold Space to brace");
+                Feedback=FString::Printf(TEXT("%s LOOP | %s"),*UEnum::GetDisplayValueAsText(HitZone).ToString().ToUpper(),FightHint);
+            }
         }
         else { StartRecovery(TEXT("Target lost")); }
         return;
@@ -185,7 +230,7 @@ void ULassoComponent::TickComponent(float Dt, ELevelTick TickType, FActorCompone
     if (State!=ELassoState::Thrown) { return; }
     if (!Target.IsValid()) { StartRecovery(TEXT("Target lost")); return; }
 
-    const float Step=FMath::Min(ThrowSpeed*Dt,MaximumRange-TravelDistance);
+    const float Step=FMath::Min(EffectiveThrowSpeed*Dt,EffectiveMaximumRange-TravelDistance);
     const FVector Previous=LoopLocation;
     const FVector Next=Previous+ThrowDirection*FMath::Max(0.f,Step);
     FCollisionQueryParams Params(SCENE_QUERY_STAT(SteppeLasso),false,GetOwner());
@@ -198,23 +243,24 @@ void ULassoComponent::TickComponent(float Dt, ELevelTick TickType, FActorCompone
     Pawns.AddObjectTypesToQuery(ECC_WorldStatic);
     Pawns.AddObjectTypesToQuery(ECC_WorldDynamic);
     FHitResult Hit;
-    if (GetWorld()->SweepSingleByObjectType(Hit,Previous,Next,FQuat::Identity,Pawns,FCollisionShape::MakeSphere(CaptureRadius),Params))
+    if (GetWorld()->SweepSingleByObjectType(Hit,Previous,Next,FQuat::Identity,Pawns,FCollisionShape::MakeSphere(EffectiveCaptureRadius),Params))
     {
         LoopLocation=Hit.ImpactPoint;
         if (Hit.GetActor()==Target.Get())
         {
             State=ELassoState::Attached;
+            HitZone=ClassifyHitZone(Target.Get(),Hit.ImpactPoint);
             RopeLength=FMath::Max(200.f,FVector::Dist(RopeStart,LoopLocation)-120.f);
-            Tension=120.f/FMath::Max(10.f,TensionRange);
+            Tension=120.f/FMath::Max(10.f,TensionRange)*GetHitZoneTensionMultiplier();
             Target->Brain->SetLassoed(true);
-            Feedback=TEXT("LASSO ATTACHED - Left Mouse to release");
+            Feedback=FString::Printf(TEXT("%s LOOP - Left Mouse to release"),*UEnum::GetDisplayValueAsText(HitZone).ToString().ToUpper());
         }
         else { StartRecovery(TEXT("Lasso blocked - recovering")); }
         return;
     }
     LoopLocation=Next;
     TravelDistance+=Step;
-    if (TravelDistance>=MaximumRange-KINDA_SMALL_NUMBER) { StartRecovery(TEXT("Missed - recovering")); }
+    if (TravelDistance>=EffectiveMaximumRange-KINDA_SMALL_NUMBER) { StartRecovery(TEXT("Missed - recovering")); }
 }
 
 void ULassoComponent::EndPlay(const EEndPlayReason::Type Reason)

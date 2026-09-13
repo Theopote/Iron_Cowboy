@@ -11,6 +11,9 @@ class ASteppeHerdManager;
 UENUM(BlueprintType)
 enum class ELassoState : uint8 { Stored, Aiming, Thrown, Attached, Recovering, Subdued, Captured };
 
+UENUM(BlueprintType)
+enum class ELassoHitZone : uint8 { None, Head, Neck, Torso };
+
 UCLASS(ClassGroup=(Steppe), meta=(BlueprintSpawnableComponent))
 class STEPPE_API ULassoComponent : public UActorComponent
 {
@@ -31,11 +34,18 @@ public:
     bool CaptureWithHerd(ASteppeHerdManager* Herd);
     UFUNCTION(BlueprintPure, Category="Lasso") FGameplayTag GetStateTag() const;
     float GetEffectiveSubdueSeconds(const ASteppeWildHorseCharacter* Horse) const;
+    ELassoHitZone ClassifyHitZone(const ASteppeWildHorseCharacter* Horse, FVector HitLocation) const;
+    float GetHitZoneTensionMultiplier() const;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lasso", meta=(ClampMin="100")) float ThrowSpeed = 3200.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lasso", meta=(ClampMin="100")) float MaximumRange = 2600.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lasso", meta=(ClampMin="1")) float CaptureRadius = 80.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lasso", meta=(ClampMin="0.1")) float RecoverySeconds = .75f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lasso|Swing", meta=(ClampMin="0.1")) float ReadySeconds = .35f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lasso|Swing", meta=(ClampMin="0.2")) float SwingPeriod = 1.2f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lasso|Swing", meta=(ClampMin="0.1", ClampMax="1")) float UnstableRadiusMultiplier = .45f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lasso|Swing", meta=(ClampMin="0.1", ClampMax="1")) float UnstableSpeedMultiplier = .75f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lasso|Swing", meta=(ClampMin="0.1", ClampMax="1")) float UnstableRangeMultiplier = .8f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight", meta=(ClampMin="0.1")) float SubdueSeconds = 3.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight", meta=(ClampMin="10")) float TensionRange = 500.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight", meta=(ClampMin="0", ClampMax="1")) float UsefulTensionMin = .2f;
@@ -45,6 +55,14 @@ public:
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso") FVector RopeStart = FVector::ZeroVector;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso") FVector LoopLocation = FVector::ZeroVector;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso") float TravelDistance = 0.f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso|Swing") float AimSeconds = 0.f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso|Swing") float SwingPhase = 0.f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso|Swing") float SwingStability = 0.f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso|Swing") float LastThrowStability = 0.f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso|Swing") float EffectiveCaptureRadius = 80.f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso|Swing") float EffectiveThrowSpeed = 3200.f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso|Swing") float EffectiveMaximumRange = 2600.f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso|Hit Zone") ELassoHitZone HitZone = ELassoHitZone::None;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso") FString Feedback = TEXT("Select and isolate a target");
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso") TWeakObjectPtr<ASteppeWildHorseCharacter> Target;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Rope Fight") float RopeLength = 0.f;
@@ -56,4 +74,5 @@ private:
     float RecoveryRemaining = 0.f;
     float OverTensionSeconds = 0.f;
     void StartRecovery(const TCHAR* Message);
+    void UpdateSwing(float DeltaSeconds);
 };

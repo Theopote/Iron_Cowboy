@@ -18,6 +18,7 @@ param(
     [switch]$PostCaptureSmoke,
     [switch]$FullLoopSmoke,
     [switch]$ArchetypeSmoke,
+    [switch]$LassoSkillSmoke,
     [ValidateRange(1,10000)][int]$ExpectedTests = 2
 )
 $ErrorActionPreference = 'Stop'
@@ -59,6 +60,10 @@ if ($FullLoopSmoke) {
 if ($ArchetypeSmoke) {
     if (!$Smoke -or !$Game) { throw 'ArchetypeSmoke requires Game and Smoke.' }
     $editorArgs += '-SteppeArchetypeSmoke'
+}
+if ($LassoSkillSmoke) {
+    if (!$Smoke -or !$Game) { throw 'LassoSkillSmoke requires Game and Smoke.' }
+    $editorArgs += '-SteppeLassoSmoke'; $editorArgs += '-SteppeLassoSkillSmoke'
 }
 if ($RetrySmoke) { if (!$Smoke -or !$Game) { throw 'RetrySmoke requires Game and Smoke.' }; $editorArgs += '-SteppeRetrySmoke' }
 if ($Tests) { $editorArgs += '-TestExit=Automation Test Queue Empty'; $editorArgs += "-ReportExportPath=$PSScriptRoot\..\Saved\Automation" }
@@ -179,5 +184,16 @@ if ($ArchetypeSmoke) {
         throw "P11 smoke did not expose all three archetypes; see $logPath"
     }
     Write-Output 'P11 archetype smoke: Fast, Strong and Nervous profiles rendered and logged.'
+}
+if ($LassoSkillSmoke) {
+    $skillLog = Get-Content $logPath -Raw
+    $skillPath = Join-Path $PSScriptRoot '..\Saved\Screenshots\SteppeP12LassoSkill.png'
+    $swingPath = Join-Path $PSScriptRoot '..\Saved\Screenshots\SteppeP12Swing.png'
+    if (!(Test-Path $swingPath) -or (Get-Item $swingPath).LastWriteTime -lt $runStarted) { throw "P12 swing screenshot is missing or stale; see $logPath" }
+    if (!(Test-Path $skillPath) -or (Get-Item $skillPath).LastWriteTime -lt $runStarted) { throw "P12 lasso skill screenshot is missing or stale; see $logPath" }
+    if ($skillLog -notmatch 'STEPPE_P12_SMOKE: Stability=(0\.9[0-9]|1\.00) Zone=ELassoHitZone::Neck Radius=[7-9][0-9]\.[0-9] Range=2[5-6][0-9][0-9]\.[0-9]') {
+        throw "P12 lasso skill smoke did not confirm a stable neck throw; see $logPath"
+    }
+    Write-Output 'P12 lasso skill smoke: stable-window throw attached at the neck with expanded loop and range.'
 }
 Write-Output "Editor exited successfully. Log: $logPath"

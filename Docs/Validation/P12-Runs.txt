@@ -1,0 +1,17 @@
+P12 first increment validation — 2026-09-13 — Unreal Engine 5.8.2
+
+Build:
+  .\Scripts\Build.ps1 -EngineRoot 'C:\Program Files\Epic Games\UE_5.8'
+  Result: SteppeEditor Win64 Development succeeded.
+
+Automation:
+  .\Scripts\RunEditor.ps1 -Tests -ExpectedTests 16 -Commands 'Automation RunTests Steppe' -LogName P12-FinalAutomation
+  Result: 16 passed, 0 failed, 1 existing RiderSeat placeholder warning.
+
+Lasso skill render smoke:
+  .\Scripts\RunEditor.ps1 -Game -Render -Smoke -LassoSkillSmoke -Commands '' -LogName P12-LassoSkillRender
+  Result: stable window rendered; Stability=1.00, Zone=Neck, Radius=80.0 cm, Range=2600.0 cm; persistent NECK feedback rendered after attachment.
+
+Full-loop regression:
+  .\Scripts\RunEditor.ps1 -Game -Render -Smoke -FullLoopSmoke -Commands '' -LogName P12-FullLoopRegression
+  Result: horse followed through Movement, entered camp, showed Horse Card and was named Saran; Trial Success.

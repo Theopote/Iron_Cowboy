@@ -1,6 +1,6 @@
 # Project STEPPE 设计与实现基线
 
-**基线版本：0.5**
+**基线版本：0.6**
 **日期：2026-09-13**  
 **引擎：Unreal Engine 5.8.2**
 
@@ -28,7 +28,7 @@
 | 单匹野马 | 距离、视线和接近速度感知；Roaming/Alert/Yielding/Fleeing/Recovering；局部避障与脱困 | P2 测试与实际烟测 |
 | 小规模马群 | 5 匹完整 Actor；邻居、分离、方向、凝聚、个体反应差异和延迟警报 | P3 测试与实际烟测 |
 | 目标切出 | Q 选择；目标关闭群体方向牵引；距离其余马群中心 18 m 并保持 2 秒 | P4 测试与实际烟测 |
-| 套索 | RMB 瞄准、LMB 投掷；连续球形扫掠；命中、障碍、脱靶、释放和回收 | P5 测试与实际烟测 |
+| 套索 | RMB 摆绳并观察稳定窗口、LMB 投掷；稳定性影响环口/速度/射程；连续球形扫掠；Head/Neck/Torso 命中区；障碍、脱靶、释放和回收 | P5、P12 测试与实际烟测 |
 | 绳索对抗 | 根据距离与相对速度计算张力；空格稳绳；20%–85% 有效区间；过载或超长断绳 | P6 测试与实际烟测 |
 | 捕获 | Subdued 后按 C；目标退出活动马群，进入捕获登记并保留 Captured 状态 | P7 测试与实际烟测 |
 | 任务 | 120 秒内控制、接触、交付并命名 1 匹；阶段提示、倒计时、计分、成功/失败结算与重玩 | P8–P10 测试与双路线烟测 |
@@ -36,7 +36,7 @@
 | 牵回与命名 | E 建立牵行；目标经 Movement 自行跟随；双 Actor 营地交付；Horse Card 输入名字后结算 | P10 测试与完整链路烟测 |
 | 马匹原型 | Fast、Strong、Nervous 确定性分配；属性真实影响运动、恐惧、控绳与安全接近；灰盒颜色和标签辅助识别 | P11 测试与实际渲染烟测 |
 
-当前自动化基线为 **15 passed、0 failed**，其中 1 项有既有 RiderSeat 占位资源回退警告。
+当前自动化基线为 **16 passed、0 failed**，其中 1 项有既有 RiderSeat 占位资源回退警告。
 
 ## 与早期 P0–P8 命名的差异
 
@@ -48,7 +48,7 @@
 | P2 Wild Horse | 感知、威胁、恐惧、逃跑和体力 | 基础行为及三类原型倍率完成；复杂性格与长期体能深度不足 |
 | P3 Herd | 12–20 匹、聚散、对齐、玩家压力 | 5 匹规模完成；尚未达到 12–20 匹体验与性能验证 |
 | P4 Isolation | 选择目标并用路线切出 | 已完成灰盒闭环 |
-| P5 Lasso Throw | Swing、Aim、Throw、Attach、Miss、Retrieve | Aim/Throw/Attach/Miss/Recover 完成；Swing 和部位判定未完成 |
+| P5 Lasso Throw | Swing、Aim、Throw、Attach、Miss、Retrieve | Swing 稳定窗口、Aim/Throw/Attach/Miss/Recover 与三类命中区域完成；正式动画未完成 |
 | P6 Rope Fight | 张力、反抗、断裂、骑手平衡、落马、拖行、野马体力 | 张力、反抗、断裂和控制完成；平衡、落马、拖行和体力消耗未完成 |
 | P7 Capture | Exhaustion、Controlled、Approach、Trust、Lead、Camp Return、Naming | 已完成捕获登记、安全接近、第一次接触、牵回、营地交付与本轮命名 |
 | P8 Vertical Slice | 风、草、尘、呼吸、马蹄/绳索声音、音乐、动画、UI、Horse Card、约 10 分钟体验 | 完成完整灰盒流程、任务 HUD、Horse Card 与成功/失败；正式音画和约 10 分钟节奏未完成 |
@@ -65,7 +65,7 @@
 
 1. 三类原型已经影响 Gameplay，但尚未完成无调试 HUD 的盲测与参数平衡。
 2. 没有 Rider Balance、落马和拖行，绳索对抗的失控故事仍有限。
-3. 套索没有摆绳准备、动态圆环和命中部位差异。
+3. 套索稳定性已有 Gameplay 结果，但仍缺少摆绳动画、动态圆环模型与声音反馈。
 4. 没有正式马模型、动画、马蹄/呼吸/绳索声音、尘土和风反馈。
 5. 当前 120 秒挑战比早期 3–8 分钟/约 10 分钟完整体验短，尚未完成节奏扩展与测试。
 6. 尚未采集 Chase Time、Throw Count、Hit Rate、Rope Break、Retry Desire 等人工试玩数据。
