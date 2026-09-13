@@ -6,6 +6,7 @@
 
 class ASteppeWildHorseCharacter;
 class ASteppeRiderCharacter;
+class ASteppeDeliveryZone;
 
 UCLASS()
 class STEPPE_API ASteppeHerdManager : public AActor
@@ -23,6 +24,8 @@ public:
     UFUNCTION(BlueprintCallable, Category="Herd") void ClearFocusedHorse();
     UFUNCTION(BlueprintCallable, Category="Capture") bool RegisterCapturedHorse(ASteppeWildHorseCharacter* Horse);
     UFUNCTION(BlueprintCallable, Category="Capture") bool HandleFirstContactInteraction(ASteppeRiderCharacter* Rider);
+    UFUNCTION(BlueprintCallable, Category="Capture") bool ConfirmDeliveredHorseName(AActor* HorseActor, const FString& NewName);
+    void SetDeliveryZone(ASteppeDeliveryZone* Zone);
     void EnsureMembersSpawned();
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Herd", meta=(ClampMin="1", ClampMax="12")) int32 HerdSize = 5;
@@ -53,6 +56,11 @@ public:
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Capture") int32 CapturedCount = 0;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Capture") TArray<TObjectPtr<ASteppeWildHorseCharacter>> FirstContactHorses;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Capture") int32 FirstContactCount = 0;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Delivery") TObjectPtr<ASteppeWildHorseCharacter> LeadingHorse;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Delivery") TArray<TObjectPtr<ASteppeWildHorseCharacter>> DeliveredHorses;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Delivery") int32 DeliveredCount = 0;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Delivery") int32 NamedCount = 0;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Delivery") TObjectPtr<ASteppeDeliveryZone> DeliveryZone;
 
 private:
     UPROPERTY() TWeakObjectPtr<AActor> ThreatTarget;

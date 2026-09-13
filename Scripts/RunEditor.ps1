@@ -16,6 +16,7 @@ param(
     [switch]$VerticalSliceSmoke,
     [switch]$VerticalSliceFailureSmoke,
     [switch]$PostCaptureSmoke,
+    [switch]$FullLoopSmoke,
     [ValidateRange(1,10000)][int]$ExpectedTests = 2
 )
 $ErrorActionPreference = 'Stop'
@@ -49,6 +50,10 @@ if ($VerticalSliceFailureSmoke) {
 if ($PostCaptureSmoke) {
     if (!$Smoke -or !$Game) { throw 'PostCaptureSmoke requires Game and Smoke.' }
     $editorArgs += '-SteppeLassoSmoke'; $editorArgs += '-SteppeRopeFightSmoke'; $editorArgs += '-SteppeCaptureSmoke'; $editorArgs += '-SteppePostCaptureSmoke'
+}
+if ($FullLoopSmoke) {
+    if (!$Smoke -or !$Game) { throw 'FullLoopSmoke requires Game and Smoke.' }
+    $editorArgs += '-SteppeLassoSmoke'; $editorArgs += '-SteppeRopeFightSmoke'; $editorArgs += '-SteppeCaptureSmoke'; $editorArgs += '-SteppeFullLoopSmoke'
 }
 if ($RetrySmoke) { if (!$Smoke -or !$Game) { throw 'RetrySmoke requires Game and Smoke.' }; $editorArgs += '-SteppeRetrySmoke' }
 if ($Tests) { $editorArgs += '-TestExit=Automation Test Queue Empty'; $editorArgs += "-ReportExportPath=$PSScriptRoot\..\Saved\Automation" }
@@ -145,9 +150,20 @@ if ($PostCaptureSmoke) {
     if (!(Test-Path $approachPath) -or (Get-Item $approachPath).LastWriteTime -lt $runStarted) {
         throw "Post-capture approach screenshot is missing or stale; see $logPath"
     }
-    if ($sliceLog -notmatch 'STEPPE_P9_SMOKE: PostState=EPostCaptureState::FirstContact FirstContact=1 FirstContacts=1 Mounted=0 Calm=1\.00 Trial=ESteppeTrialState::Success') {
-        throw "Post-capture smoke did not complete calm first contact and mission success; see $logPath"
+    if ($sliceLog -notmatch 'STEPPE_P9_SMOKE: PostState=EPostCaptureState::FirstContact FirstContact=1 FirstContacts=1 Mounted=0 Calm=1\.00 Trial=ESteppeTrialState::Running') {
+        throw "Post-capture smoke did not complete calm first contact while leaving P10 pending; see $logPath"
     }
-    Write-Output 'Post-capture smoke: rider dismounted, completed calm approach and registered first contact.'
+    Write-Output 'Post-capture smoke: rider dismounted, completed calm approach and left the P10 delivery step pending.'
+}
+if ($FullLoopSmoke) {
+    $loopLog = Get-Content $logPath -Raw
+    $leadPath = Join-Path $PSScriptRoot '..\Saved\Screenshots\SteppeP10Lead.png'
+    $cardPath = Join-Path $PSScriptRoot '..\Saved\Screenshots\SteppeP10Card.png'
+    if (!(Test-Path $leadPath) -or (Get-Item $leadPath).LastWriteTime -lt $runStarted) { throw "P10 lead screenshot is missing or stale; see $logPath" }
+    if (!(Test-Path $cardPath) -or (Get-Item $cardPath).LastWriteTime -lt $runStarted) { throw "P10 Horse Card screenshot is missing or stale; see $logPath" }
+    if ($loopLog -notmatch 'STEPPE_P10_SMOKE: PostState=EPostCaptureState::Named Leading=0 Delivered=1 Named=1 HorseName=Saran Travel=[3-9][0-9][0-9]\.[0-9] Trial=ESteppeTrialState::Success') {
+        throw "P10 smoke did not complete natural lead, delivery and naming; see $logPath"
+    }
+    Write-Output 'P10 full loop smoke: horse followed through Movement, entered camp, showed its card and was named.'
 }
 Write-Output "Editor exited successfully. Log: $logPath"

@@ -11,6 +11,7 @@
 #include "Core/SteppeGameplayTags.h"
 #include "Game/SteppeTrialState.h"
 #include "Capture/HorseTrustComponent.h"
+#include "Camp/SteppeDeliveryZone.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "Engine/StaticMeshActor.h"
@@ -455,27 +456,29 @@ bool FVerticalSliceRulesTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Mission starts running"),Trial.State,ESteppeTrialState::Running);
     TestEqual(TEXT("Mission stores its capture goal"),Trial.RequiredCaptures,2);
 
-    Trial.Advance(3.f,1,0);
+    Trial.Advance(3.f,1,0,0,0);
     TestEqual(TEXT("Partial capture keeps mission running"),Trial.State,ESteppeTrialState::Running);
     TestEqual(TEXT("Mission timer advances"),Trial.RemainingSeconds,7.f);
 
-    Trial.Advance(2.f,2,2);
-    TestEqual(TEXT("Required first contacts complete the mission"),Trial.State,ESteppeTrialState::Success);
+    Trial.Advance(2.f,2,2,2,1);
+    TestEqual(TEXT("Delivery without all names keeps mission running"),Trial.State,ESteppeTrialState::Running);
+    Trial.Advance(0.f,2,2,2,2);
+    TestEqual(TEXT("Required names complete the mission"),Trial.State,ESteppeTrialState::Success);
     TestEqual(TEXT("Score combines captures and remaining time"),Trial.Score,2050);
     const float CompletionTime=Trial.RemainingSeconds;
-    Trial.Advance(100.f,2,2);
+    Trial.Advance(100.f,2,2,2,2);
     TestEqual(TEXT("Completed mission freezes its timer"),Trial.RemainingSeconds,CompletionTime);
 
     FSteppeTrialProgress Failed;
     Failed.Start(5.f,1);
-    Failed.Advance(5.1f,0,0);
+    Failed.Advance(5.1f,0,0,0,0);
     TestEqual(TEXT("Expired mission fails without a capture"),Failed.State,ESteppeTrialState::Failed);
     TestEqual(TEXT("Failed mission has no score"),Failed.Score,0);
 
     FSteppeTrialProgress LastMoment;
     LastMoment.Start(1.f,1);
-    LastMoment.Advance(1.f,1,1);
-    TestEqual(TEXT("First contact on the final tick counts as success"),LastMoment.State,ESteppeTrialState::Success);
+    LastMoment.Advance(1.f,1,1,1,1);
+    TestEqual(TEXT("Naming on the final tick counts as success"),LastMoment.State,ESteppeTrialState::Success);
     return true;
 }
 
@@ -518,6 +521,46 @@ bool FPostCaptureApproachTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("First contact grants minimum trust"),Wild->Trust->Trust,Wild->Trust->FirstContactTrust);
     TestEqual(TEXT("Herd records first contact once"),Herd->FirstContactCount,1);
     TestTrue(TEXT("Horse remains captured after contact"),Wild->Brain->bCaptured && Herd->CapturedCount==1);
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FLeadDeliveryNamingTest,"Steppe.P10.LeadDeliveryAndNaming",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FLeadDeliveryNamingTest::RunTest(const FString& Parameters)
+{
+    FWildTestWorld Fixture;
+    auto* Rider=Fixture.World->SpawnActor<ASteppeRiderCharacter>(FVector(0,0,100),FRotator::ZeroRotator);
+    const FTransform HerdTransform(FRotator::ZeroRotator,FVector(800,0,100));
+    auto* Herd=Fixture.World->SpawnActorDeferred<ASteppeHerdManager>(ASteppeHerdManager::StaticClass(),HerdTransform,
+        nullptr,nullptr,ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+    Herd->HerdSize=1;
+    Herd->HorseClass=ASteppeWildHorseCharacter::StaticClass();
+    Herd->SetThreatTarget(Rider);
+    Herd->FinishSpawning(HerdTransform);
+    auto* Zone=Fixture.World->SpawnActor<ASteppeDeliveryZone>(FVector::ZeroVector,FRotator::ZeroRotator);
+    Herd->SetDeliveryZone(Zone);
+    Fixture.Begin();
+    if (!TestEqual(TEXT("P10 fixture has one horse"),Herd->Members.Num(),1)) { return false; }
+    auto* Wild=Herd->Members[0].Get();
+    TestTrue(TEXT("Cannot lead before first contact"),!Wild->Trust->BeginLeading(Rider));
+    TestTrue(TEXT("Horse registers captured"),Herd->RegisterCapturedHorse(Wild));
+    Wild->Brain->SetCaptured(true);
+    Wild->Trust->State=EPostCaptureState::FirstContact;
+    Wild->Trust->bFirstContact=true;
+    TestTrue(TEXT("First-contact interaction starts leading"),Herd->HandleFirstContactInteraction(Rider));
+    TestEqual(TEXT("First-contact horse enters lead state"),Wild->Trust->State,EPostCaptureState::Leading);
+    TestTrue(TEXT("Brain holds active lead target"),Wild->Brain->bLeading);
+
+    Herd->Tick(.2f);
+    TestEqual(TEXT("Horse alone outside camp is not delivered"),Herd->DeliveredCount,0);
+    Wild->SetActorLocation(FVector(100,0,100),false,nullptr,ETeleportType::TeleportPhysics);
+    Herd->Tick(.2f);
+    TestEqual(TEXT("Rider and horse together in camp deliver once"),Herd->DeliveredCount,1);
+    TestEqual(TEXT("Delivery stops lead intent"),Wild->Trust->State,EPostCaptureState::Delivered);
+    TestTrue(TEXT("Empty horse name is rejected"),!Herd->ConfirmDeliveredHorseName(Wild,TEXT("   ")));
+    TestTrue(TEXT("Valid horse name is accepted"),Herd->ConfirmDeliveredHorseName(Wild,TEXT("Saran")));
+    TestEqual(TEXT("Horse stores trimmed name"),Wild->Trust->HorseName,FString(TEXT("Saran")));
+    TestEqual(TEXT("Named result counts once"),Herd->NamedCount,1);
+    TestTrue(TEXT("Second name cannot double count"),!Herd->ConfirmDeliveredHorseName(Wild,TEXT("Other")) && Herd->NamedCount==1);
     return true;
 }
 #endif

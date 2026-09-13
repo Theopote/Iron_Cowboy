@@ -15,6 +15,7 @@
 #include "Lasso/LassoComponent.h"
 #include "Capture/HorseTrustComponent.h"
 #include "Engine/Canvas.h"
+#include "Camp/SteppeDeliveryZone.h"
 void ASteppeHUD::DrawHUD()
 {
     Super::DrawHUD();
@@ -56,14 +57,15 @@ void ASteppeHUD::DrawHUD()
     if (Mode && Mode->bEnableTrial && Mode->Trial.State!=ESteppeTrialState::NotStarted)
     {
         const int32 Seconds=FMath::CeilToInt(Mode->Trial.RemainingSeconds);
-        const FString Mission=FString::Printf(TEXT("MISSION  Secure %d/%d  Contact %d/%d  |  %02d:%02d  |  SCORE %d"),
+        const FString Mission=FString::Printf(TEXT("MISSION  Secure %d/%d  Contact %d/%d  Deliver %d/%d  Name %d/%d  |  %02d:%02d  |  SCORE %d"),
             Mode->Trial.Captured,Mode->Trial.RequiredCaptures,Mode->Trial.FirstContacts,Mode->Trial.RequiredCaptures,
+            Mode->Trial.Delivered,Mode->Trial.RequiredCaptures,Mode->Trial.Named,Mode->Trial.RequiredCaptures,
             Seconds/60,Seconds%60,Mode->Trial.Score);
         const float MissionY=Canvas->ClipY-42.f;
         const bool bUrgent=Mode->Trial.State==ESteppeTrialState::Running && Mode->Trial.RemainingSeconds<=30.f;
         const float Pulse=bUrgent && Mode->Trial.RemainingSeconds<=10.f ? .65f+.35f*FMath::Sin(Mode->Trial.ElapsedSeconds*8.f) : 1.f;
         const FLinearColor MissionColor=bUrgent?FLinearColor(1.f,.2f,.1f,Pulse):FLinearColor(1.f,.88f,.25f);
-        DrawRect(FLinearColor(0,0,0,.72f),18,MissionY-6,590,32);
+        DrawRect(FLinearColor(0,0,0,.72f),18,MissionY-6,760,32);
         DrawText(Mission,MissionColor,26,MissionY,nullptr,1.05f);
         if (Mode->Trial.State==ESteppeTrialState::Running)
         {
@@ -73,12 +75,28 @@ void ASteppeHUD::DrawHUD()
             {
                 for (const TObjectPtr<ASteppeWildHorseCharacter>& Horse : Mode->HerdManager->CapturedHorses)
                 {
-                    if (Horse && Horse->Trust && !Horse->Trust->bFirstContact) { PendingTrust=Horse->Trust; break; }
+                    if (Horse && Horse->Trust && !Horse->Trust->bNamed) { PendingTrust=Horse->Trust; break; }
                 }
             }
             if (PendingTrust)
             {
-                Objective=FString::Printf(TEXT("NEXT  %s  |  CALM %.0f%%"),*PendingTrust->Feedback,PendingTrust->CalmProgress*100.f);
+                if (PendingTrust->State==EPostCaptureState::Leading && Mode->DeliveryZone)
+                {
+                    const float CampDistance=Rider?FVector::Dist2D(Rider->GetActorLocation(),Mode->DeliveryZone->GetActorLocation())/100.f:0.f;
+                    Objective=FString::Printf(TEXT("NEXT  Lead the horse to CAMP / PEN  |  %.1f m"),CampDistance);
+                }
+                else if (PendingTrust->State==EPostCaptureState::FirstContact)
+                {
+                    Objective=TEXT("NEXT  Press E again to take the lead rope");
+                }
+                else if (PendingTrust->State==EPostCaptureState::Delivered)
+                {
+                    Objective=TEXT("NEXT  Name the horse on the Horse Card");
+                }
+                else
+                {
+                    Objective=FString::Printf(TEXT("NEXT  %s  |  CALM %.0f%%"),*PendingTrust->Feedback,PendingTrust->CalmProgress*100.f);
+                }
             }
             else if (!Lasso || Lasso->State==ELassoState::Stored)
             {
@@ -103,7 +121,7 @@ void ASteppeHUD::DrawHUD()
                 default: break;
                 }
             }
-            DrawRect(FLinearColor(0,0,0,.68f),18,MissionY-42,590,30);
+            DrawRect(FLinearColor(0,0,0,.68f),18,MissionY-42,760,30);
             DrawText(Objective,FLinearColor(.55f,1.f,1.f),26,MissionY-36,nullptr,1.f);
 
             if (Mode->Trial.ElapsedSeconds<4.f)
@@ -111,7 +129,7 @@ void ASteppeHUD::DrawHUD()
                 const float Opacity=FMath::Clamp(4.f-Mode->Trial.ElapsedSeconds,0.f,1.f);
                 DrawRect(FLinearColor(0,0,0,.78f*Opacity),Canvas->ClipX*.5f-270,130,540,92);
                 DrawText(TEXT("ROUND START"),FLinearColor(1.f,.88f,.25f,Opacity),Canvas->ClipX*.5f-105,146,nullptr,1.65f);
-                DrawText(TEXT("Capture one wild horse before time expires"),FLinearColor(1,1,1,Opacity),Canvas->ClipX*.5f-205,188,nullptr,1.05f);
+                DrawText(TEXT("Capture, befriend, deliver and name one horse"),FLinearColor(1,1,1,Opacity),Canvas->ClipX*.5f-215,188,nullptr,1.05f);
             }
             if (Mode->Trial.RemainingSeconds<=10.f)
             {
@@ -122,10 +140,19 @@ void ASteppeHUD::DrawHUD()
         {
             const bool bSuccess=Mode->Trial.State==ESteppeTrialState::Success;
             DrawRect(FLinearColor(0,0,0,.78f),Canvas->ClipX*.5f-245,Canvas->ClipY*.5f-52,490,104);
-            DrawText(bSuccess?TEXT("FIRST CONTACT"):TEXT("TIME EXPIRED"),bSuccess?FLinearColor(.25f,1.f,.35f):FLinearColor(1.f,.25f,.15f),
+            DrawText(bSuccess?TEXT("HORSE NAMED"):TEXT("TIME EXPIRED"),bSuccess?FLinearColor(.25f,1.f,.35f):FLinearColor(1.f,.25f,.15f),
                 Canvas->ClipX*.5f-150,Canvas->ClipY*.5f-30,nullptr,1.8f);
             DrawText(FString::Printf(TEXT("Score %d  |  F2 replay"),Mode->Trial.Score),FLinearColor::White,
                 Canvas->ClipX*.5f-105,Canvas->ClipY*.5f+12,nullptr,1.1f);
+        }
+        if (Mode->DeliveryZone && PlayerOwner)
+        {
+            FVector2D CampScreen;
+            const FVector CampLocation=Mode->DeliveryZone->GetActorLocation()+FVector(0,0,240);
+            if (PlayerOwner->ProjectWorldLocationToScreen(CampLocation,CampScreen))
+            {
+                DrawText(TEXT("CAMP / PEN"),FLinearColor(1.f,.75f,.2f),CampScreen.X-45,CampScreen.Y,nullptr,1.1f);
+            }
         }
     }
     auto* Debug=GetWorld()->GetSubsystem<USteppeDebugSubsystem>();

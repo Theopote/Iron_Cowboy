@@ -91,6 +91,12 @@ void UHorseBrainComponent::RequestCapturedRetreat(FVector Direction, float Speed
     CapturedRetreatSpeed=FMath::Max(0.f,Speed);
     CapturedRetreatSeconds=FMath::Max(CapturedRetreatSeconds,FMath::Max(0.f,Duration));
 }
+void UHorseBrainComponent::SetLeadTarget(AActor* Target)
+{
+    LeadTarget=Target==GetOwner()?nullptr:Target;
+    bLeading=LeadTarget.IsValid();
+    LeadDistance=0.f;
+}
 void UHorseBrainComponent::SetHerdGuidance(FVector Center, FVector Velocity, FVector Separation, int32 NeighborCount)
 {
     HerdCenter=Center;
@@ -221,7 +227,32 @@ void UHorseBrainComponent::TickComponent(float Dt, ELevelTick TickType, FActorCo
     {
         FHorseMovementIntent CapturedIntent;
         CapturedRetreatSeconds=FMath::Max(0.f,CapturedRetreatSeconds-Dt);
-        if (CapturedRetreatSeconds>0.f && !CapturedRetreatDirection.IsNearlyZero())
+        if (bLeading && LeadTarget.IsValid())
+        {
+            const AActor* Leader=LeadTarget.Get();
+            const FVector Anchor=Leader->GetActorLocation()-Leader->GetActorForwardVector()*LeadFollowDistance;
+            const FVector ToAnchor=Anchor-Horse->GetActorLocation();
+            LeadDistance=FVector::Dist2D(Horse->GetActorLocation(),Leader->GetActorLocation());
+            if (LeadDistance<=LeadMaxDistance && ToAnchor.Size2D()>LeadMoveThreshold)
+            {
+                const FVector SafeDirection=FindSafeDirection(*Horse,ToAnchor.GetSafeNormal2D());
+                if (!SafeDirection.IsNearlyZero())
+                {
+                    const float HeadingError=FMath::FindDeltaAngleDegrees(Horse->GetActorRotation().Yaw,SafeDirection.Rotation().Yaw);
+                    CapturedIntent.DesiredSpeed=LeadWalkSpeed;
+                    CapturedIntent.DesiredTurn=FMath::Clamp(HeadingError/45.f,-1.f,1.f);
+                    CapturedIntent.RequestedGait=EHorseGait::Walk;
+                    SteeringDirection=SafeDirection;
+                }
+                else { CapturedIntent.BrakeStrength=1.f; }
+            }
+            else
+            {
+                CapturedIntent.BrakeStrength=1.f;
+                SteeringDirection=FVector::ZeroVector;
+            }
+        }
+        else if (CapturedRetreatSeconds>0.f && !CapturedRetreatDirection.IsNearlyZero())
         {
             const float HeadingError=FMath::FindDeltaAngleDegrees(Horse->GetActorRotation().Yaw,CapturedRetreatDirection.Rotation().Yaw);
             CapturedIntent.DesiredSpeed=CapturedRetreatSpeed;

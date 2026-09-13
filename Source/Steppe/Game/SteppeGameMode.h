@@ -6,6 +6,7 @@
 class ASteppeHorseCharacter;
 class ASteppeWildHorseCharacter;
 class ASteppeHerdManager;
+class ASteppeDeliveryZone;
 UCLASS()
 class STEPPE_API ASteppeGameMode : public AGameModeBase
 {
@@ -27,6 +28,9 @@ public:
     UPROPERTY(EditDefaultsOnly, Category="Wild Horse", meta=(ClampMin="1", ClampMax="12")) int32 WildHorseCount = 5;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") TObjectPtr<ASteppeHerdManager> HerdManager;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") TArray<TObjectPtr<ASteppeWildHorseCharacter>> WildHorses;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Camp") FTransform DeliveryZoneTransform = FTransform(FVector(-300,-900,100));
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Camp") TSubclassOf<ASteppeDeliveryZone> DeliveryZoneClass;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Camp") TObjectPtr<ASteppeDeliveryZone> DeliveryZone;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Trial") bool bEnableTrial = true;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Trial", meta=(ClampMin="10")) float TrialDurationSeconds = 120.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Trial", meta=(ClampMin="1")) int32 RequiredCaptures = 1;

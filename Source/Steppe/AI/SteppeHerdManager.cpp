@@ -5,6 +5,8 @@
 #include "Capture/HorseTrustComponent.h"
 #include "Components/SceneComponent.h"
 #include "Engine/World.h"
+#include "Camp/SteppeDeliveryZone.h"
+#include "Player/SteppePlayerController.h"
 
 ASteppeHerdManager::ASteppeHerdManager()
 {
@@ -38,6 +40,7 @@ void ASteppeHerdManager::EnsureMembersSpawned()
         if (Horse)
         {
             Horse->Brain->SetHerdIdentity(Index,HerdSeed);
+            Horse->Trust->InitializeIdentity(Index);
             Horse->FinishSpawning(SpawnTransform);
             Members.Add(Horse);
             Horse->Brain->SetThreatTarget(ThreatTarget.Get());
@@ -112,7 +115,7 @@ bool ASteppeHerdManager::HandleFirstContactInteraction(ASteppeRiderCharacter* Ri
     for (const TObjectPtr<ASteppeWildHorseCharacter>& HorsePtr : CapturedHorses)
     {
         auto* Horse=HorsePtr.Get();
-        if (!IsValid(Horse) || !Horse->Trust || Horse->Trust->bFirstContact) { continue; }
+        if (!IsValid(Horse) || !Horse->Trust || Horse->Trust->bNamed) { continue; }
         const float Distance=FVector::Dist2D(Horse->GetActorLocation(),Rider->GetActorLocation());
         if (Distance<=Horse->Trust->AwarenessRadius && Distance<ClosestDistance)
         {
@@ -121,7 +124,11 @@ bool ASteppeHerdManager::HandleFirstContactInteraction(ASteppeRiderCharacter* Ri
         }
     }
     if (!Closest) { return false; }
-    if (Closest->Trust->TryFirstContact(Rider))
+    if (Closest->Trust->State==EPostCaptureState::FirstContact)
+    {
+        if (Closest->Trust->BeginLeading(Rider)) { LeadingHorse=Closest; }
+    }
+    else if (Closest->Trust->TryFirstContact(Rider))
     {
         FirstContactHorses.AddUnique(Closest);
         FirstContactCount=FirstContactHorses.Num();
@@ -131,11 +138,37 @@ bool ASteppeHerdManager::HandleFirstContactInteraction(ASteppeRiderCharacter* Ri
     return true;
 }
 
+void ASteppeHerdManager::SetDeliveryZone(ASteppeDeliveryZone* Zone) { DeliveryZone=Zone; }
+
+bool ASteppeHerdManager::ConfirmDeliveredHorseName(AActor* HorseActor, const FString& NewName)
+{
+    auto* Horse=Cast<ASteppeWildHorseCharacter>(HorseActor);
+    if (!Horse || !DeliveredHorses.Contains(Horse) || !Horse->Trust || !Horse->Trust->ConfirmName(NewName)) { return false; }
+    NamedCount=0;
+    for (const TObjectPtr<ASteppeWildHorseCharacter>& Delivered : DeliveredHorses)
+    {
+        NamedCount+=Delivered && Delivered->Trust && Delivered->Trust->bNamed;
+    }
+    return true;
+}
+
 void ASteppeHerdManager::Tick(float Dt)
 {
     Super::Tick(Dt);
     Members.RemoveAll([](const TObjectPtr<ASteppeWildHorseCharacter>& Horse) { return !IsValid(Horse); });
     if (FocusedHorse && !Members.Contains(FocusedHorse)) { ClearFocusedHorse(); }
+    if (LeadingHorse && LeadingHorse->Trust && DeliveryZone)
+    {
+        auto* Rider=Cast<ASteppeRiderCharacter>(ThreatTarget.Get());
+        if (Rider && DeliveryZone->ContainsActor(Rider) && DeliveryZone->ContainsActor(LeadingHorse)
+            && LeadingHorse->Trust->MarkDelivered(Rider))
+        {
+            DeliveredHorses.AddUnique(LeadingHorse);
+            DeliveredCount=DeliveredHorses.Num();
+            if (auto* PC=Cast<ASteppePlayerController>(Rider->GetController())) { PC->ShowHorseNaming(LeadingHorse->Trust); }
+            LeadingHorse=nullptr;
+        }
+    }
     if (Members.IsEmpty()) { HerdCenter=FVector::ZeroVector; AverageVelocity=FVector::ZeroVector; return; }
 
     HerdCenter=FVector::ZeroVector;
@@ -235,6 +268,11 @@ void ASteppeHerdManager::EndPlay(const EEndPlayReason::Type Reason)
     CapturedHorses.Reset();
     FirstContactHorses.Reset();
     FirstContactCount=0;
+    LeadingHorse=nullptr;
+    DeliveredHorses.Reset();
+    DeliveredCount=0;
+    NamedCount=0;
+    DeliveryZone=nullptr;
     AlarmTravelSeconds.Reset();
     Super::EndPlay(Reason);
 }

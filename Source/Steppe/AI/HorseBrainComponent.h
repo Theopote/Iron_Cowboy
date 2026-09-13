@@ -24,6 +24,7 @@ public:
     void SetLassoConstraint(FVector Anchor, float Tension, bool bBraced);
     UFUNCTION(BlueprintCallable, Category="Wild Horse") void SetCaptured(bool bNewCaptured);
     void RequestCapturedRetreat(FVector Direction, float Speed, float Duration);
+    void SetLeadTarget(AActor* Target);
     void SetHerdGuidance(FVector Center, FVector Velocity, FVector Separation, int32 NeighborCount);
     void SetHerdIdentity(int32 MemberIndex, int32 HerdSeed);
     UFUNCTION(BlueprintPure, Category="Wild Horse") FGameplayTag GetBehaviorTag() const;
@@ -51,6 +52,12 @@ public:
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") bool bLassoed = false;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") float LassoTension = 0.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") bool bCaptured = false;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lead") bool bLeading = false;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lead") float LeadDistance = 0.f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lead", meta=(ClampMin="50")) float LeadFollowDistance = 280.f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lead", meta=(ClampMin="50")) float LeadMoveThreshold = 380.f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lead", meta=(ClampMin="50")) float LeadMaxDistance = 1800.f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lead", meta=(ClampMin="10")) float LeadWalkSpeed = 300.f;
     const UWildHorseConfig& GetConfig() const;
 private:
     void Sense(float Dt, const ASteppeHorseCharacter& Horse);
@@ -78,4 +85,5 @@ private:
     FVector CapturedRetreatDirection = FVector::ZeroVector;
     float CapturedRetreatSpeed = 0.f;
     float CapturedRetreatSeconds = 0.f;
+    UPROPERTY() TWeakObjectPtr<AActor> LeadTarget;
 };

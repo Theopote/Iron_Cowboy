@@ -21,13 +21,31 @@ void UHorseTrustComponent::BeginSecured(ASteppeRiderCharacter* Rider)
     CalmProgress=0.f;
     Trust=0.f;
     bFirstContact=false;
+    bLeading=false;
+    bDelivered=false;
+    bNamed=false;
+    HorseName.Reset();
     RejectionRemaining=0.f;
     Feedback=TEXT("Slow down and dismount");
 }
 
+void UHorseTrustComponent::InitializeIdentity(int32 MemberIndex)
+{
+    static const TCHAR* Sexes[]={TEXT("Mare"),TEXT("Stallion"),TEXT("Gelding")};
+    static const TCHAR* Coats[]={TEXT("Bay"),TEXT("Chestnut"),TEXT("Dun"),TEXT("Grey"),TEXT("Black")};
+    static const TCHAR* Temperaments[]={TEXT("Steady"),TEXT("Watchful"),TEXT("Bold"),TEXT("Gentle"),TEXT("Restless")};
+    const int32 SafeIndex=FMath::Max(0,MemberIndex);
+    HorseId=FString::Printf(TEXT("H%d"),SafeIndex+1);
+    Sex=Sexes[SafeIndex%UE_ARRAY_COUNT(Sexes)];
+    Coat=Coats[(SafeIndex*3+1)%UE_ARRAY_COUNT(Coats)];
+    Temperament=Temperaments[(SafeIndex*2+1)%UE_ARRAY_COUNT(Temperaments)];
+    AgeYears=3+(SafeIndex*2)%8;
+}
+
 void UHorseTrustComponent::AdvanceApproach(float Dt, float Distance, float ApproachSpeed, bool bRiderMounted)
 {
-    if (State==EPostCaptureState::Inactive || State==EPostCaptureState::FirstContact || Dt<=0.f) { return; }
+    if (State==EPostCaptureState::Inactive || State==EPostCaptureState::FirstContact || State==EPostCaptureState::Leading
+        || State==EPostCaptureState::Delivered || State==EPostCaptureState::Named || Dt<=0.f) { return; }
     DistanceToRider=FMath::Max(0.f,Distance);
     RiderApproachSpeed=ApproachSpeed;
     if (bRiderMounted)
@@ -102,10 +120,45 @@ bool UHorseTrustComponent::TryFirstContact(ASteppeRiderCharacter* Rider)
     return true;
 }
 
+bool UHorseTrustComponent::BeginLeading(ASteppeRiderCharacter* Rider)
+{
+    if (!Rider || Rider!=Interactor.Get() || Rider->Riding->IsMounted() || State!=EPostCaptureState::FirstContact) { return false; }
+    State=EPostCaptureState::Leading;
+    bLeading=true;
+    LeadStartLocation=GetOwner()->GetActorLocation();
+    Feedback=TEXT("Lead the horse back to CAMP / PEN");
+    if (auto* Horse=Cast<ASteppeWildHorseCharacter>(GetOwner())) { Horse->Brain->SetLeadTarget(Rider); }
+    return true;
+}
+
+bool UHorseTrustComponent::MarkDelivered(ASteppeRiderCharacter* Rider)
+{
+    if (!Rider || Rider!=Interactor.Get() || State!=EPostCaptureState::Leading) { return false; }
+    State=EPostCaptureState::Delivered;
+    bLeading=false;
+    bDelivered=true;
+    Feedback=TEXT("Horse delivered - choose a name");
+    if (auto* Horse=Cast<ASteppeWildHorseCharacter>(GetOwner())) { Horse->Brain->SetLeadTarget(nullptr); }
+    return true;
+}
+
+bool UHorseTrustComponent::ConfirmName(const FString& NewName)
+{
+    if (State!=EPostCaptureState::Delivered || bNamed) { return false; }
+    FString Clean=NewName.TrimStartAndEnd();
+    if (Clean.IsEmpty()) { Feedback=TEXT("Enter a name before confirming"); return false; }
+    HorseName=Clean.Left(16);
+    bNamed=true;
+    State=EPostCaptureState::Named;
+    Feedback=FString::Printf(TEXT("WELCOME, %s"),*HorseName.ToUpper());
+    return true;
+}
+
 void UHorseTrustComponent::TickComponent(float Dt, ELevelTick TickType, FActorComponentTickFunction* TickFunction)
 {
     Super::TickComponent(Dt,TickType,TickFunction);
-    if (State==EPostCaptureState::Inactive || State==EPostCaptureState::FirstContact) { return; }
+    if (State==EPostCaptureState::Inactive || State==EPostCaptureState::FirstContact || State==EPostCaptureState::Leading
+        || State==EPostCaptureState::Delivered || State==EPostCaptureState::Named) { return; }
     auto* Rider=Interactor.Get();
     if (!Rider) { Feedback=TEXT("Rider unavailable"); return; }
     const FVector ToHorse=(GetOwner()->GetActorLocation()-Rider->GetActorLocation()).GetSafeNormal2D();
