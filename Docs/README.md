@@ -6,8 +6,9 @@
 2. `DESIGN_BASELINE.md`：当前事实、早期设想与现状的差异、文档权威顺序。
 3. `PROTOTYPE_GDD.md`：当前规则与下一版 6–10 分钟完整流程。
 4. `DEVELOPMENT_ROADMAP.md`：P9–P14 的执行顺序和退出条件。
-5. `P10_LEAD_DELIVERY_NAMING_SPEC.md`：当前完整闭环的牵行、交付和命名规格。
-6. `DESIGN_DECISIONS.md`：已确认决策、待决事项和变更记录。
+5. `P11_HORSE_ARCHETYPES_SPEC.md`：当前三类野马原型及 Gameplay 接入规格。
+6. `P10_LEAD_DELIVERY_NAMING_SPEC.md`：完整闭环的牵行、交付和命名规格。
+7. `DESIGN_DECISIONS.md`：已确认决策、待决事项和变更记录。
 
 ## 当前开发文档
 
@@ -17,6 +18,7 @@
 - DEVELOPMENT_ROADMAP.md：P9–P14 里程碑与验证门。
 - P9_CAPTURE_AFTERMATH_SPEC.md：已实现的安全接近、拒绝恢复与第一次接触规则。
 - P10_LEAD_DELIVERY_NAMING_SPEC.md：已实现的牵回营地、Horse Card、命名和最终结算规则。
+- P11_HORSE_ARCHETYPES_SPEC.md：已实现的 Fast、Strong、Nervous 原型、参数接入和验证结果。
 - DESIGN_DECISIONS.md：跨系统技术与产品决策。
 - References/：两份早期讨论 PDF 原件及使用说明。
 
@@ -36,4 +38,4 @@
 - DEVELOPMENT_STATUS.md：当前状态与最新验证。
 - Validation/：实际运行截图与精简结果。
 
-当前使用本机 UE 5.8.2。已实现 P10 从营地出发到命名的完整灰盒闭环；下一阶段为 P11 可感知的马匹个体差异。
+当前使用本机 UE 5.8.2。已实现 P11 三类可感知马匹原型和从营地出发到命名的完整灰盒闭环；下一阶段为 P12 套索技巧与失控后果。

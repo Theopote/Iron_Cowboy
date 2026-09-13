@@ -18,7 +18,7 @@ HerdManager 持有可编辑的 Archetype Profile 数组，并按成员编号确�
 - SafeApproachSpeed 与 CalmHold 倍率。
 - 显示名、性格词、毛色和灰盒识别色。
 
-Profile 在 WildHorse 完成生成前应用一次。Gameplay 系统只读取应用后的参数，不依赖资产路径或 HUD 文案。
+Profile 在 WildHorse 完成生成后应用一次，避免 Blueprint 构造覆盖运行时参数和材质。Gameplay 系统只读取应用后的参数，不依赖资产路径或 HUD 文案。
 
 ## 三种原型
 

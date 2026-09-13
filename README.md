@@ -1,6 +1,6 @@
 # 《套马的汉子》 / Project STEPPE
 
-UE **5.8.2** 的 C++ 骑乘游戏原型。当前已完成 P10 灰盒闭环：骑手可驱赶马群、切出目标、投掷套索、控制张力、下马安抚、牵回营地，并通过 Horse Card 命名完成结算。
+UE **5.8.2** 的 C++ 骑乘游戏原型。当前已完成 P11：骑手可驱赶具有 Fast、Strong、Nervous 实际行为差异的马群，切出目标、投掷套索、控制张力、下马安抚、牵回营地，并通过 Horse Card 命名完成结算。
 
 ## 打开与试玩
 
@@ -11,7 +11,7 @@ UE **5.8.2** 的 C++ 骑乘游戏原型。当前已完成 P10 灰盒闭环：骑
 ```
 
 2. 用 UE 5.8.2 打开 `Steppe.uproject`。默认加载 `L_Prototype_Grassland`。
-3. 点击 Play，默认已骑上占位马。前方约 38 m 有五匹浅色野马，可缓慢接近、加速追逐，并用 Q 选择一匹尝试切出。无需下载模型或手工创建输入资产。
+3. 点击 Play，默认已骑上占位马。前方约 38 m 有五匹野马，Fast、Strong、Nervous 会以不同速度、恐惧和控制参数行动；可用 Q 选择一匹尝试切出。无需下载模型或手工创建输入资产。
 
 当前是灰盒原型：方块马身、圆柱骑手、2 km 平地、距离标记、绕桩与坡道；没有最终动画、音效或美术。代码通过与手感满意是不同验收，追逐、控绳和捕获后接近仍需持续人工试玩调参。
 
@@ -45,13 +45,14 @@ UE **5.8.2** 的 C++ 骑乘游戏原型。当前已完成 P10 灰盒闭环：骑
 ## 验证
 
 ```powershell
-.\Scripts\RunEditor.ps1 -Tests -ExpectedTests 14 -Commands 'Automation RunTests Steppe' -LogName P10-FinalAutomation
-.\Scripts\RunEditor.ps1 -Game -Render -Smoke -FullLoopSmoke -Commands '' -LogName P10-FinalRender
-.\Scripts\RunEditor.ps1 -Game -Render -Smoke -VerticalSliceFailureSmoke -Commands '' -LogName P10-FailureRegression
+.\Scripts\RunEditor.ps1 -Tests -ExpectedTests 15 -Commands 'Automation RunTests Steppe' -LogName P11-FinalAutomation
+.\Scripts\RunEditor.ps1 -Game -Render -Smoke -ArchetypeSmoke -Commands '' -LogName P11-ArchetypeRender
+.\Scripts\RunEditor.ps1 -Game -Render -Smoke -FullLoopSmoke -Commands '' -LogName P11-FullLoopRegression
+.\Scripts\RunEditor.ps1 -Game -Render -Smoke -VerticalSliceFailureSmoke -Commands '' -LogName P11-FailureRegression
 ```
 
-第一条运行全部数学和真实 UWorld 集成测试，报告位于 `Saved/Automation/index.json`。第二条启动实际游戏，自动走完捕获、接近、牵行、交付和命名并截图；第三条验证紧迫提示与超时失败。这些烟测不用于人工试玩。
+第一条运行全部数学和真实 UWorld 集成测试，报告位于 `Saved/Automation/index.json`。第二条同屏验证三类原型与运行时参数；第三条自动走完捕获、接近、牵行、交付和命名；第四条验证紧迫提示与超时失败。这些烟测不用于人工试玩。
 
 当前构建使用 V7 / Unreal5_8 IncludeOrder；因本机共享 PCH 编译停顿，模块禁用 PCH，构建脚本传入 `-NoUBA` 禁用 detouring。没有修改引擎安装。Editor 开启 Live Coding 时应先保存关闭再运行外部构建。
 
-后续开发先阅读 `Docs/GAME_DESIGN_VISION.md`、`Docs/DESIGN_BASELINE.md`、`Docs/PROTOTYPE_GDD.md` 和 `Docs/DEVELOPMENT_ROADMAP.md`。真实结果见 `Docs/DEVELOPMENT_STATUS.md`，工程分层见 `Docs/ARCHITECTURE.md`，P10 规格与验证依据见 `Docs/P10_LEAD_DELIVERY_NAMING_SPEC.md`；下一阶段按路线图进入 P11 个体差异。
+后续开发先阅读 `Docs/GAME_DESIGN_VISION.md`、`Docs/DESIGN_BASELINE.md`、`Docs/PROTOTYPE_GDD.md` 和 `Docs/DEVELOPMENT_ROADMAP.md`。真实结果见 `Docs/DEVELOPMENT_STATUS.md`，工程分层见 `Docs/ARCHITECTURE.md`，P11 规格与验证依据见 `Docs/P11_HORSE_ARCHETYPES_SPEC.md`；下一阶段按路线图进入 P12 套索技巧与失控后果。
