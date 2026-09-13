@@ -2,7 +2,7 @@
 
 **状态：第一增量已实现并验证；第二增量待实施**  
 **依赖：P11**  
-**当前范围：摆绳准备、投掷稳定性、Head/Neck/Torso 简化命中区域**
+**当前范围：摆绳准备、投掷稳定性、Head/Neck/Torso 简化命中区域、Rider Balance、落马与短距离拖行**
 
 ## 目标
 
@@ -39,13 +39,33 @@
 5. Neck 命中保持 P5–P11 完整闭环兼容。
 6. 自动化覆盖纯规则与真实 UWorld 投掷；实际渲染烟测显示摆绳与 Neck 命中结果。
 
-## 第二增量预留
+## 第二增量规则
 
-后续在第一增量稳定后加入 Rider Balance、侧向拉力、Stumble/Fall，以及可主动松手的短距离 Dragged。阈值必须确定、失败可恢复，且不由动画决定 Gameplay 结果。
+### Rider Balance
+
+- 独立 RiderBalanceComponent 读取当前套索张力、绳索相对坐骑的侧向比例、坐骑速度、目标 Strength 与命中区域。
+- 低速、顺向或低张力时 Balance 恢复；持续侧向高负荷时先进入 Warning，再达到阈值触发 Fall。
+- Head 放大失衡负荷，Torso 略微降低负荷；所有阈值和速率可编辑。
+- HUD 持续显示 Balance、侧向比例和 SAFE/WARNING/FALL 状态。
+
+### Fall 与 Dragged
+
+- Fall 使用 RidingComponent 的事故脱离入口，一次性解除挂接、恢复 Rider 碰撞并施加确定性侧向/向上速度。
+- 若套索仍附着且目标在最大拖行距离内，Rider 进入最长 1.25 秒的 Dragged；CharacterMovement 按目标方向设置受限速度。
+- LMB 主动松绳立即结束 Dragged 并进入短暂 Recovering；达到最大时长也会自动松绳。
+- Recovering 结束后回到 Stable，可以继续步行和后续玩法；不销毁 Rider、坐骑或目标。
+
+## 第二增量验收
+
+1. 同一张力和速度下，侧向拉力比顺向拉力产生更高 Balance Load。
+2. 更高目标 Strength 和 Head 命中提高风险，Torso 降低风险。
+3. 达到阈值后安全解除 Mounted 关系，Rider 进入 Falling 或 Dragged。
+4. Dragged 有严格最大时间，LMB Release 可提前结束。
+5. 状态恢复后角色仍存在并可移动；完整 P1–P12.1 闭环继续通过。
 
 ## 非目标
 
-本增量不实现物理套索绳、骨骼级精确缠绕、随机风偏、自动锁定、伤害、骑手落马、拖行、投索动画或正式音效。
+P12 不实现物理套索绳、骨骼级精确缠绕、随机风偏、自动锁定、生命值/伤害、布娃娃、长距离拖行、投索/落马正式动画或正式音效。
 
 ## 第一增量实现与验证结果
 

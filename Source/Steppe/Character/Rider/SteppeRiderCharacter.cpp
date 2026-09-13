@@ -18,6 +18,7 @@
 #include "Steppe.h"
 #include "Core/SteppeGameplayTags.h"
 #include "Lasso/LassoComponent.h"
+#include "Character/Rider/RiderBalanceComponent.h"
 #include "Game/SteppeGameMode.h"
 #include "AI/SteppeHerdManager.h"
 ASteppeRiderCharacter::ASteppeRiderCharacter()
@@ -25,6 +26,8 @@ ASteppeRiderCharacter::ASteppeRiderCharacter()
     PrimaryActorTick.bCanEverTick=false;
     Riding=CreateDefaultSubobject<URidingComponent>(TEXT("Riding"));
     Lasso=CreateDefaultSubobject<ULassoComponent>(TEXT("Lasso"));
+    Balance=CreateDefaultSubobject<URiderBalanceComponent>(TEXT("RiderBalance"));
+    Balance->AddTickPrerequisiteComponent(Lasso);
     CameraBoom=CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
     CameraBoom->SetupAttachment(GetRootComponent()); CameraBoom->TargetArmLength=350;
     CameraBoom->bUsePawnControlRotation=true; CameraBoom->bEnableCameraLag=true;
@@ -107,11 +110,18 @@ void ASteppeRiderCharacter::SetupPlayerInputComponent(UInputComponent* Input)
 void ASteppeRiderCharacter::ResetRidingInput() { Intent.Reset(); Riding->SetIntent(Intent); }
 FGameplayTag ASteppeRiderCharacter::GetRiderStateTag() const
 {
+    if (Balance)
+    {
+        if (Balance->State==ERiderBalanceState::Dragged) { return SteppeTags::Rider_State_Dragged; }
+        if (Balance->State==ERiderBalanceState::Recovering) { return SteppeTags::Rider_State_Recovering; }
+        if (Balance->State==ERiderBalanceState::Warning) { return SteppeTags::Rider_State_BalanceWarning; }
+    }
     if (Riding->IsMounted()) { return SteppeTags::Rider_State_Mounted; }
     return GetCharacterMovement()->IsFalling()?SteppeTags::Rider_State_Falling:SteppeTags::Rider_State_OnFoot;
 }
 void ASteppeRiderCharacter::Move(const FInputActionValue& Value)
 {
+    if (Balance && (Balance->State==ERiderBalanceState::Dragged || Balance->State==ERiderBalanceState::Falling)) { return; }
     const FVector2D Axis=Value.Get<FVector2D>(); Intent.Forward=Axis.Y; Intent.Turn=Axis.X; Intent.Clamp(); Riding->SetIntent(Intent);
     if (!Riding->IsMounted() && Controller)
     {

@@ -14,6 +14,7 @@ public:
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
     UFUNCTION(BlueprintCallable) bool TryMount(ASteppeHorseCharacter* Horse);
     UFUNCTION(BlueprintCallable) void Dismount();
+    bool ForceDismount(FVector LaunchVelocity);
     UFUNCTION(BlueprintPure) bool IsMounted() const { return MountedHorse.IsValid(); }
     UFUNCTION(BlueprintPure) ASteppeHorseCharacter* GetHorse() const { return MountedHorse.Get(); }
     void SetIntent(const FRidingIntent& NewIntent) { Intent=NewIntent; Intent.Clamp(); }

@@ -69,6 +69,23 @@ void URidingComponent::Dismount()
     Rider->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
     Rider->ResetRidingInput(); Rider->RefreshInputContext();
 }
+bool URidingComponent::ForceDismount(FVector LaunchVelocity)
+{
+    auto* Horse=MountedHorse.Get(); auto* Rider=Cast<ASteppeRiderCharacter>(GetOwner());
+    if (!Horse || !Rider) { return false; }
+    Horse->OnDestroyed.RemoveDynamic(this,&URidingComponent::OnHorseDestroyed);
+    Horse->GetCharacterMovement()->RemoveTickPrerequisiteComponent(this);
+    CastChecked<UHorseMovementComponent>(Horse->GetCharacterMovement())->ClearIntent();
+    Horse->MountedRider.Reset(); MountedHorse.Reset();
+    const FVector Side=LaunchVelocity.GetSafeNormal2D().IsNearlyZero()?Horse->GetActorRightVector():LaunchVelocity.GetSafeNormal2D();
+    Rider->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+    Rider->SetActorLocation(Horse->GetActorLocation()+Side*DismountOffset+FVector(0,0,120),false,nullptr,ETeleportType::TeleportPhysics);
+    Rider->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    Rider->GetCharacterMovement()->SetMovementMode(MOVE_Falling);
+    Rider->GetCharacterMovement()->Velocity=LaunchVelocity;
+    Rider->ResetRidingInput(); Rider->RefreshInputContext();
+    return true;
+}
 void URidingComponent::OnHorseDestroyed(AActor* Actor)
 {
     MountedHorse.Reset(); Intent.Reset();

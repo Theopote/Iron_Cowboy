@@ -13,6 +13,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Character/Rider/SteppeRiderCharacter.h"
 #include "Lasso/LassoComponent.h"
+#include "Character/Rider/RiderBalanceComponent.h"
 #include "Capture/HorseTrustComponent.h"
 #include "Engine/Canvas.h"
 #include "Camp/SteppeDeliveryZone.h"
@@ -53,6 +54,17 @@ void ASteppeHUD::DrawHUD()
             DrawText(FightText,TensionColor,LassoX,78,nullptr,1.f);
             DrawRect(FLinearColor(.12f,.12f,.12f,1),LassoX,99,520,8);
             DrawRect(FLinearColor(.3f,.8f,1.f,1),LassoX,99,520*Lasso->ControlProgress,8);
+        }
+        if (Rider->Balance && (Lasso->State==ELassoState::Attached || Rider->Balance->State!=ERiderBalanceState::Stable))
+        {
+            const float NormalizedBalance=FMath::Clamp(Rider->Balance->Balance/FMath::Max(.01f,Rider->Balance->FallThreshold),0.f,1.f);
+            const bool bDanger=Rider->Balance->State==ERiderBalanceState::Warning || Rider->Balance->State==ERiderBalanceState::Falling || Rider->Balance->State==ERiderBalanceState::Dragged;
+            const FLinearColor BalanceColor=bDanger?FLinearColor(1.f,.28f,.12f):FLinearColor(.4f,1.f,.55f);
+            DrawRect(FLinearColor(0,0,0,.6f),LassoX-6,121,558,43);
+            DrawText(FString::Printf(TEXT("BALANCE %.0f%% | SIDE %.0f%% | %s"),NormalizedBalance*100.f,Rider->Balance->LateralPull*100.f,
+                *UEnum::GetDisplayValueAsText(Rider->Balance->State).ToString().ToUpper()),BalanceColor,LassoX,126,nullptr,1.f);
+            DrawRect(FLinearColor(.12f,.12f,.12f,1),LassoX,147,520,8);
+            DrawRect(BalanceColor,LassoX,147,520*NormalizedBalance,8);
         }
         if (Lasso->State==ELassoState::Aiming)
         {
@@ -140,6 +152,12 @@ void ASteppeHUD::DrawHUD()
                 case ELassoState::Captured: Objective=TEXT("NEXT  Slow down and press E to dismount"); break;
                 default: break;
                 }
+            }
+            if (Rider && Rider->Balance)
+            {
+                if (Rider->Balance->State==ERiderBalanceState::Dragged) { Objective=TEXT("DRAGGED  Press LMB to release the rope"); }
+                else if (Rider->Balance->State==ERiderBalanceState::Falling) { Objective=TEXT("FALL  Release the rope and recover"); }
+                else if (Rider->Balance->State==ERiderBalanceState::Warning) { Objective=TEXT("BALANCE WARNING  Turn toward the rope or slow down"); }
             }
             DrawRect(FLinearColor(0,0,0,.68f),18,MissionY-42,760,30);
             DrawText(Objective,FLinearColor(.55f,1.f,1.f),26,MissionY-36,nullptr,1.f);

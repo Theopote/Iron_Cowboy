@@ -4,6 +4,7 @@
 #include "Character/Horse/HorseAttributeComponent.h"
 #include "Character/Rider/SteppeRiderCharacter.h"
 #include "Character/Rider/RidingComponent.h"
+#include "Character/Rider/RiderBalanceComponent.h"
 #include "Debug/SteppeHUD.h"
 #include "HAL/IConsoleManager.h"
 #include "Engine/World.h"
@@ -106,6 +107,8 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
         const bool bFullLoopSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeFullLoopSmoke"));
         const bool bArchetypeSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeArchetypeSmoke"));
         const bool bLassoSkillSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeLassoSkillSmoke"));
+        const bool bBalanceSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeBalanceSmoke"));
+        const bool bTimedLassoSmoke=bLassoSkillSmoke || bBalanceSmoke;
         const bool bFullLoopSequence=bVerticalSliceSmoke || bFullLoopSmoke;
         const bool bPostCaptureSequence=bVerticalSliceSmoke || bPostCaptureSmoke || bFullLoopSmoke;
         // Process-local count is restricted to this opt-in standalone smoke run.
@@ -122,7 +125,7 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
                 { CastChecked<ASteppePlayerController>(NewPlayer)->SteppeRestartTrial(); }),3.f,false);
             }
         }
-        FTimerHandle StartHandle,FocusHandle,LassoSetupHandle,LassoAimHandle,LassoThrowHandle,LassoSwingShotHandle,LassoHitShotHandle,BraceHandle,CaptureHandle,DismountHandle,ApproachHandle,ContactHandle,LeadHandle,LeadShotHandle,CardShotHandle,NameHandle,ArchetypeSetupHandle,ArchetypeShotHandle,GuidanceShotHandle,PostCaptureShotHandle,ShotHandle,ExitHandle;
+        FTimerHandle StartHandle,FocusHandle,LassoSetupHandle,LassoAimHandle,LassoThrowHandle,LassoSwingShotHandle,LassoHitShotHandle,BalanceLoadHandle,BalanceShotHandle,BalanceLogHandle,BalanceReleaseHandle,BalanceRecoveryLogHandle,BraceHandle,CaptureHandle,DismountHandle,ApproachHandle,ContactHandle,LeadHandle,LeadShotHandle,CardShotHandle,NameHandle,ArchetypeSetupHandle,ArchetypeShotHandle,GuidanceShotHandle,PostCaptureShotHandle,ShotHandle,ExitHandle;
         if (bArchetypeSmoke && HerdManager)
         {
             GetWorldTimerManager().SetTimer(ArchetypeSetupHandle,FTimerDelegate::CreateWeakLambda(this,[this,Rider,NewPlayer]()
@@ -149,13 +152,14 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
         }
         if (bLassoSmoke && HerdManager && !WildHorses.IsEmpty())
         {
-            GetWorldTimerManager().SetTimer(LassoSetupHandle,FTimerDelegate::CreateWeakLambda(this,[this,Rider,NewPlayer,bLassoSkillSmoke]()
+            GetWorldTimerManager().SetTimer(LassoSetupHandle,FTimerDelegate::CreateWeakLambda(this,[this,Rider,NewPlayer,bTimedLassoSmoke,bBalanceSmoke]()
             {
                 auto* Target=WildHorses.IsEmpty()?nullptr:WildHorses[0].Get();
                 if (!Target) { return; }
-                const FVector Direction=FRotator(0,NewPlayer->GetControlRotation().Yaw,0).Vector();
+                const auto* Mount=Rider->Riding->GetHorse();
+                const FVector Direction=bBalanceSmoke && Mount?Mount->GetActorRightVector():FRotator(0,NewPlayer->GetControlRotation().Yaw,0).Vector();
                 Target->SetActorLocation(Rider->GetActorLocation()+Direction*1200.f,false,nullptr,ETeleportType::TeleportPhysics);
-                if (bLassoSkillSmoke)
+                if (bTimedLassoSmoke)
                 {
                     Target->Brain->SetComponentTickEnabled(false);
                     Target->GetCharacterMovement()->StopMovementImmediately();
@@ -164,21 +168,27 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
                 HerdManager->IsolationHoldSeconds=.1f;
                 HerdManager->SetFocusedHorse(Target);
             }),.7f,false);
-            if (bLassoSkillSmoke)
+            if (bTimedLassoSmoke)
             {
                 GetWorldTimerManager().SetTimer(LassoAimHandle,FTimerDelegate::CreateWeakLambda(Rider,[Rider]()
                 { Rider->Lasso->BeginAim(); }),1.f,false);
-                GetWorldTimerManager().SetTimer(LassoSwingShotHandle,FTimerDelegate::CreateWeakLambda(this,[]()
-                { FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeP12Swing.png"),true,false); }),1.45f,false);
+                if (bLassoSkillSmoke)
+                {
+                    GetWorldTimerManager().SetTimer(LassoSwingShotHandle,FTimerDelegate::CreateWeakLambda(this,[]()
+                    { FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeP12Swing.png"),true,false); }),1.45f,false);
+                }
                 GetWorldTimerManager().SetTimer(LassoThrowHandle,FTimerDelegate::CreateWeakLambda(this,[this,Rider]()
                 {
                     auto* Target=HerdManager?HerdManager->FocusedHorse.Get():nullptr;
-                    if (!Target) { return; }
-                    const FVector Origin=Rider->GetActorLocation()+FVector(0,0,100);
-                    Rider->Lasso->ThrowFrom(Origin,(Target->GetActorLocation()+FVector(0,0,70)-Origin).GetSafeNormal());
+                if (!Target) { return; }
+                const FVector Origin=Rider->GetActorLocation()+FVector(0,0,100);
+                Rider->Lasso->ThrowFrom(Origin,(Target->GetActorLocation()+FVector(0,0,70)-Origin).GetSafeNormal());
                 }),1.6f,false);
-                GetWorldTimerManager().SetTimer(LassoHitShotHandle,FTimerDelegate::CreateWeakLambda(this,[]()
-                { FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeP12LassoSkill.png"),true,false); }),2.2f,false);
+                if (bLassoSkillSmoke)
+                {
+                    GetWorldTimerManager().SetTimer(LassoHitShotHandle,FTimerDelegate::CreateWeakLambda(this,[]()
+                    { FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeP12LassoSkill.png"),true,false); }),2.2f,false);
+                }
             }
             else
             {
@@ -199,6 +209,38 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
             {
                 GetWorldTimerManager().SetTimer(CaptureHandle,FTimerDelegate::CreateWeakLambda(Rider,[Rider]()
                 { Rider->Lasso->Capture(); }),5.2f,false);
+            }
+            if (bBalanceSmoke)
+            {
+                GetWorldTimerManager().SetTimer(BalanceLoadHandle,FTimerDelegate::CreateWeakLambda(this,[this,Rider]()
+                {
+                    auto* Mount=Rider->Riding->GetHorse();
+                    auto* Target=HerdManager?HerdManager->FocusedHorse.Get():nullptr;
+                    if (!Mount || !Target || Rider->Lasso->State!=ELassoState::Attached) { return; }
+                    Rider->Balance->FallThreshold=.18f;
+                    Rider->Balance->WarningThreshold=.08f;
+                    Rider->Balance->BuildThreshold=0.f;
+                    Mount->GetCharacterMovement()->StopMovementImmediately();
+                    Mount->GetCharacterMovement()->SetComponentTickEnabled(false);
+                    Mount->GetCharacterMovement()->Velocity=Mount->GetActorForwardVector()*1200.f;
+                    const FVector Pull=(Target->GetActorLocation()-Mount->GetActorLocation()).GetSafeNormal2D();
+                    Target->SetActorLocation(Target->GetActorLocation()+Pull*300.f,false,nullptr,ETeleportType::TeleportPhysics);
+                }),2.f,false);
+                GetWorldTimerManager().SetTimer(BalanceShotHandle,FTimerDelegate::CreateWeakLambda(this,[]()
+                { FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeP12Dragged.png"),true,false); }),2.7f,false);
+                GetWorldTimerManager().SetTimer(BalanceLogHandle,FTimerDelegate::CreateWeakLambda(this,[Rider]()
+                {
+                    UE_LOG(LogSteppe,Display,TEXT("STEPPE_P12_BALANCE_SMOKE: State=%s Mounted=%d Lasso=%s Balance=%.2f Side=%.2f"),
+                        *UEnum::GetValueAsString(Rider->Balance->State),Rider->Riding->IsMounted(),*UEnum::GetValueAsString(Rider->Lasso->State),
+                        Rider->Balance->Balance/Rider->Balance->FallThreshold,Rider->Balance->LateralPull);
+                }),2.75f,false);
+                GetWorldTimerManager().SetTimer(BalanceReleaseHandle,FTimerDelegate::CreateWeakLambda(Rider,[Rider]()
+                { Rider->Lasso->Release(); }),3.f,false);
+                GetWorldTimerManager().SetTimer(BalanceRecoveryLogHandle,FTimerDelegate::CreateWeakLambda(this,[Rider]()
+                {
+                    UE_LOG(LogSteppe,Display,TEXT("STEPPE_P12_BALANCE_RELEASE: State=%s Lasso=%s"),
+                        *UEnum::GetValueAsString(Rider->Balance->State),*UEnum::GetValueAsString(Rider->Lasso->State));
+                }),3.1f,false);
             }
         }
         if (bPostCaptureSequence)

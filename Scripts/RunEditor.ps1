@@ -19,6 +19,7 @@ param(
     [switch]$FullLoopSmoke,
     [switch]$ArchetypeSmoke,
     [switch]$LassoSkillSmoke,
+    [switch]$BalanceSmoke,
     [ValidateRange(1,10000)][int]$ExpectedTests = 2
 )
 $ErrorActionPreference = 'Stop'
@@ -64,6 +65,10 @@ if ($ArchetypeSmoke) {
 if ($LassoSkillSmoke) {
     if (!$Smoke -or !$Game) { throw 'LassoSkillSmoke requires Game and Smoke.' }
     $editorArgs += '-SteppeLassoSmoke'; $editorArgs += '-SteppeLassoSkillSmoke'
+}
+if ($BalanceSmoke) {
+    if (!$Smoke -or !$Game) { throw 'BalanceSmoke requires Game and Smoke.' }
+    $editorArgs += '-SteppeLassoSmoke'; $editorArgs += '-SteppeBalanceSmoke'
 }
 if ($RetrySmoke) { if (!$Smoke -or !$Game) { throw 'RetrySmoke requires Game and Smoke.' }; $editorArgs += '-SteppeRetrySmoke' }
 if ($Tests) { $editorArgs += '-TestExit=Automation Test Queue Empty'; $editorArgs += "-ReportExportPath=$PSScriptRoot\..\Saved\Automation" }
@@ -195,5 +200,17 @@ if ($LassoSkillSmoke) {
         throw "P12 lasso skill smoke did not confirm a stable neck throw; see $logPath"
     }
     Write-Output 'P12 lasso skill smoke: stable-window throw attached at the neck with expanded loop and range.'
+}
+if ($BalanceSmoke) {
+    $balanceLog = Get-Content $logPath -Raw
+    $dragPath = Join-Path $PSScriptRoot '..\Saved\Screenshots\SteppeP12Dragged.png'
+    if (!(Test-Path $dragPath) -or (Get-Item $dragPath).LastWriteTime -lt $runStarted) { throw "P12 dragged screenshot is missing or stale; see $logPath" }
+    if ($balanceLog -notmatch 'STEPPE_P12_BALANCE_SMOKE: State=ERiderBalanceState::Dragged Mounted=0 Lasso=ELassoState::Attached Balance=1\.00 Side=1\.00') {
+        throw "P12 balance smoke did not force a mounted side-load fall into Dragged; see $logPath"
+    }
+    if ($balanceLog -notmatch 'STEPPE_P12_BALANCE_RELEASE: State=ERiderBalanceState::Recovering Lasso=ELassoState::Recovering') {
+        throw "P12 balance smoke did not recover after active rope release; see $logPath"
+    }
+    Write-Output 'P12 balance smoke: side load forced a fall and short drag; active release started recovery.'
 }
 Write-Output "Editor exited successfully. Log: $logPath"

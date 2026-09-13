@@ -8,6 +8,7 @@
 #include "Character/Horse/HorseAttributeComponent.h"
 #include "Character/Rider/SteppeRiderCharacter.h"
 #include "Character/Rider/RidingComponent.h"
+#include "Character/Rider/RiderBalanceComponent.h"
 #include "Lasso/LassoComponent.h"
 #include "Core/SteppeGameplayTags.h"
 #include "Game/SteppeTrialState.h"
@@ -414,6 +415,66 @@ bool FLassoSkillTest::RunTest(const FString& Parameters)
     Rider->Lasso->HitZone=ELassoHitZone::Torso;
     TestTrue(TEXT("Neck controls faster than head and torso"),NeckSeconds<HeadSeconds && NeckSeconds<Rider->Lasso->GetEffectiveSubdueSeconds(Wild));
     TestTrue(TEXT("Head amplifies tension more than torso"),HeadTension>Rider->Lasso->GetHitZoneTensionMultiplier());
+    return true;
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FRiderBalanceTest,"Steppe.P12.BalanceFallAndDraggedRecovery",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FRiderBalanceTest::RunTest(const FString& Parameters)
+{
+    FWildTestWorld Fixture;
+    auto* Mount=Fixture.World->SpawnActor<ASteppeHorseCharacter>(FVector(0,0,100),FRotator::ZeroRotator);
+    auto* Rider=Fixture.World->SpawnActor<ASteppeRiderCharacter>(FVector(0,180,100),FRotator::ZeroRotator);
+    auto* Wild=Fixture.World->SpawnActor<ASteppeWildHorseCharacter>(FVector(0,1200,100),FRotator::ZeroRotator);
+    Fixture.Begin();
+    Wild->GetCharacterMovement()->SetComponentTickEnabled(false);
+    auto* MountMovement=Mount->GetCharacterMovement();
+    MountMovement->SetComponentTickEnabled(false);
+
+    const float ForwardLoad=Rider->Balance->CalculateLoad(.8f,.1f,1200.f,1.f,ELassoHitZone::Neck);
+    const float SideLoad=Rider->Balance->CalculateLoad(.8f,1.f,1200.f,1.f,ELassoHitZone::Neck);
+    const float StrongHeadLoad=Rider->Balance->CalculateLoad(.8f,1.f,1200.f,1.35f,ELassoHitZone::Head);
+    const float TorsoLoad=Rider->Balance->CalculateLoad(.8f,1.f,1200.f,1.f,ELassoHitZone::Torso);
+    TestTrue(TEXT("Side pull loads balance more than forward pull"),SideLoad>ForwardLoad*5.f);
+    TestTrue(TEXT("Strong head catch is riskier than baseline neck"),StrongHeadLoad>SideLoad);
+    TestTrue(TEXT("Torso catch reduces balance load"),TorsoLoad<SideLoad);
+
+    TestTrue(TEXT("Balance fixture mounts safely"),Rider->Riding->TryMount(Mount));
+    TestTrue(TEXT("Side target can be aimed"),Rider->Lasso->BeginAimForTarget(Wild,true));
+    TestTrue(TEXT("Side target throw starts"),Rider->Lasso->ThrowFrom(FVector(0,0,190),(Wild->GetActorLocation()+FVector(0,0,60)-FVector(0,0,190)).GetSafeNormal()));
+    Fixture.Step(.6f);
+    if (!TestEqual(TEXT("Side target is attached"),Rider->Lasso->State,ELassoState::Attached)) { return false; }
+    Rider->Balance->FallThreshold=.08f;
+    Rider->Balance->WarningThreshold=.04f;
+    Rider->Balance->BuildThreshold=0.f;
+    MountMovement->Velocity=FVector(1200,0,0);
+    Wild->SetActorLocation(Wild->GetActorLocation()+FVector(0,300,0),false,nullptr,ETeleportType::TeleportPhysics);
+    Fixture.Step(.25f);
+    TestFalse(TEXT("Critical side load force-dismounts the rider"),Rider->Riding->IsMounted());
+    TestEqual(TEXT("Nearby attached target starts a short drag"),Rider->Balance->State,ERiderBalanceState::Dragged);
+    TestEqual(TEXT("Dragged state exposes its gameplay tag"),Rider->GetRiderStateTag(),SteppeTags::Rider_State_Dragged.GetTag());
+    Rider->Lasso->Release();
+    Fixture.Step(.05f);
+    TestEqual(TEXT("Active rope release ends dragging"),Rider->Balance->State,ERiderBalanceState::Recovering);
+    Fixture.Step(1.f);
+    TestEqual(TEXT("Fall recovery returns to stable"),Rider->Balance->State,ERiderBalanceState::Stable);
+    TestTrue(TEXT("Rider survives and remains movable"),IsValid(Rider) && Rider->GetCharacterMovement()->MovementMode!=MOVE_None);
+
+    MountMovement->Velocity=FVector::ZeroVector;
+    Rider->SetActorLocation(Mount->GetActorLocation()+FVector(0,180,0),false,nullptr,ETeleportType::TeleportPhysics);
+    Rider->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+    TestTrue(TEXT("Recovered rider can remount"),Rider->Riding->TryMount(Mount));
+    Wild->SetActorLocation(FVector(0,1200,100),false,nullptr,ETeleportType::TeleportPhysics);
+    TestTrue(TEXT("Second side target can be aimed"),Rider->Lasso->BeginAimForTarget(Wild,true));
+    TestTrue(TEXT("Second side throw starts"),Rider->Lasso->ThrowFrom(FVector(0,0,190),(Wild->GetActorLocation()+FVector(0,0,60)-FVector(0,0,190)).GetSafeNormal()));
+    Fixture.Step(.6f);
+    if (!TestEqual(TEXT("Second throw attaches"),Rider->Lasso->State,ELassoState::Attached)) { return false; }
+    Rider->Balance->MaximumDraggedSeconds=.1f;
+    MountMovement->Velocity=FVector(1200,0,0);
+    Wild->SetActorLocation(Wild->GetActorLocation()+FVector(0,300,0),false,nullptr,ETeleportType::TeleportPhysics);
+    Fixture.Step(.18f);
+    if (!TestEqual(TEXT("Second fall begins dragging"),Rider->Balance->State,ERiderBalanceState::Dragged)) { return false; }
+    Fixture.Step(.2f);
+    TestEqual(TEXT("Maximum drag time forces rope recovery"),Rider->Lasso->State,ELassoState::Recovering);
+    TestEqual(TEXT("Maximum drag time starts rider recovery"),Rider->Balance->State,ERiderBalanceState::Recovering);
     return true;
 }
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FRopeFightTest,"Steppe.P6.RopeFightTensionAndSubdue",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
