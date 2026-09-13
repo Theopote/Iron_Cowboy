@@ -146,11 +146,11 @@ void UHorseBrainComponent::Sense(float Dt, const ASteppeHorseCharacter& Horse)
         const float Proximity = 1.f - FMath::Clamp(ThreatDistance / FMath::Max(1.f, C.NoticeDistance), 0.f, 1.f);
         const float Rush = FMath::Clamp(ApproachSpeed / FMath::Max(1.f, C.FastClosingSpeed), 0.f, 2.f);
         const float Ceiling = ApproachSpeed >= C.FastClosingSpeed ? 1.f : FMath::Max(C.AlertThreshold,FMath::Min(.6f,C.FlightThreshold-.05f));
-        const float Next = Awareness + FMath::Max(.01f,C.AwarenessRiseRate) * (.25f + Proximity + Rush) * Dt;
+        const float Next = Awareness + FMath::Max(.01f,C.AwarenessRiseRate)*AwarenessRiseScale * (.25f + Proximity + Rush) * Dt;
         // Reduce existing fright gradually instead of snapping down to the slow cap.
-        Awareness = Awareness > Ceiling ? FMath::Max(Ceiling,Awareness-C.AwarenessDecayRate*Dt) : FMath::Min(Ceiling,Next);
+        Awareness = Awareness > Ceiling ? FMath::Max(Ceiling,Awareness-C.AwarenessDecayRate*AwarenessDecayScale*Dt) : FMath::Min(Ceiling,Next);
     }
-    else { Awareness = FMath::Max(0.f, Awareness - FMath::Max(.01f,C.AwarenessDecayRate) * Dt); }
+    else { Awareness = FMath::Max(0.f, Awareness - FMath::Max(.01f,C.AwarenessDecayRate)*AwarenessDecayScale * Dt); }
     HerdAlarmSeconds=FMath::Max(0.f,HerdAlarmSeconds-Dt);
     if (HerdAlarmSeconds>0.f) { Awareness=FMath::Max(Awareness,HerdAlarmStrength); }
 }
@@ -280,7 +280,7 @@ void UHorseBrainComponent::TickComponent(float Dt, ELevelTick TickType, FActorCo
         {
             const FVector Away=(Horse->GetActorLocation()-LassoAnchor).GetSafeNormal2D();
             const float HeadingError=FMath::FindDeltaAngleDegrees(Horse->GetActorRotation().Yaw,Away.Rotation().Yaw);
-            StruggleIntent.DesiredSpeed=600.f;
+            StruggleIntent.DesiredSpeed=600.f*StruggleSpeedScale;
             StruggleIntent.DesiredTurn=FMath::Clamp(HeadingError/45.f,-1.f,1.f);
             StruggleIntent.RequestedGait=EHorseGait::Canter;
             SteeringDirection=Away;
@@ -334,7 +334,7 @@ void UHorseBrainComponent::TickComponent(float Dt, ELevelTick TickType, FActorCo
         FVector Away = (Horse->GetActorLocation() - LastThreatPosition).GetSafeNormal2D();
         if (Away.IsNearlyZero()) { Away = Horse->GetActorForwardVector(); }
         Goal = Horse->GetActorLocation() + Away * FMath::Max(1.f,C.EscapeLookAhead);
-        Intent.DesiredSpeed = State == EWildHorseState::Yielding ? C.YieldSpeed : C.FlightSpeed;
+        Intent.DesiredSpeed = State == EWildHorseState::Yielding ? C.YieldSpeed : C.FlightSpeed*FlightSpeedScale;
         Intent.RequestedGait = State == EWildHorseState::Yielding ? EHorseGait::Walk : EHorseGait::Gallop;
     }
     else if (State == EWildHorseState::Roaming)

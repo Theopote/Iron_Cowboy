@@ -202,7 +202,8 @@ void ASteppeHUD::DrawHUD()
                     const bool bCaptured=MemberState==EWildHorseState::Captured;
                     const FLinearColor Color=bCaptured?FLinearColor(.2f,1.f,.2f):bTarget?FLinearColor(0,1,1):MemberState==EWildHorseState::Fleeing?FLinearColor(1,.25f,.1f):
                         (MemberState==EWildHorseState::Alert?FLinearColor::Yellow:FLinearColor(.55f,.8f,1.f));
-                    DrawText(FString::Printf(TEXT("%sH%d %s"),bCaptured?TEXT("CAPTURED "):(bTarget?TEXT("TARGET "):TEXT("")),Index+1,*UEnum::GetDisplayValueAsText(MemberState).ToString()),
+                    DrawText(FString::Printf(TEXT("%sH%d [%s] %s"),bCaptured?TEXT("CAPTURED "):(bTarget?TEXT("TARGET "):TEXT("")),Index+1,
+                        *Member->ArchetypeLabel,*UEnum::GetDisplayValueAsText(MemberState).ToString()),
                         Color,LabelPosition.X,LabelPosition.Y,nullptr,.9f);
                 }
             }

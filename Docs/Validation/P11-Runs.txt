@@ -1,0 +1,22 @@
+P11 validation — 2026-09-13 — Unreal Engine 5.8.2
+
+Build:
+  .\Scripts\Build.ps1 -EngineRoot 'C:\Program Files\Epic Games\UE_5.8'
+  Result: SteppeEditor Win64 Development succeeded.
+
+Automation:
+  .\Scripts\RunEditor.ps1 -Tests -ExpectedTests 15 -Commands 'Automation RunTests Steppe' -LogName P11-FinalAutomation
+  Result: 15 passed, 0 failed, 1 existing RiderSeat placeholder warning.
+
+Archetype render smoke:
+  .\Scripts\RunEditor.ps1 -Game -Render -Smoke -ArchetypeSmoke -Commands '' -LogName P11-ArchetypeRender
+  Result: H1 Fast, H2 Strong and H3 Nervous spawned together with distinct debug colors and runtime parameters.
+  Log: H1=Fast Speed=1770 Strength=0.85 Fear=1.00/1.00 Safe=120 Calm=2.50; H2=Strong Speed=1380 Strength=1.35 Fear=0.85/1.15 Safe=132 Calm=2.25; H3=Nervous Speed=1575 Strength=0.90 Fear=1.45/0.70 Safe=90 Calm=3.25.
+
+Full-loop regression:
+  .\Scripts\RunEditor.ps1 -Game -Render -Smoke -FullLoopSmoke -Commands '' -LogName P11-FullLoopRegression
+  Result: Named Saran, delivered=1, named=1, horse travelled 416.2 cm through HorseMovement, Trial Success.
+
+Failure regression:
+  .\Scripts\RunEditor.ps1 -Game -Render -Smoke -VerticalSliceFailureSmoke -Commands '' -LogName P11-FailureRegression
+  Result: urgency warning rendered and uncaptured mission timed out.

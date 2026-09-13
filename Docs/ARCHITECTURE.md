@@ -90,3 +90,7 @@ GameMode 持有轻量的 `FSteppeTrialProgress`，在玩家与马群完成生成
 ## P10：牵回营地与命名
 
 第一次接触后，HorseTrust 进入 Leading，并让 HorseBrain 持有弱引用 LeadTarget。Brain 计算骑手后方锚点、跟随距离和环境安全方向，只向 HorseMovement 提交 Walk/Brake 意图。`ASteppeDeliveryZone` 提供可见围栏和空间判定；HerdManager 要求骑手与牵行目标同时在区域内才进入 Delivered。PlayerController 随后显示原生 UMG `UHorseNamingWidget`，UI 接管键盘焦点并通过 HerdManager 提交名字。Trial 读取 DeliveredCount 与 NamedCount，仅在命名达到目标后成功。详见 P10_LEAD_DELIVERY_NAMING_SPEC.md。
+
+## P11：可感知马匹原型
+
+`FWildHorseArchetypeProfile` 汇总身份文案、灰盒识别色，以及速度、体力、力量、敏捷、恐惧、挣扎和接近规则倍率。HerdManager 按成员编号确定性选择可编辑 Profile，并在 Actor 完成生成后调用 WildHorse 的幂等应用入口。WildHorse 将最终值分别写入 HorseAttribute、HorseBrain 和 HorseTrust；LassoComponent 查询目标的控制抗性计算实际压制时间。运动、AI、套索和信任组件仍只负责各自规则，HUD 与 Horse Card 读取结果但不参与判定。详见 P11_HORSE_ARCHETYPES_SPEC.md。

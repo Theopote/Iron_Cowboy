@@ -14,6 +14,28 @@ ASteppeHerdManager::ASteppeHerdManager()
     PrimaryActorTick.TickInterval = .2f;
     SetRootComponent(CreateDefaultSubobject<USceneComponent>(TEXT("HerdRoot")));
     HorseClass = ASteppeWildHorseCharacter::StaticClass();
+
+    FWildHorseArchetypeProfile Fast;
+    Fast.Archetype=EWildHorseArchetype::Fast; Fast.DisplayName=TEXT("Fast"); Fast.Temperament=TEXT("Keen"); Fast.Coat=TEXT("Golden Dun");
+    Fast.DebugColor=FLinearColor(.72f,.46f,.12f); Fast.MaxSpeedMultiplier=1.18f; Fast.AccelerationMultiplier=1.12f;
+    Fast.StaminaMultiplier=.9f; Fast.StrengthMultiplier=.85f; Fast.AgilityMultiplier=1.15f; Fast.FlightSpeedMultiplier=1.15f;
+    Fast.StruggleMultiplier=1.05f; Fast.SubdueResistanceMultiplier=.85f;
+
+    FWildHorseArchetypeProfile Strong;
+    Strong.Archetype=EWildHorseArchetype::Strong; Strong.DisplayName=TEXT("Strong"); Strong.Temperament=TEXT("Steady"); Strong.Coat=TEXT("Dark Bay");
+    Strong.DebugColor=FLinearColor(.24f,.09f,.035f); Strong.MaxSpeedMultiplier=.92f; Strong.AccelerationMultiplier=.9f;
+    Strong.StaminaMultiplier=1.25f; Strong.StrengthMultiplier=1.35f; Strong.AgilityMultiplier=.85f;
+    Strong.FearRiseMultiplier=.85f; Strong.FearDecayMultiplier=1.15f; Strong.FlightSpeedMultiplier=.9f;
+    Strong.StruggleMultiplier=1.15f; Strong.SubdueResistanceMultiplier=1.35f; Strong.SafeApproachMultiplier=1.1f; Strong.CalmHoldMultiplier=.9f;
+
+    FWildHorseArchetypeProfile Nervous;
+    Nervous.Archetype=EWildHorseArchetype::Nervous; Nervous.DisplayName=TEXT("Nervous"); Nervous.Temperament=TEXT("Watchful"); Nervous.Coat=TEXT("Pale Grey");
+    Nervous.DebugColor=FLinearColor(.62f,.68f,.72f); Nervous.MaxSpeedMultiplier=1.05f; Nervous.AccelerationMultiplier=1.08f;
+    Nervous.StaminaMultiplier=.95f; Nervous.StrengthMultiplier=.9f; Nervous.AgilityMultiplier=1.1f;
+    Nervous.FearRiseMultiplier=1.45f; Nervous.FearDecayMultiplier=.7f; Nervous.FlightSpeedMultiplier=1.08f;
+    Nervous.StruggleMultiplier=1.1f; Nervous.SubdueResistanceMultiplier=1.05f; Nervous.SafeApproachMultiplier=.75f; Nervous.CalmHoldMultiplier=1.3f;
+
+    ArchetypeProfiles={Fast,Strong,Nervous};
 }
 
 void ASteppeHerdManager::BeginPlay()
@@ -40,8 +62,9 @@ void ASteppeHerdManager::EnsureMembersSpawned()
         if (Horse)
         {
             Horse->Brain->SetHerdIdentity(Index,HerdSeed);
-            Horse->Trust->InitializeIdentity(Index);
             Horse->FinishSpawning(SpawnTransform);
+            Horse->Trust->InitializeIdentity(Index);
+            if (!ArchetypeProfiles.IsEmpty()) { Horse->ApplyArchetype(ArchetypeProfiles[Index%ArchetypeProfiles.Num()]); }
             Members.Add(Horse);
             Horse->Brain->SetThreatTarget(ThreatTarget.Get());
         }

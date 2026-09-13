@@ -30,6 +30,7 @@ public:
     UFUNCTION(BlueprintCallable, Category="Capture") bool Capture();
     bool CaptureWithHerd(ASteppeHerdManager* Herd);
     UFUNCTION(BlueprintPure, Category="Lasso") FGameplayTag GetStateTag() const;
+    float GetEffectiveSubdueSeconds(const ASteppeWildHorseCharacter* Horse) const;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lasso", meta=(ClampMin="100")) float ThrowSpeed = 3200.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lasso", meta=(ClampMin="100")) float MaximumRange = 2600.f;

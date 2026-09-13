@@ -23,6 +23,7 @@ public:
     const UHorseLocomotionConfig* GetLocomotionConfig() const;
     UFUNCTION(BlueprintPure, Category="Horse") FGameplayTag GetGaitTag() const;
     UFUNCTION(BlueprintPure, Category="Horse") FGameplayTag GetStateTag() const;
+    UStaticMeshComponent* GetPlaceholderMesh() const { return Placeholder; }
 private:
     UPROPERTY() TObjectPtr<UStaticMeshComponent> Placeholder;
 };

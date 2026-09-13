@@ -79,8 +79,8 @@ void UHorseNamingWidget::RefreshCard()
     const auto* Wild=Cast<ASteppeWildHorseCharacter>(Horse->GetOwner());
     const auto* A=Wild?Wild->Attributes.Get():nullptr;
     CardText->SetText(FText::FromString(FString::Printf(
-        TEXT("%s\n%s | %d years | %s\nTemperament: %s\n\nSpeed      %.0f cm/s\nEndurance  %.0f\nStrength   %.1f\nAgility    %.1f"),
-        *Horse->HorseId,*Horse->Sex,Horse->AgeYears,*Horse->Coat,*Horse->Temperament,
+        TEXT("%s | %s\n%s | %d years | %s\nTemperament: %s\n\nSpeed      %.0f cm/s\nEndurance  %.0f\nStrength   %.2f\nAgility    %.2f"),
+        *Horse->HorseId,Wild?*Wild->ArchetypeLabel:TEXT("Unknown"),*Horse->Sex,Horse->AgeYears,*Horse->Coat,*Horse->Temperament,
         A?A->MaxSpeed:0.f,A?A->MaxStamina:0.f,A?A->Strength:0.f,A?A->Agility:0.f)));
     if (Horse->bNamed && NameInput && StatusText && ConfirmButton)
     {

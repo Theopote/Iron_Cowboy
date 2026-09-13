@@ -104,6 +104,7 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
         const bool bVerticalSliceSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeVerticalSliceSmoke"));
         const bool bPostCaptureSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppePostCaptureSmoke"));
         const bool bFullLoopSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeFullLoopSmoke"));
+        const bool bArchetypeSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeArchetypeSmoke"));
         const bool bFullLoopSequence=bVerticalSliceSmoke || bFullLoopSmoke;
         const bool bPostCaptureSequence=bVerticalSliceSmoke || bPostCaptureSmoke || bFullLoopSmoke;
         // Process-local count is restricted to this opt-in standalone smoke run.
@@ -120,7 +121,26 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
                 { CastChecked<ASteppePlayerController>(NewPlayer)->SteppeRestartTrial(); }),3.f,false);
             }
         }
-        FTimerHandle StartHandle,FocusHandle,LassoSetupHandle,LassoThrowHandle,BraceHandle,CaptureHandle,DismountHandle,ApproachHandle,ContactHandle,LeadHandle,LeadShotHandle,CardShotHandle,NameHandle,GuidanceShotHandle,PostCaptureShotHandle,ShotHandle,ExitHandle;
+        FTimerHandle StartHandle,FocusHandle,LassoSetupHandle,LassoThrowHandle,BraceHandle,CaptureHandle,DismountHandle,ApproachHandle,ContactHandle,LeadHandle,LeadShotHandle,CardShotHandle,NameHandle,ArchetypeSetupHandle,ArchetypeShotHandle,GuidanceShotHandle,PostCaptureShotHandle,ShotHandle,ExitHandle;
+        if (bArchetypeSmoke && HerdManager)
+        {
+            GetWorldTimerManager().SetTimer(ArchetypeSetupHandle,FTimerDelegate::CreateWeakLambda(this,[this,Rider,NewPlayer]()
+            {
+                const FVector Center=(PlaygroundHorse?PlaygroundHorse->GetActorLocation():Rider->GetActorLocation())+FVector(1400,0,0);
+                const FVector Offsets[]={FVector(0,-360,0),FVector(0,0,0),FVector(0,360,0)};
+                for (int32 Index=0; Index<FMath::Min(3,WildHorses.Num()); ++Index)
+                {
+                    WildHorses[Index]->SetActorLocation(Center+Offsets[Index],false,nullptr,ETeleportType::TeleportPhysics);
+                    WildHorses[Index]->SetActorRotation(FRotator(0,180,0));
+                    WildHorses[Index]->Brain->SetComponentTickEnabled(false);
+                    WildHorses[Index]->GetCharacterMovement()->StopMovementImmediately();
+                }
+                NewPlayer->SetControlRotation(FRotator(-8,0,0));
+                if (auto* DebugVar=IConsoleManager::Get().FindConsoleVariable(TEXT("steppe.Debug.Horse"))) { DebugVar->Set(1,ECVF_SetByCode); }
+            }),.25f,false);
+            GetWorldTimerManager().SetTimer(ArchetypeShotHandle,FTimerDelegate::CreateWeakLambda(this,[]()
+            { FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeP11Archetypes.png"),true,false); }),1.2f,false);
+        }
         if (bIsolationSmoke)
         {
             GetWorldTimerManager().SetTimer(FocusHandle,FTimerDelegate::CreateWeakLambda(NewPlayer,[NewPlayer]()
@@ -221,7 +241,7 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
             GetWorldTimerManager().SetTimer(PostCaptureShotHandle,FTimerDelegate::CreateWeakLambda(this,[]()
             { FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeP9Approach.png"),true,false); }),7.f,false);
         }
-        GetWorldTimerManager().SetTimer(ShotHandle,FTimerDelegate::CreateWeakLambda(this,[this,Rider,bVerticalSliceSmoke,bVerticalFailureSmoke,bPostCaptureSmoke,bFullLoopSequence]()
+        GetWorldTimerManager().SetTimer(ShotHandle,FTimerDelegate::CreateWeakLambda(this,[this,Rider,bVerticalSliceSmoke,bVerticalFailureSmoke,bPostCaptureSmoke,bFullLoopSequence,bArchetypeSmoke]()
         {
             UE_LOG(LogSteppe,Display,TEXT("STEPPE_SMOKE: Horse=%s Speed=%.1f Mounted=%d"),*GetNameSafe(PlaygroundHorse),PlaygroundHorse?PlaygroundHorse->GetVelocity().Size2D():0.f,PlaygroundHorse && PlaygroundHorse->MountedRider.IsValid());
             if (WildHorse)
@@ -285,8 +305,20 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
                     Target && Target->Trust?*Target->Trust->HorseName:TEXT(""),Target && Target->Trust?FVector::Dist2D(Target->Trust->LeadStartLocation,Target->GetActorLocation()):0.f,
                     *UEnum::GetValueAsString(Trial.State));
             }
+            if (bArchetypeSmoke && WildHorses.Num()>=3)
+            {
+                FString Summary=TEXT("STEPPE_P11_SMOKE:");
+                for (int32 Index=0; Index<3; ++Index)
+                {
+                    const auto* Horse=WildHorses[Index].Get();
+                    Summary+=FString::Printf(TEXT(" H%d=%s Speed=%.0f Strength=%.2f Fear=%.2f/%.2f Safe=%.0f Calm=%.2f"),Index+1,
+                        *Horse->ArchetypeLabel,Horse->Attributes->MaxSpeed,Horse->Attributes->Strength,Horse->Brain->AwarenessRiseScale,
+                        Horse->Brain->AwarenessDecayScale,Horse->Trust->SafeApproachSpeed,Horse->Trust->CalmHoldSeconds);
+                }
+                UE_LOG(LogSteppe,Display,TEXT("%s"),*Summary);
+            }
             FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeSmoke.png"),true,false);
-        }),bHerdIdleSmoke?3.5f:(bVerticalFailureSmoke?4.f:(bFullLoopSequence?13.f:(bPostCaptureSequence?10.f:7.f))),false);
-        GetWorldTimerManager().SetTimer(ExitHandle,FTimerDelegate::CreateWeakLambda(NewPlayer,[NewPlayer]() { NewPlayer->ConsoleCommand(TEXT("quit")); }),bHerdIdleSmoke?5.5f:(bVerticalFailureSmoke?6.f:(bFullLoopSequence?15.f:(bPostCaptureSequence?12.f:9.f))),false);
+        }),bArchetypeSmoke?1.5f:(bHerdIdleSmoke?3.5f:(bVerticalFailureSmoke?4.f:(bFullLoopSequence?13.f:(bPostCaptureSequence?10.f:7.f)))),false);
+        GetWorldTimerManager().SetTimer(ExitHandle,FTimerDelegate::CreateWeakLambda(NewPlayer,[NewPlayer]() { NewPlayer->ConsoleCommand(TEXT("quit")); }),bArchetypeSmoke?3.f:(bHerdIdleSmoke?5.5f:(bVerticalFailureSmoke?6.f:(bFullLoopSequence?15.f:(bPostCaptureSequence?12.f:9.f)))),false);
     }
 }

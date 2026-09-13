@@ -5,6 +5,7 @@
 #include "AI/SteppeHerdManager.h"
 #include "Character/Horse/SteppeWildHorseCharacter.h"
 #include "Character/Horse/HorseMovementComponent.h"
+#include "Character/Horse/HorseAttributeComponent.h"
 #include "Character/Rider/SteppeRiderCharacter.h"
 #include "Character/Rider/RidingComponent.h"
 #include "Lasso/LassoComponent.h"
@@ -561,6 +562,47 @@ bool FLeadDeliveryNamingTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Horse stores trimmed name"),Wild->Trust->HorseName,FString(TEXT("Saran")));
     TestEqual(TEXT("Named result counts once"),Herd->NamedCount,1);
     TestTrue(TEXT("Second name cannot double count"),!Herd->ConfirmDeliveredHorseName(Wild,TEXT("Other")) && Herd->NamedCount==1);
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FHorseArchetypesTest,"Steppe.P11.ArchetypeGameplayDifferences",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FHorseArchetypesTest::RunTest(const FString& Parameters)
+{
+    FWildTestWorld Fixture;
+    auto* Rider=Fixture.World->SpawnActor<ASteppeRiderCharacter>(FVector::ZeroVector,FRotator::ZeroRotator);
+    const FTransform HerdTransform(FRotator::ZeroRotator,FVector(1800,0,100));
+    auto* Herd=Fixture.World->SpawnActorDeferred<ASteppeHerdManager>(ASteppeHerdManager::StaticClass(),HerdTransform,
+        nullptr,nullptr,ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+    Herd->HerdSize=3;
+    Herd->HorseClass=ASteppeWildHorseCharacter::StaticClass();
+    Herd->SetThreatTarget(Rider);
+    Herd->FinishSpawning(HerdTransform);
+    Fixture.Begin();
+    if (!TestEqual(TEXT("Archetype fixture has three horses"),Herd->Members.Num(),3)) { return false; }
+    auto* Fast=Herd->Members[0].Get();
+    auto* Strong=Herd->Members[1].Get();
+    auto* Nervous=Herd->Members[2].Get();
+    TestEqual(TEXT("First profile is Fast"),Fast->Archetype,EWildHorseArchetype::Fast);
+    TestEqual(TEXT("Second profile is Strong"),Strong->Archetype,EWildHorseArchetype::Strong);
+    TestEqual(TEXT("Third profile is Nervous"),Nervous->Archetype,EWildHorseArchetype::Nervous);
+    TestTrue(TEXT("Fast has higher top speed than Strong"),Fast->Attributes->MaxSpeed>Strong->Attributes->MaxSpeed);
+    TestTrue(TEXT("Fast accelerates harder than Strong"),Fast->Attributes->Acceleration>Strong->Attributes->Acceleration);
+    TestTrue(TEXT("Strong has more stamina and strength than Fast"),Strong->Attributes->MaxStamina>Fast->Attributes->MaxStamina
+        && Strong->Attributes->Strength>Fast->Attributes->Strength);
+    TestTrue(TEXT("Strong requires longer steady rope control"),Rider->Lasso->GetEffectiveSubdueSeconds(Strong)>Rider->Lasso->GetEffectiveSubdueSeconds(Fast));
+    TestTrue(TEXT("Nervous fear rises faster and decays slower"),Nervous->Brain->AwarenessRiseScale>Fast->Brain->AwarenessRiseScale
+        && Nervous->Brain->AwarenessDecayScale<Fast->Brain->AwarenessDecayScale);
+    TestTrue(TEXT("Nervous approach window is stricter"),Nervous->Trust->SafeApproachSpeed<Fast->Trust->SafeApproachSpeed
+        && Nervous->Trust->CalmHoldSeconds>Fast->Trust->CalmHoldSeconds);
+
+    Fast->Trust->BeginSecured(Rider);
+    Nervous->Trust->BeginSecured(Rider);
+    Fast->Trust->AdvanceApproach(1.f,200.f,100.f,false);
+    Nervous->Trust->AdvanceApproach(1.f,200.f,100.f,false);
+    TestTrue(TEXT("Same approach calms Fast but not Nervous"),Fast->Trust->CalmProgress>0.f && Nervous->Trust->CalmProgress==0.f);
+    const float FastSpeed=Fast->Attributes->MaxSpeed;
+    Fast->ApplyArchetype(Herd->ArchetypeProfiles[0]);
+    TestEqual(TEXT("Profile application is idempotent"),Fast->Attributes->MaxSpeed,FastSpeed);
     return true;
 }
 #endif

@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "AI/WildHorseArchetype.h"
 #include "SteppeHerdManager.generated.h"
 
 class ASteppeWildHorseCharacter;
@@ -41,6 +42,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Isolation", meta=(ClampMin="100")) float IsolationDistanceRequired = 1800.f;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Isolation", meta=(ClampMin="0.1")) float IsolationHoldSeconds = 2.f;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Herd") TSubclassOf<ASteppeWildHorseCharacter> HorseClass;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Archetype") TArray<FWildHorseArchetypeProfile> ArchetypeProfiles;
 
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Herd") TArray<TObjectPtr<ASteppeWildHorseCharacter>> Members;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Herd") FVector HerdCenter = FVector::ZeroVector;

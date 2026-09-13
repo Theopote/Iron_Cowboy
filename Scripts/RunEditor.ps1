@@ -17,6 +17,7 @@ param(
     [switch]$VerticalSliceFailureSmoke,
     [switch]$PostCaptureSmoke,
     [switch]$FullLoopSmoke,
+    [switch]$ArchetypeSmoke,
     [ValidateRange(1,10000)][int]$ExpectedTests = 2
 )
 $ErrorActionPreference = 'Stop'
@@ -54,6 +55,10 @@ if ($PostCaptureSmoke) {
 if ($FullLoopSmoke) {
     if (!$Smoke -or !$Game) { throw 'FullLoopSmoke requires Game and Smoke.' }
     $editorArgs += '-SteppeLassoSmoke'; $editorArgs += '-SteppeRopeFightSmoke'; $editorArgs += '-SteppeCaptureSmoke'; $editorArgs += '-SteppeFullLoopSmoke'
+}
+if ($ArchetypeSmoke) {
+    if (!$Smoke -or !$Game) { throw 'ArchetypeSmoke requires Game and Smoke.' }
+    $editorArgs += '-SteppeArchetypeSmoke'
 }
 if ($RetrySmoke) { if (!$Smoke -or !$Game) { throw 'RetrySmoke requires Game and Smoke.' }; $editorArgs += '-SteppeRetrySmoke' }
 if ($Tests) { $editorArgs += '-TestExit=Automation Test Queue Empty'; $editorArgs += "-ReportExportPath=$PSScriptRoot\..\Saved\Automation" }
@@ -165,5 +170,14 @@ if ($FullLoopSmoke) {
         throw "P10 smoke did not complete natural lead, delivery and naming; see $logPath"
     }
     Write-Output 'P10 full loop smoke: horse followed through Movement, entered camp, showed its card and was named.'
+}
+if ($ArchetypeSmoke) {
+    $typeLog = Get-Content $logPath -Raw
+    $typePath = Join-Path $PSScriptRoot '..\Saved\Screenshots\SteppeP11Archetypes.png'
+    if (!(Test-Path $typePath) -or (Get-Item $typePath).LastWriteTime -lt $runStarted) { throw "P11 archetype screenshot is missing or stale; see $logPath" }
+    if ($typeLog -notmatch 'STEPPE_P11_SMOKE: H1=Fast .*H2=Strong .*H3=Nervous') {
+        throw "P11 smoke did not expose all three archetypes; see $logPath"
+    }
+    Write-Output 'P11 archetype smoke: Fast, Strong and Nervous profiles rendered and logged.'
 }
 Write-Output "Editor exited successfully. Log: $logPath"

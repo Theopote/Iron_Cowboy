@@ -52,6 +52,10 @@ public:
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") bool bLassoed = false;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") float LassoTension = 0.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") bool bCaptured = false;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Archetype") float AwarenessRiseScale = 1.f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Archetype") float AwarenessDecayScale = 1.f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Archetype") float FlightSpeedScale = 1.f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Archetype") float StruggleSpeedScale = 1.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lead") bool bLeading = false;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lead") float LeadDistance = 0.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lead", meta=(ClampMin="50")) float LeadFollowDistance = 280.f;

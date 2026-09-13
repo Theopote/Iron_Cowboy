@@ -123,6 +123,11 @@ FGameplayTag ULassoComponent::GetStateTag() const
     }
 }
 
+float ULassoComponent::GetEffectiveSubdueSeconds(const ASteppeWildHorseCharacter* Horse) const
+{
+    return FMath::Max(.1f,SubdueSeconds*(Horse?Horse->SubdueResistance:1.f));
+}
+
 void ULassoComponent::TickComponent(float Dt, ELevelTick TickType, FActorComponentTickFunction* TickFunction)
 {
     Super::TickComponent(Dt,TickType,TickFunction);
@@ -164,7 +169,7 @@ void ULassoComponent::TickComponent(float Dt, ELevelTick TickType, FActorCompone
             Tension=FMath::Clamp((Distance-RopeLength)/FMath::Max(10.f,TensionRange)+FMath::Max(0.f,SeparatingSpeed)/1200.f,0.f,1.5f);
             Horse->Brain->SetLassoConstraint(RopeStart,Tension,bBracing);
             const bool bUseful=bBracing && Tension>=UsefulTensionMin && Tension<=UsefulTensionMax;
-            ControlProgress=FMath::Clamp(ControlProgress+(bUseful?Dt:-Dt*.6f)/FMath::Max(.1f,SubdueSeconds),0.f,1.f);
+            ControlProgress=FMath::Clamp(ControlProgress+(bUseful?Dt:-Dt*.6f)/GetEffectiveSubdueSeconds(Horse),0.f,1.f);
             OverTensionSeconds=Tension>1.f?OverTensionSeconds+Dt:FMath::Max(0.f,OverTensionSeconds-Dt*2.f);
             if (Distance>MaximumRange*1.1f || OverTensionSeconds>=BreakHoldSeconds) { StartRecovery(TEXT("Rope broke - recovering")); }
             else if (ControlProgress>=1.f)
