@@ -18,6 +18,8 @@
 #include "Steppe.h"
 #include "Core/SteppeGameplayTags.h"
 #include "Lasso/LassoComponent.h"
+#include "Game/SteppeGameMode.h"
+#include "AI/SteppeHerdManager.h"
 ASteppeRiderCharacter::ASteppeRiderCharacter()
 {
     PrimaryActorTick.bCanEverTick=false;
@@ -127,6 +129,10 @@ void ASteppeRiderCharacter::Brake(const FInputActionValue& Value) { Intent.bBrak
 void ASteppeRiderCharacter::Interact()
 {
     if (Riding->IsMounted()) { Riding->Dismount(); return; }
+    if (auto* Mode=GetWorld()->GetAuthGameMode<ASteppeGameMode>())
+    {
+        if (Mode->HerdManager && Mode->HerdManager->HandleFirstContactInteraction(this)) { return; }
+    }
     ASteppeHorseCharacter* Closest=nullptr; float Distance=Riding->MountDistance;
     // On interaction only; never scan all horses per frame.
     for (TActorIterator<ASteppeHorseCharacter> It(GetWorld()); It; ++It)

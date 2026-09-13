@@ -84,6 +84,13 @@ void UHorseBrainComponent::SetCaptured(bool bNewCaptured)
     }
     else if (State==EWildHorseState::Captured) { ChangeState(EWildHorseState::Recovering); }
 }
+void UHorseBrainComponent::RequestCapturedRetreat(FVector Direction, float Speed, float Duration)
+{
+    if (!bCaptured) { return; }
+    CapturedRetreatDirection=Direction.GetSafeNormal2D();
+    CapturedRetreatSpeed=FMath::Max(0.f,Speed);
+    CapturedRetreatSeconds=FMath::Max(CapturedRetreatSeconds,FMath::Max(0.f,Duration));
+}
 void UHorseBrainComponent::SetHerdGuidance(FVector Center, FVector Velocity, FVector Separation, int32 NeighborCount)
 {
     HerdCenter=Center;
@@ -213,9 +220,21 @@ void UHorseBrainComponent::TickComponent(float Dt, ELevelTick TickType, FActorCo
     if (bCaptured)
     {
         FHorseMovementIntent CapturedIntent;
-        CapturedIntent.BrakeStrength=1.f;
+        CapturedRetreatSeconds=FMath::Max(0.f,CapturedRetreatSeconds-Dt);
+        if (CapturedRetreatSeconds>0.f && !CapturedRetreatDirection.IsNearlyZero())
+        {
+            const float HeadingError=FMath::FindDeltaAngleDegrees(Horse->GetActorRotation().Yaw,CapturedRetreatDirection.Rotation().Yaw);
+            CapturedIntent.DesiredSpeed=CapturedRetreatSpeed;
+            CapturedIntent.DesiredTurn=FMath::Clamp(HeadingError/45.f,-1.f,1.f);
+            CapturedIntent.RequestedGait=EHorseGait::Walk;
+            SteeringDirection=CapturedRetreatDirection;
+        }
+        else
+        {
+            CapturedIntent.BrakeStrength=1.f;
+            SteeringDirection=FVector::ZeroVector;
+        }
         Movement->SetHorseIntent(CapturedIntent);
-        SteeringDirection=FVector::ZeroVector;
         return;
     }
     if (bLassoed)

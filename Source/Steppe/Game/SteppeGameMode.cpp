@@ -18,6 +18,8 @@
 #include "AI/WildHorseConfig.h"
 #include "AI/SteppeHerdManager.h"
 #include "Lasso/LassoComponent.h"
+#include "Capture/HorseTrustComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 ASteppeGameMode::ASteppeGameMode()
 {
     PrimaryActorTick.bCanEverTick=true;
@@ -32,7 +34,7 @@ void ASteppeGameMode::Tick(float DeltaSeconds)
     Super::Tick(DeltaSeconds);
     if (bEnableTrial && Trial.State==ESteppeTrialState::Running)
     {
-        Trial.Advance(DeltaSeconds,HerdManager?HerdManager->CapturedCount:0);
+        Trial.Advance(DeltaSeconds,HerdManager?HerdManager->CapturedCount:0,HerdManager?HerdManager->FirstContactCount:0);
     }
 }
 void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer)
@@ -91,6 +93,8 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
         const bool bRopeFightSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeRopeFightSmoke"));
         const bool bCaptureSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeCaptureSmoke"));
         const bool bVerticalSliceSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeVerticalSliceSmoke"));
+        const bool bPostCaptureSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppePostCaptureSmoke"));
+        const bool bPostCaptureSequence=bVerticalSliceSmoke || bPostCaptureSmoke;
         // Process-local count is restricted to this opt-in standalone smoke run.
         static int32 RetrySmokeCount=0;
         if (FParse::Param(FCommandLine::Get(),TEXT("SteppeRetrySmoke")))
@@ -105,7 +109,7 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
                 { CastChecked<ASteppePlayerController>(NewPlayer)->SteppeRestartTrial(); }),3.f,false);
             }
         }
-        FTimerHandle StartHandle,FocusHandle,LassoSetupHandle,LassoThrowHandle,BraceHandle,CaptureHandle,GuidanceShotHandle,ShotHandle,ExitHandle;
+        FTimerHandle StartHandle,FocusHandle,LassoSetupHandle,LassoThrowHandle,BraceHandle,CaptureHandle,DismountHandle,ApproachHandle,ContactHandle,GuidanceShotHandle,PostCaptureShotHandle,ShotHandle,ExitHandle;
         if (bIsolationSmoke)
         {
             GetWorldTimerManager().SetTimer(FocusHandle,FTimerDelegate::CreateWeakLambda(NewPlayer,[NewPlayer]()
@@ -140,6 +144,20 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
                 { Rider->Lasso->Capture(); }),5.2f,false);
             }
         }
+        if (bPostCaptureSequence)
+        {
+            GetWorldTimerManager().SetTimer(DismountHandle,FTimerDelegate::CreateWeakLambda(Rider,[Rider]()
+            { Rider->Riding->Dismount(); }),5.35f,false);
+            GetWorldTimerManager().SetTimer(ApproachHandle,FTimerDelegate::CreateWeakLambda(this,[this,Rider]()
+            {
+                auto* Target=HerdManager && !HerdManager->CapturedHorses.IsEmpty()?HerdManager->CapturedHorses[0].Get():nullptr;
+                if (!Target || Rider->Riding->IsMounted()) { return; }
+                Rider->SetActorLocation(Target->GetActorLocation()-FVector(200,0,0),false,nullptr,ETeleportType::TeleportPhysics);
+                Rider->GetCharacterMovement()->Velocity=FVector::ZeroVector;
+            }),5.6f,false);
+            GetWorldTimerManager().SetTimer(ContactHandle,FTimerDelegate::CreateWeakLambda(this,[this,Rider]()
+            { if (HerdManager) { HerdManager->HandleFirstContactInteraction(Rider); } }),8.4f,false);
+        }
         if (!bHerdIdleSmoke && !bLassoSmoke)
         {
             GetWorldTimerManager().SetTimer(StartHandle,FTimerDelegate::CreateWeakLambda(Rider,[Rider]()
@@ -161,7 +179,12 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
                 FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeP8Urgency.png"),true,false);
             }),2.4f,false);
         }
-        GetWorldTimerManager().SetTimer(ShotHandle,FTimerDelegate::CreateWeakLambda(this,[this,Rider,bVerticalSliceSmoke,bVerticalFailureSmoke]()
+        if (bPostCaptureSmoke)
+        {
+            GetWorldTimerManager().SetTimer(PostCaptureShotHandle,FTimerDelegate::CreateWeakLambda(this,[]()
+            { FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeP9Approach.png"),true,false); }),7.f,false);
+        }
+        GetWorldTimerManager().SetTimer(ShotHandle,FTimerDelegate::CreateWeakLambda(this,[this,Rider,bVerticalSliceSmoke,bVerticalFailureSmoke,bPostCaptureSmoke]()
         {
             UE_LOG(LogSteppe,Display,TEXT("STEPPE_SMOKE: Horse=%s Speed=%.1f Mounted=%d"),*GetNameSafe(PlaygroundHorse),PlaygroundHorse?PlaygroundHorse->GetVelocity().Size2D():0.f,PlaygroundHorse && PlaygroundHorse->MountedRider.IsValid());
             if (WildHorse)
@@ -208,8 +231,16 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
                 UE_LOG(LogSteppe,Display,TEXT("STEPPE_P8_SMOKE: State=%s Captured=%d Required=%d Remaining=%.1f Score=%d"),
                     *UEnum::GetValueAsString(Trial.State),Trial.Captured,Trial.RequiredCaptures,Trial.RemainingSeconds,Trial.Score);
             }
+            if (bPostCaptureSmoke)
+            {
+                const auto* Target=HerdManager && !HerdManager->CapturedHorses.IsEmpty()?HerdManager->CapturedHorses[0].Get():nullptr;
+                UE_LOG(LogSteppe,Display,TEXT("STEPPE_P9_SMOKE: PostState=%s FirstContact=%d FirstContacts=%d Mounted=%d Calm=%.2f Trial=%s"),
+                    Target && Target->Trust?*UEnum::GetValueAsString(Target->Trust->State):TEXT("Missing"),
+                    Target && Target->Trust && Target->Trust->bFirstContact,HerdManager?HerdManager->FirstContactCount:0,
+                    Rider->Riding->IsMounted(),Target && Target->Trust?Target->Trust->CalmProgress:0.f,*UEnum::GetValueAsString(Trial.State));
+            }
             FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeSmoke.png"),true,false);
-        }),bHerdIdleSmoke?3.5f:(bVerticalFailureSmoke?4.f:7.f),false);
-        GetWorldTimerManager().SetTimer(ExitHandle,FTimerDelegate::CreateWeakLambda(NewPlayer,[NewPlayer]() { NewPlayer->ConsoleCommand(TEXT("quit")); }),bHerdIdleSmoke?5.5f:(bVerticalFailureSmoke?6.f:9.f),false);
+        }),bHerdIdleSmoke?3.5f:(bVerticalFailureSmoke?4.f:(bPostCaptureSequence?10.f:7.f)),false);
+        GetWorldTimerManager().SetTimer(ExitHandle,FTimerDelegate::CreateWeakLambda(NewPlayer,[NewPlayer]() { NewPlayer->ConsoleCommand(TEXT("quit")); }),bHerdIdleSmoke?5.5f:(bVerticalFailureSmoke?6.f:(bPostCaptureSequence?12.f:9.f)),false);
     }
 }

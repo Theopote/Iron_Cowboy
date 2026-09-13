@@ -1,11 +1,13 @@
 # P8 限时捕获垂直切片
 
+> 本文记录 P8–P8.2 的历史交付基线。P9 已将成功条件延后到第一次接触；当前规则见 `P9_CAPTURE_AFTERMATH_SPEC.md`。
+
 P8 将已有的骑乘、驱赶、切出、套索、控绳和捕获串成一轮可开始、可完成、可失败、可重试的灰盒任务。开局目标是在 120 秒内捕获 1 匹野马。
 
 ## 任务规则
 
 - 玩家进入关卡后任务自动开始，HUD 左下角显示捕获进度、剩余时间和积分。
-- 捕获数量达到目标时立即成功；时间归零且目标未完成时失败。
+- P8.2 时捕获数量达到目标即成功；P9 起按 C 只登记 Secure，第一次接触达到目标才成功。时间归零且目标未完成时失败。
 - 结算后计时与积分冻结，中央显示成功或超时结果；`F2` 重新加载场景并开始新一轮。
 - 积分为 `捕获数 × 1000 + 成功时向上取整的剩余秒数 × 10`。失败得 0 分。
 - 同一帧既发生捕获又到达时限时，捕获优先，任务判定成功。
@@ -30,18 +32,18 @@ P8 将已有的骑乘、驱赶、切出、套索、控绳和捕获串成一轮�
 2. 将目标赶到距离其余马群中心至少 18 米的位置并保持 2 秒。
 3. 按住鼠标右键瞄准，以鼠标左键投掷套索。
 4. 命中后按住空格，将张力维持在 20%–85%，直到目标进入 `Subdued`。
-5. 按 `C` 捕获目标，查看成功结算和积分；按 `F2` 重玩。
+5. 按 `C` 捕获目标。P8.2 在此显示成功结算；当前 P9 流程还需下马、平静接近并按 `E` 完成第一次接触。
 
 ## 验证
 
-`Steppe.P8.TimedMissionRules` 覆盖任务开始、倒计时、部分进度、成功、失败、结算冻结、积分公式和最后一帧捕获。既有 P1–P7 测试继续覆盖实际玩法链路。
+`Steppe.P8.TimedMissionRules` 最初覆盖任务开始、倒计时、部分进度、成功、失败、结算冻结、积分公式和最后一帧捕获。P9 已将该测试更新为第一次接触完成任务；既有 P1–P7 测试继续覆盖实际玩法链路。
 
 ```powershell
-.\Scripts\RunEditor.ps1 -Tests -ExpectedTests 12 -Commands 'Automation RunTests Steppe' -LogName P8-Automation
+.\Scripts\RunEditor.ps1 -Tests -ExpectedTests 13 -Commands 'Automation RunTests Steppe' -LogName P9-Automation
 .\Scripts\RunEditor.ps1 -Game -Render -Smoke -VerticalSliceSmoke -Commands 'steppe.Debug.Movement 1' -LogName P8-FinalRender
 .\Scripts\RunEditor.ps1 -Game -Render -Smoke -VerticalSliceFailureSmoke -Commands '' -LogName P8_2-FailureRender
 ```
 
-2026-09-13 最终结果：12 passed、0 failed。成功路线记录 `Success`、`Captured=1/1`、剩余 114.8 秒、积分 2150；失败路线记录 `Failed`、`Captured=0/1`、剩余 0 秒、积分 0。证据位于 `Validation/P8.2-Results.json`、`P8.2-Success.png`、`P8.2-Urgency.png`、`P8.2-Failure.png` 和 `P8.2-Runs.txt`。
+2026-09-13 P8.2 历史结果：12 passed、0 failed。成功路线记录 `Success`、`Captured=1/1`、剩余 114.8 秒、积分 2150；失败路线记录 `Failed`、`Captured=0/1`、剩余 0 秒、积分 0。证据位于 `Validation/P8.2-Results.json`、`P8.2-Success.png`、`P8.2-Urgency.png`、`P8.2-Failure.png` 和 `P8.2-Runs.txt`。当前 P9 验证结果与命令见 `P9_CAPTURE_AFTERMATH_SPEC.md`。
 
 当前任务状态仅存在于本轮关卡，不包含跨局存档、马匹品质、奖励经济、营地交付、正式 UI/音效或多人网络。

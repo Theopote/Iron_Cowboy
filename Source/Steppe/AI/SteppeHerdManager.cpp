@@ -1,6 +1,8 @@
 #include "AI/SteppeHerdManager.h"
 #include "AI/HorseBrainComponent.h"
 #include "Character/Horse/SteppeWildHorseCharacter.h"
+#include "Character/Rider/SteppeRiderCharacter.h"
+#include "Capture/HorseTrustComponent.h"
 #include "Components/SceneComponent.h"
 #include "Engine/World.h"
 
@@ -98,6 +100,34 @@ bool ASteppeHerdManager::RegisterCapturedHorse(ASteppeWildHorseCharacter* Horse)
     CapturedHorses.AddUnique(Horse);
     CapturedCount=CapturedHorses.Num();
     Horse->Brain->bIsolationFocus=false;
+    Horse->Trust->BeginSecured(Cast<ASteppeRiderCharacter>(ThreatTarget.Get()));
+    return true;
+}
+
+bool ASteppeHerdManager::HandleFirstContactInteraction(ASteppeRiderCharacter* Rider)
+{
+    if (!Rider) { return false; }
+    ASteppeWildHorseCharacter* Closest=nullptr;
+    float ClosestDistance=BIG_NUMBER;
+    for (const TObjectPtr<ASteppeWildHorseCharacter>& HorsePtr : CapturedHorses)
+    {
+        auto* Horse=HorsePtr.Get();
+        if (!IsValid(Horse) || !Horse->Trust || Horse->Trust->bFirstContact) { continue; }
+        const float Distance=FVector::Dist2D(Horse->GetActorLocation(),Rider->GetActorLocation());
+        if (Distance<=Horse->Trust->AwarenessRadius && Distance<ClosestDistance)
+        {
+            Closest=Horse;
+            ClosestDistance=Distance;
+        }
+    }
+    if (!Closest) { return false; }
+    if (Closest->Trust->TryFirstContact(Rider))
+    {
+        FirstContactHorses.AddUnique(Closest);
+        FirstContactCount=FirstContactHorses.Num();
+    }
+    // Consume E near a secured horse even when it is not ready, preventing an
+    // unrelated mount attempt from hiding the approach feedback.
     return true;
 }
 
@@ -203,6 +233,8 @@ void ASteppeHerdManager::EndPlay(const EEndPlayReason::Type Reason)
     }
     Members.Reset();
     CapturedHorses.Reset();
+    FirstContactHorses.Reset();
+    FirstContactCount=0;
     AlarmTravelSeconds.Reset();
     Super::EndPlay(Reason);
 }

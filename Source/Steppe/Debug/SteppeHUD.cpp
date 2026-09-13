@@ -13,6 +13,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Character/Rider/SteppeRiderCharacter.h"
 #include "Lasso/LassoComponent.h"
+#include "Capture/HorseTrustComponent.h"
 #include "Engine/Canvas.h"
 void ASteppeHUD::DrawHUD()
 {
@@ -45,15 +46,19 @@ void ASteppeHUD::DrawHUD()
         if (Lasso->State==ELassoState::Thrown || Lasso->State==ELassoState::Attached || Lasso->State==ELassoState::Subdued || Lasso->State==ELassoState::Captured)
         {
             DrawDebugLine(GetWorld(),Lasso->RopeStart,Lasso->LoopLocation,FColor::Orange,false,0,0,6);
-            DrawDebugSphere(GetWorld(),Lasso->LoopLocation,Lasso->CaptureRadius,16,FColor::Yellow,false,0,0,4);
+            if (Lasso->State!=ELassoState::Captured)
+            {
+                DrawDebugSphere(GetWorld(),Lasso->LoopLocation,Lasso->CaptureRadius,16,FColor::Yellow,false,0,0,4);
+            }
         }
     }
     auto* Mode=GetWorld()->GetAuthGameMode<ASteppeGameMode>();
     if (Mode && Mode->bEnableTrial && Mode->Trial.State!=ESteppeTrialState::NotStarted)
     {
         const int32 Seconds=FMath::CeilToInt(Mode->Trial.RemainingSeconds);
-        const FString Mission=FString::Printf(TEXT("MISSION  Capture %d/%d wild horse  |  %02d:%02d  |  SCORE %d"),
-            Mode->Trial.Captured,Mode->Trial.RequiredCaptures,Seconds/60,Seconds%60,Mode->Trial.Score);
+        const FString Mission=FString::Printf(TEXT("MISSION  Secure %d/%d  Contact %d/%d  |  %02d:%02d  |  SCORE %d"),
+            Mode->Trial.Captured,Mode->Trial.RequiredCaptures,Mode->Trial.FirstContacts,Mode->Trial.RequiredCaptures,
+            Seconds/60,Seconds%60,Mode->Trial.Score);
         const float MissionY=Canvas->ClipY-42.f;
         const bool bUrgent=Mode->Trial.State==ESteppeTrialState::Running && Mode->Trial.RemainingSeconds<=30.f;
         const float Pulse=bUrgent && Mode->Trial.RemainingSeconds<=10.f ? .65f+.35f*FMath::Sin(Mode->Trial.ElapsedSeconds*8.f) : 1.f;
@@ -63,7 +68,19 @@ void ASteppeHUD::DrawHUD()
         if (Mode->Trial.State==ESteppeTrialState::Running)
         {
             FString Objective;
-            if (!Lasso || Lasso->State==ELassoState::Stored)
+            UHorseTrustComponent* PendingTrust=nullptr;
+            if (Mode->HerdManager)
+            {
+                for (const TObjectPtr<ASteppeWildHorseCharacter>& Horse : Mode->HerdManager->CapturedHorses)
+                {
+                    if (Horse && Horse->Trust && !Horse->Trust->bFirstContact) { PendingTrust=Horse->Trust; break; }
+                }
+            }
+            if (PendingTrust)
+            {
+                Objective=FString::Printf(TEXT("NEXT  %s  |  CALM %.0f%%"),*PendingTrust->Feedback,PendingTrust->CalmProgress*100.f);
+            }
+            else if (!Lasso || Lasso->State==ELassoState::Stored)
             {
                 const auto* Herd=Mode->HerdManager.Get();
                 if (!Herd || !Herd->FocusedHorse) { Objective=TEXT("NEXT  Look toward a wild horse and press Q"); }
@@ -82,7 +99,7 @@ void ASteppeHUD::DrawHUD()
                 case ELassoState::Attached: Objective=TEXT("NEXT  Hold Space and keep tension in the green zone"); break;
                 case ELassoState::Subdued: Objective=TEXT("NEXT  Press C to secure the horse"); break;
                 case ELassoState::Recovering: Objective=TEXT("LASSO RECOVERING  Prepare another throw"); break;
-                case ELassoState::Captured: Objective=TEXT("HORSE SECURED"); break;
+                case ELassoState::Captured: Objective=TEXT("NEXT  Slow down and press E to dismount"); break;
                 default: break;
                 }
             }
@@ -105,7 +122,7 @@ void ASteppeHUD::DrawHUD()
         {
             const bool bSuccess=Mode->Trial.State==ESteppeTrialState::Success;
             DrawRect(FLinearColor(0,0,0,.78f),Canvas->ClipX*.5f-245,Canvas->ClipY*.5f-52,490,104);
-            DrawText(bSuccess?TEXT("CAPTURE SUCCESS"):TEXT("TIME EXPIRED"),bSuccess?FLinearColor(.25f,1.f,.35f):FLinearColor(1.f,.25f,.15f),
+            DrawText(bSuccess?TEXT("FIRST CONTACT"):TEXT("TIME EXPIRED"),bSuccess?FLinearColor(.25f,1.f,.35f):FLinearColor(1.f,.25f,.15f),
                 Canvas->ClipX*.5f-150,Canvas->ClipY*.5f-30,nullptr,1.8f);
             DrawText(FString::Printf(TEXT("Score %d  |  F2 replay"),Mode->Trial.Score),FLinearColor::White,
                 Canvas->ClipX*.5f-105,Canvas->ClipY*.5f+12,nullptr,1.1f);

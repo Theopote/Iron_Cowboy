@@ -82,3 +82,7 @@ C 输入由 Rider 转给 LassoComponent。只有 Subdued 状态可提交捕获�
 ## P8：限时垂直切片
 
 GameMode 持有轻量的 `FSteppeTrialProgress`，在玩家与马群完成生成后启动 120 秒任务，并从 HerdManager 的权威捕获计数更新进度。规则结构负责成功/失败、剩余时间冻结和积分计算；HUD 只读取结果并绘制任务条与结算层。F2 仍通过关卡重载重建全部本轮状态。任务层不反向修改骑乘、马群或套索逻辑，因此 P1–P7 玩法可独立测试和继续调参。详见 P8_VERTICAL_SLICE.md。
+
+## P9：捕获后安全接近
+
+`UHorseTrustComponent` 属于 WildHorse，捕获登记时由 HerdManager 注入当前 Rider，并开始评估二维距离、有符号接近速度和骑乘状态。组件持有 Secured、CalmApproach、Rejected、ReadyForContact 与 FirstContact；高速冲入通过 HorseBrain 提交短时后退意图，Movement 仍负责真实移动。HerdManager 记录首次接触的权威集合与计数，Trial 使用该计数完成任务。Rider 的 E 输入在徒步且靠近已捕获目标时优先交给接触流程，否则保持原上马行为。详见 P9_CAPTURE_AFTERMATH_SPEC.md。

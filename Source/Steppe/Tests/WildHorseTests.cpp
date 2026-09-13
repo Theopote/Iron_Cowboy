@@ -10,6 +10,7 @@
 #include "Lasso/LassoComponent.h"
 #include "Core/SteppeGameplayTags.h"
 #include "Game/SteppeTrialState.h"
+#include "Capture/HorseTrustComponent.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "Engine/StaticMeshActor.h"
@@ -454,27 +455,69 @@ bool FVerticalSliceRulesTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Mission starts running"),Trial.State,ESteppeTrialState::Running);
     TestEqual(TEXT("Mission stores its capture goal"),Trial.RequiredCaptures,2);
 
-    Trial.Advance(3.f,1);
+    Trial.Advance(3.f,1,0);
     TestEqual(TEXT("Partial capture keeps mission running"),Trial.State,ESteppeTrialState::Running);
     TestEqual(TEXT("Mission timer advances"),Trial.RemainingSeconds,7.f);
 
-    Trial.Advance(2.f,2);
-    TestEqual(TEXT("Required captures complete the mission"),Trial.State,ESteppeTrialState::Success);
+    Trial.Advance(2.f,2,2);
+    TestEqual(TEXT("Required first contacts complete the mission"),Trial.State,ESteppeTrialState::Success);
     TestEqual(TEXT("Score combines captures and remaining time"),Trial.Score,2050);
     const float CompletionTime=Trial.RemainingSeconds;
-    Trial.Advance(100.f,2);
+    Trial.Advance(100.f,2,2);
     TestEqual(TEXT("Completed mission freezes its timer"),Trial.RemainingSeconds,CompletionTime);
 
     FSteppeTrialProgress Failed;
     Failed.Start(5.f,1);
-    Failed.Advance(5.1f,0);
+    Failed.Advance(5.1f,0,0);
     TestEqual(TEXT("Expired mission fails without a capture"),Failed.State,ESteppeTrialState::Failed);
     TestEqual(TEXT("Failed mission has no score"),Failed.Score,0);
 
     FSteppeTrialProgress LastMoment;
     LastMoment.Start(1.f,1);
-    LastMoment.Advance(1.f,1);
-    TestEqual(TEXT("Capture on the final tick counts as success"),LastMoment.State,ESteppeTrialState::Success);
+    LastMoment.Advance(1.f,1,1);
+    TestEqual(TEXT("First contact on the final tick counts as success"),LastMoment.State,ESteppeTrialState::Success);
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPostCaptureApproachTest,"Steppe.P9.PostCaptureApproachAndContact",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FPostCaptureApproachTest::RunTest(const FString& Parameters)
+{
+    FWildTestWorld Fixture;
+    auto* Rider=Fixture.World->SpawnActor<ASteppeRiderCharacter>(FVector(800,0,100),FRotator::ZeroRotator);
+    const FTransform HerdTransform(FRotator::ZeroRotator,FVector(1000,0,100));
+    auto* Herd=Fixture.World->SpawnActorDeferred<ASteppeHerdManager>(ASteppeHerdManager::StaticClass(),HerdTransform,
+        nullptr,nullptr,ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+    Herd->HerdSize=1;
+    Herd->HorseClass=ASteppeWildHorseCharacter::StaticClass();
+    Herd->SetThreatTarget(Rider);
+    Herd->FinishSpawning(HerdTransform);
+    Fixture.Begin();
+    if (!TestEqual(TEXT("Approach fixture has one horse"),Herd->Members.Num(),1)) { return false; }
+    auto* Wild=Herd->Members[0].Get();
+    Wild->SetActorLocation(FVector(1000,0,100),false,nullptr,ETeleportType::TeleportPhysics);
+    Rider->GetCharacterMovement()->SetComponentTickEnabled(false);
+    Wild->GetCharacterMovement()->SetComponentTickEnabled(false);
+    TestTrue(TEXT("Secured horse registers with herd"),Herd->RegisterCapturedHorse(Wild));
+    Wild->Brain->SetCaptured(true);
+    TestEqual(TEXT("Capture begins secured approach state"),Wild->Trust->State,EPostCaptureState::Secured);
+
+    Wild->Trust->AdvanceApproach(3.f,200.f,0.f,true);
+    TestEqual(TEXT("Mounted rider cannot calm the horse"),Wild->Trust->State,EPostCaptureState::Secured);
+    TestEqual(TEXT("Mounted rider gains no calm progress"),Wild->Trust->CalmProgress,0.f);
+
+    Wild->Trust->AdvanceApproach(.1f,200.f,400.f,false);
+    TestEqual(TEXT("Fast forward approach is rejected"),Wild->Trust->State,EPostCaptureState::Rejected);
+    TestEqual(TEXT("Rejection clears calm progress"),Wild->Trust->CalmProgress,0.f);
+    Wild->Trust->AdvanceApproach(1.6f,200.f,-500.f,false);
+    TestTrue(TEXT("Fast retreat is not mistaken for a rush"),Wild->Trust->State!=EPostCaptureState::Rejected);
+    Wild->Trust->AdvanceApproach(1.f,200.f,0.f,false);
+    TestEqual(TEXT("Calm close hold enables contact"),Wild->Trust->State,EPostCaptureState::ReadyForContact);
+
+    TestTrue(TEXT("Ready interaction is consumed"),Herd->HandleFirstContactInteraction(Rider));
+    TestTrue(TEXT("First contact is recorded on horse"),Wild->Trust->bFirstContact);
+    TestEqual(TEXT("First contact grants minimum trust"),Wild->Trust->Trust,Wild->Trust->FirstContactTrust);
+    TestEqual(TEXT("Herd records first contact once"),Herd->FirstContactCount,1);
+    TestTrue(TEXT("Horse remains captured after contact"),Wild->Brain->bCaptured && Herd->CapturedCount==1);
     return true;
 }
 #endif

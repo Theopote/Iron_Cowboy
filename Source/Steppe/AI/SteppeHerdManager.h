@@ -5,6 +5,7 @@
 #include "SteppeHerdManager.generated.h"
 
 class ASteppeWildHorseCharacter;
+class ASteppeRiderCharacter;
 
 UCLASS()
 class STEPPE_API ASteppeHerdManager : public AActor
@@ -21,6 +22,7 @@ public:
     UFUNCTION(BlueprintCallable, Category="Herd") void SetFocusedHorse(ASteppeWildHorseCharacter* Horse);
     UFUNCTION(BlueprintCallable, Category="Herd") void ClearFocusedHorse();
     UFUNCTION(BlueprintCallable, Category="Capture") bool RegisterCapturedHorse(ASteppeWildHorseCharacter* Horse);
+    UFUNCTION(BlueprintCallable, Category="Capture") bool HandleFirstContactInteraction(ASteppeRiderCharacter* Rider);
     void EnsureMembersSpawned();
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Herd", meta=(ClampMin="1", ClampMax="12")) int32 HerdSize = 5;
@@ -49,6 +51,8 @@ public:
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Isolation") bool bTargetIsolated = false;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Capture") TArray<TObjectPtr<ASteppeWildHorseCharacter>> CapturedHorses;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Capture") int32 CapturedCount = 0;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Capture") TArray<TObjectPtr<ASteppeWildHorseCharacter>> FirstContactHorses;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Capture") int32 FirstContactCount = 0;
 
 private:
     UPROPERTY() TWeakObjectPtr<AActor> ThreatTarget;

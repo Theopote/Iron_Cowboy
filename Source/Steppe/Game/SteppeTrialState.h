@@ -15,6 +15,7 @@ struct STEPPE_API FSteppeTrialProgress
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) float ElapsedSeconds = 0.f;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) float RemainingSeconds = 0.f;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) int32 Captured = 0;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) int32 FirstContacts = 0;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) int32 RequiredCaptures = 1;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) int32 Score = 0;
     float DurationSeconds = 120.f;
@@ -27,16 +28,18 @@ struct STEPPE_API FSteppeTrialProgress
         ElapsedSeconds=0.f;
         RemainingSeconds=DurationSeconds;
         Captured=0;
+        FirstContacts=0;
         Score=0;
     }
 
-    void Advance(float DeltaSeconds, int32 CapturedCount)
+    void Advance(float DeltaSeconds, int32 CapturedCount, int32 FirstContactCount)
     {
         if (State!=ESteppeTrialState::Running) { return; }
         Captured=FMath::Max(0,CapturedCount);
+        FirstContacts=FMath::Max(0,FirstContactCount);
         ElapsedSeconds=FMath::Min(DurationSeconds,ElapsedSeconds+FMath::Max(0.f,DeltaSeconds));
         RemainingSeconds=FMath::Max(0.f,DurationSeconds-ElapsedSeconds);
-        if (Captured>=RequiredCaptures)
+        if (FirstContacts>=RequiredCaptures)
         {
             State=ESteppeTrialState::Success;
             Score=Captured*1000+FMath::CeilToInt(RemainingSeconds)*10;

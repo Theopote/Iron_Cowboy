@@ -15,6 +15,7 @@ param(
     [switch]$CaptureSmoke,
     [switch]$VerticalSliceSmoke,
     [switch]$VerticalSliceFailureSmoke,
+    [switch]$PostCaptureSmoke,
     [ValidateRange(1,10000)][int]$ExpectedTests = 2
 )
 $ErrorActionPreference = 'Stop'
@@ -44,6 +45,10 @@ if ($VerticalSliceFailureSmoke) {
     if (!$Smoke -or !$Game) { throw 'VerticalSliceFailureSmoke requires Game and Smoke.' }
     if ($VerticalSliceSmoke) { throw 'Choose either VerticalSliceSmoke or VerticalSliceFailureSmoke.' }
     $editorArgs += '-SteppeVerticalFailureSmoke'
+}
+if ($PostCaptureSmoke) {
+    if (!$Smoke -or !$Game) { throw 'PostCaptureSmoke requires Game and Smoke.' }
+    $editorArgs += '-SteppeLassoSmoke'; $editorArgs += '-SteppeRopeFightSmoke'; $editorArgs += '-SteppeCaptureSmoke'; $editorArgs += '-SteppePostCaptureSmoke'
 }
 if ($RetrySmoke) { if (!$Smoke -or !$Game) { throw 'RetrySmoke requires Game and Smoke.' }; $editorArgs += '-SteppeRetrySmoke' }
 if ($Tests) { $editorArgs += '-TestExit=Automation Test Queue Empty'; $editorArgs += "-ReportExportPath=$PSScriptRoot\..\Saved\Automation" }
@@ -133,5 +138,16 @@ if ($VerticalSliceFailureSmoke) {
         throw "Vertical slice failure smoke did not reach the expected timeout result; see $logPath"
     }
     Write-Output 'Vertical slice failure smoke: urgency warning rendered and uncaptured mission timed out.'
+}
+if ($PostCaptureSmoke) {
+    $sliceLog = Get-Content $logPath -Raw
+    $approachPath = Join-Path $PSScriptRoot '..\Saved\Screenshots\SteppeP9Approach.png'
+    if (!(Test-Path $approachPath) -or (Get-Item $approachPath).LastWriteTime -lt $runStarted) {
+        throw "Post-capture approach screenshot is missing or stale; see $logPath"
+    }
+    if ($sliceLog -notmatch 'STEPPE_P9_SMOKE: PostState=EPostCaptureState::FirstContact FirstContact=1 FirstContacts=1 Mounted=0 Calm=1\.00 Trial=ESteppeTrialState::Success') {
+        throw "Post-capture smoke did not complete calm first contact and mission success; see $logPath"
+    }
+    Write-Output 'Post-capture smoke: rider dismounted, completed calm approach and registered first contact.'
 }
 Write-Output "Editor exited successfully. Log: $logPath"

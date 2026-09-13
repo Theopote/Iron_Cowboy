@@ -1,6 +1,6 @@
 # 《套马的汉子》 / Project STEPPE
 
-UE **5.8.2** 的 C++ 骑乘游戏原型。当前已完成 P8.2 限时捕获垂直切片；骑手可在 120 秒任务中驱赶马群、切出目标、投掷套索、控制张力、完成捕获并获得积分结算，超时路线也具备紧迫提示与失败结算。
+UE **5.8.2** 的 C++ 骑乘游戏原型。当前已完成 P9 捕获后安全接近；骑手可在限时任务中驱赶马群、切出目标、投掷套索、控制张力、下马安抚，并以第一次接触完成结算。
 
 ## 打开与试玩
 
@@ -13,7 +13,7 @@ UE **5.8.2** 的 C++ 骑乘游戏原型。当前已完成 P8.2 限时捕获垂�
 2. 用 UE 5.8.2 打开 `Steppe.uproject`。默认加载 `L_Prototype_Grassland`。
 3. 点击 Play，默认已骑上占位马。前方约 38 m 有五匹浅色野马，可缓慢接近、加速追逐，并用 Q 选择一匹尝试切出。无需下载模型或手工创建输入资产。
 
-当前是灰盒原型：方块马身、圆柱骑手、2 km 平地、距离标记、绕桩与坡道；没有最终动画、音效或美术。代码通过与手感满意是不同验收，P1 仍需至少 10 分钟人工试玩调参。
+当前是灰盒原型：方块马身、圆柱骑手、2 km 平地、距离标记、绕桩与坡道；没有最终动画、音效或美术。代码通过与手感满意是不同验收，追逐、控绳和捕获后接近仍需持续人工试玩调参。
 
 ## 按键
 
@@ -25,7 +25,7 @@ UE **5.8.2** 的 C++ 骑乘游戏原型。当前已完成 P8.2 限时捕获垂�
 | 鼠标 | 独立自由观察，不改变马朝向 |
 | 左 Shift + W | 请求 Sprint；受体力限制 |
 | 左 Ctrl | 强制动 |
-| E | 上马 / 下马，要求速度低于 200 cm/s，且下马侧有安全落脚点 |
+| E | 上马 / 下马；捕获后徒步靠近并平静停留，再按 E 完成第一次接触 |
 | Q | 选择视线前方的野马；再次选择同一匹可取消 |
 | 鼠标右键 | 隔离目标后按住瞄准套索 |
 | 鼠标左键 | 瞄准时投掷；附着后释放 |
@@ -45,12 +45,13 @@ UE **5.8.2** 的 C++ 骑乘游戏原型。当前已完成 P8.2 限时捕获垂�
 ## 验证
 
 ```powershell
-.\Scripts\RunEditor.ps1 -Commands 'Automation RunTests Steppe.P1' -Tests -LogName P1-FinalTests
-.\Scripts\RunEditor.ps1 -Game -Render -Smoke -Commands '' -LogName P1-Render
+.\Scripts\RunEditor.ps1 -Tests -ExpectedTests 13 -Commands 'Automation RunTests Steppe' -LogName P9-Automation
+.\Scripts\RunEditor.ps1 -Game -Render -Smoke -PostCaptureSmoke -Commands '' -LogName P9-FinalRender
+.\Scripts\RunEditor.ps1 -Game -Render -Smoke -VerticalSliceFailureSmoke -Commands '' -LogName P9-FailureRegression
 ```
 
-第一条运行数学和真实 UWorld 集成测试，报告位于 `Saved/Automation/index.json`。第二条启动实际游戏，以固定 60 Hz 模拟约 9 秒，自动上马前进、截图并退出；不要用于人工试玩。截图位于 `Saved/Screenshots/SteppeSmoke.png`。
+第一条运行全部数学和真实 UWorld 集成测试，报告位于 `Saved/Automation/index.json`。第二条启动实际游戏，自动走完捕获、下马、平静接近和第一次接触并截图；第三条验证紧迫提示与超时失败。这些烟测不用于人工试玩。
 
 当前构建使用 V7 / Unreal5_8 IncludeOrder；因本机共享 PCH 编译停顿，模块禁用 PCH，构建脚本传入 `-NoUBA` 禁用 detouring。没有修改引擎安装。Editor 开启 Live Coding 时应先保存关闭再运行外部构建。
 
-后续开发先阅读 `Docs/GAME_DESIGN_VISION.md`、`Docs/DESIGN_BASELINE.md`、`Docs/PROTOTYPE_GDD.md` 和 `Docs/DEVELOPMENT_ROADMAP.md`。真实结果见 `Docs/DEVELOPMENT_STATUS.md`，工程分层见 `Docs/ARCHITECTURE.md`，下一阶段规格见 `Docs/P9_CAPTURE_AFTERMATH_SPEC.md`。
+后续开发先阅读 `Docs/GAME_DESIGN_VISION.md`、`Docs/DESIGN_BASELINE.md`、`Docs/PROTOTYPE_GDD.md` 和 `Docs/DEVELOPMENT_ROADMAP.md`。真实结果见 `Docs/DEVELOPMENT_STATUS.md`，工程分层见 `Docs/ARCHITECTURE.md`，P9 实现规格与验证依据见 `Docs/P9_CAPTURE_AFTERMATH_SPEC.md`；下一阶段按路线图进入 P10 牵回营地与命名。

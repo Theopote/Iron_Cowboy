@@ -1,0 +1,7 @@
+UE 5.8.2 / SteppeEditor Win64 Development
+Build: Succeeded
+Automation: 13 passed, 0 failed, 1 passed with warnings (existing RiderSeat fallback)
+Approach render: Secure 1/1, Contact 0/1, Calm 56%, rider on foot
+STEPPE_P7_SMOKE: State=ELassoState::Captured Captured=1 Active=4 TargetState=EWildHorseState::Captured
+STEPPE_P9_SMOKE: PostState=EPostCaptureState::FirstContact FirstContact=1 FirstContacts=1 Mounted=0 Calm=1.00 Trial=ESteppeTrialState::Success
+Failure regression: urgency warning rendered and mission timed out without capture/contact

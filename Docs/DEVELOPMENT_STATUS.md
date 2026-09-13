@@ -1,6 +1,6 @@
 # Current Phase
 
-**P8.2 — 120 秒限时捕获垂直切片的成功与失败路线均已实现并完成实际渲染验证。**
+**P9 — 捕获后安全接近与第一次接触已经实现并完成实际渲染验证。**
 
 项目使用 UE 5.8.2。P1 骑乘基础、P2 单匹野马、P2.2 慢速退让、P3 小规模马群和 P3.1 个体差异/防卡住均已通过对应试玩反馈后继续推进。
 
@@ -19,6 +19,9 @@
 - 一轮任务要求在 120 秒内捕获 1 匹野马；HUD 持续显示进度、倒计时和积分，完成或超时后冻结结果并支持 F2 重玩。
 - 默认试玩使用精简 HUD，开局说明本轮目标，并按实时状态提示选马、切出、投索、稳绳和捕获；F1 保留完整开发遥测。
 - 最后 30 秒任务计时变红，最后 10 秒显示脉冲紧迫警告；超时冻结为 00:00、0 分并显示失败结算。
+- 按 C 后只完成 Secure 登记，任务继续计时；玩家必须减速下马、徒步缓慢靠近并在 2.2 米内平静停留 2.5 秒。
+- 高速正向接近会进入 Rejected，清空本次平静进度并让目标通过 Horse Intent 后退；停止或退开后可以恢复。
+- ReadyForContact 时按 E 完成第一次接触，记录最低 Trust，Contact 计数达到目标后才成功结算。
 
 # Build Result
 
@@ -28,17 +31,17 @@ UHT、C++ 编译和链接成功。仍使用已验证的 NoPCHs / -NoUBA 本地�
 
 # Validation
 
-自动测试：**12 passed, 0 failed**，其中 1 项包含既有的 RiderSeat 占位警告。
+自动测试：**13 passed, 0 failed**，其中 1 项包含既有的 RiderSeat 占位警告。
 
-P8 的 `Steppe.P8.TimedMissionRules` 覆盖倒计时、捕获目标、成功/失败、结算冻结、积分和最后一帧捕获。既有 P1–P7 测试继续通过。
+P9 的 `Steppe.P9.PostCaptureApproachAndContact` 覆盖骑乘阻止、正向冲入拒绝、有符号后退速度、拒绝恢复、平静停留、第一次接触、Trust、唯一计数和捕获结果保持。P8 任务测试已经改为 FirstContact 后成功，既有 P1–P7 测试继续通过。
 
-实际渲染冒烟完成 H1 捕获，记录为任务 Success、1/1 captured、4 active、剩余 114.8 秒、积分 2150；成功结算层和任务 HUD 均正常显示。
+实际渲染冒烟完成 H1 捕获、下马、平静接近和第一次接触，记录为 Secure 1/1、Contact 1/1、Mounted=0、Calm=100%、任务 Success、积分 2120。独立超时路线继续通过。
 
-证据：`Validation/P8.2-Results.json`、`P8.2-Success.png`、`P8.2-Urgency.png`、`P8.2-Failure.png`、`P8.2-Runs.txt`。原始日志为 `Saved/Logs/P8_2-Automation.log`、`P8_2-SuccessRender.log` 与 `P8_2-FailureRender.log`。
+证据：`Validation/P9-Results.json`、`P9-Approach.png`、`P9-FirstContact.png`、`P9-Runs.txt`。原始日志为 `Saved/Logs/P9-Automation.log`、`P9-FinalRender.log` 与 `P9-FailureRegression.log`。
 
 # Manual Steps
 
-打开 `Steppe.uproject` → Play。在 120 秒内完成 Q 选择、18 米隔离、RMB/LMB 投掷和空格稳绳。CONTROL 100% 出现 Subdued 后按 C，确认成功结算、4 active / 1 captured 和积分；F2 重玩。
+打开 `Steppe.uproject` → Play。在 120 秒内完成 Q 选择、18 米隔离、RMB/LMB 投掷和空格稳绳。CONTROL 100% 后按 C，减速并按 E 下马；缓慢走到目标约 2.2 米内，停留至 CALM 100%，再按 E 完成 FIRST CONTACT。F2 重玩。
 
 `steppe.Debug.Movement 1` 显示个体方向、紫色群体中心、青色目标圈和隔离连线。完整规则见 P4_TARGET_ISOLATION.md。
 
@@ -47,6 +50,7 @@ P8 的 `Steppe.P8.TimedMissionRules` 覆盖倒计时、捕获目标、成功/失
 - 仅 5 匹近距离完整 Actor 与一个显式玩家目标；没有远距离简化或领头马社会结构。
 - 套索当前使用连续扫掠和调试绳线；没有正式摆绳动画、物理绳、骑手受力、持久捕获存档、奖励经济或多人网络。
 - P8 任务是单目标、固定时限的关卡内状态；尚无任务选择、难度档位、跨局记录或正式结算界面。
+- P9 只有第一次接触和最低 Trust；没有牵行、营地交付、命名或跨局关系。
 - 仍是灰盒占位模型，没有真实马动画、听觉、鸣叫或最终美术。
 - 局部探测不是全局寻路；复杂封闭空间中仍可能原地寻找出口。
 - 感知和隔离数值是可调的原型初值，并非马术研究结论。
@@ -54,7 +58,7 @@ P8 的 `Steppe.P8.TimedMissionRules` 覆盖倒计时、捕获目标、成功/失
 
 # Next Recommended Work
 
-按照 `P9_CAPTURE_AFTERMATH_SPEC.md` 开始“捕获后安全接近”：保留当前捕获登记，增加下马、慢速靠近、停顿安抚、过快接近受拒和第一次接触。P9 完成前不开始牵回、命名、开放世界或经济系统。
+按照 `DEVELOPMENT_ROADMAP.md` 进入 P10：建立牵行状态、营地/围栏交付区域、Horse Card 和命名，完成“营地出发 → 捕获 → 第一次接触 → 牵回 → 命名”的第一条完整闭环。
 
 # Milestones
 
@@ -69,3 +73,4 @@ P8 的 `Steppe.P8.TimedMissionRules` 覆盖倒计时、捕获目标、成功/失
 - 2026-09-13 P8.1：增加开局目标、实时阶段引导和精简默认 HUD；12 项回归测试及过程/结算双截图验证通过。
 - 2026-09-13 P8.2：增加最后 30/10 秒紧迫提示与独立超时烟测；成功、紧迫和失败三类实际画面均验证通过。
 - 2026-09-13 文档基线 0.2：归档两份早期讨论，建立愿景、现状差距、原型 GDD、P9–P14 路线图、设计决策和 P9 实施规格。
+- 2026-09-13 P9：完成捕获后下马、速度/距离接近规则、冲入拒绝与恢复、第一次接触、Trust 和延后结算；13 项测试及实际链路通过。

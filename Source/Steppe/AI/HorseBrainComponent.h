@@ -23,6 +23,7 @@ public:
     UFUNCTION(BlueprintCallable, Category="Wild Horse") void SetLassoed(bool bNewLassoed);
     void SetLassoConstraint(FVector Anchor, float Tension, bool bBraced);
     UFUNCTION(BlueprintCallable, Category="Wild Horse") void SetCaptured(bool bNewCaptured);
+    void RequestCapturedRetreat(FVector Direction, float Speed, float Duration);
     void SetHerdGuidance(FVector Center, FVector Velocity, FVector Separation, int32 NeighborCount);
     void SetHerdIdentity(int32 MemberIndex, int32 HerdSeed);
     UFUNCTION(BlueprintPure, Category="Wild Horse") FGameplayTag GetBehaviorTag() const;
@@ -74,4 +75,7 @@ private:
     FVector HerdVelocity = FVector::ZeroVector;
     FVector LassoAnchor = FVector::ZeroVector;
     bool bLassoBraced = false;
+    FVector CapturedRetreatDirection = FVector::ZeroVector;
+    float CapturedRetreatSpeed = 0.f;
+    float CapturedRetreatSeconds = 0.f;
 };
