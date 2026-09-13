@@ -1,6 +1,6 @@
 # 《套马的汉子》 / Project STEPPE
 
-UE **5.8.2** 的 C++ 骑乘游戏原型。当前已完成 P9 捕获后安全接近；骑手可在限时任务中驱赶马群、切出目标、投掷套索、控制张力、下马安抚，并以第一次接触完成结算。
+UE **5.8.2** 的 C++ 骑乘游戏原型。当前已完成 P10 灰盒闭环：骑手可驱赶马群、切出目标、投掷套索、控制张力、下马安抚、牵回营地，并通过 Horse Card 命名完成结算。
 
 ## 打开与试玩
 
@@ -25,7 +25,7 @@ UE **5.8.2** 的 C++ 骑乘游戏原型。当前已完成 P9 捕获后安全接�
 | 鼠标 | 独立自由观察，不改变马朝向 |
 | 左 Shift + W | 请求 Sprint；受体力限制 |
 | 左 Ctrl | 强制动 |
-| E | 上马 / 下马；捕获后徒步靠近并平静停留，再按 E 完成第一次接触 |
+| E | 上马 / 下马；捕获后完成第一次接触，再按一次 E 建立牵行 |
 | Q | 选择视线前方的野马；再次选择同一匹可取消 |
 | 鼠标右键 | 隔离目标后按住瞄准套索 |
 | 鼠标左键 | 瞄准时投掷；附着后释放 |
@@ -45,13 +45,13 @@ UE **5.8.2** 的 C++ 骑乘游戏原型。当前已完成 P9 捕获后安全接�
 ## 验证
 
 ```powershell
-.\Scripts\RunEditor.ps1 -Tests -ExpectedTests 13 -Commands 'Automation RunTests Steppe' -LogName P9-Automation
-.\Scripts\RunEditor.ps1 -Game -Render -Smoke -PostCaptureSmoke -Commands '' -LogName P9-FinalRender
-.\Scripts\RunEditor.ps1 -Game -Render -Smoke -VerticalSliceFailureSmoke -Commands '' -LogName P9-FailureRegression
+.\Scripts\RunEditor.ps1 -Tests -ExpectedTests 14 -Commands 'Automation RunTests Steppe' -LogName P10-FinalAutomation
+.\Scripts\RunEditor.ps1 -Game -Render -Smoke -FullLoopSmoke -Commands '' -LogName P10-FinalRender
+.\Scripts\RunEditor.ps1 -Game -Render -Smoke -VerticalSliceFailureSmoke -Commands '' -LogName P10-FailureRegression
 ```
 
-第一条运行全部数学和真实 UWorld 集成测试，报告位于 `Saved/Automation/index.json`。第二条启动实际游戏，自动走完捕获、下马、平静接近和第一次接触并截图；第三条验证紧迫提示与超时失败。这些烟测不用于人工试玩。
+第一条运行全部数学和真实 UWorld 集成测试，报告位于 `Saved/Automation/index.json`。第二条启动实际游戏，自动走完捕获、接近、牵行、交付和命名并截图；第三条验证紧迫提示与超时失败。这些烟测不用于人工试玩。
 
 当前构建使用 V7 / Unreal5_8 IncludeOrder；因本机共享 PCH 编译停顿，模块禁用 PCH，构建脚本传入 `-NoUBA` 禁用 detouring。没有修改引擎安装。Editor 开启 Live Coding 时应先保存关闭再运行外部构建。
 
-后续开发先阅读 `Docs/GAME_DESIGN_VISION.md`、`Docs/DESIGN_BASELINE.md`、`Docs/PROTOTYPE_GDD.md` 和 `Docs/DEVELOPMENT_ROADMAP.md`。真实结果见 `Docs/DEVELOPMENT_STATUS.md`，工程分层见 `Docs/ARCHITECTURE.md`，P9 实现规格与验证依据见 `Docs/P9_CAPTURE_AFTERMATH_SPEC.md`；下一阶段按路线图进入 P10 牵回营地与命名。
+后续开发先阅读 `Docs/GAME_DESIGN_VISION.md`、`Docs/DESIGN_BASELINE.md`、`Docs/PROTOTYPE_GDD.md` 和 `Docs/DEVELOPMENT_ROADMAP.md`。真实结果见 `Docs/DEVELOPMENT_STATUS.md`，工程分层见 `Docs/ARCHITECTURE.md`，P10 规格与验证依据见 `Docs/P10_LEAD_DELIVERY_NAMING_SPEC.md`；下一阶段按路线图进入 P11 个体差异。

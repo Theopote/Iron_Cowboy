@@ -1,6 +1,6 @@
 # P10 牵回营地与命名规格
 
-**状态：实施中**
+**状态：已实现并验证**
 **依赖：P9**
 **范围：从第一次接触到本轮命名结算**
 
@@ -61,3 +61,15 @@
 ## 非目标
 
 P10 不实现跨启动存档、马厩容量、出售、奖励经济、正式角色动画、牵绳物理、骑马牵行或多个目标同时交付。
+
+## 实现结果
+
+2026-09-13 已完成：
+
+- `UHorseTrustComponent` 增加 Leading、Delivered、Named 与本轮身份记录。
+- HorseBrain 在 Captured 分支中使用牵引锚点、距离阈值和既有环境探测提交步行/制动意图。
+- `ASteppeDeliveryZone` 提供出生点附近的可见围栏和双 Actor 交付判定。
+- 原生 UMG Horse Card 支持键盘输入、Enter/按钮确认与 F2 重玩，并在显示时接管输入焦点。
+- Trial 记录 Secure、Contact、Deliver、Name 四段进度，仅在命名后结算。
+
+验证：14 passed、0 failed；完整渲染烟测记录目标通过 Movement 移动 428.3 cm 后交付，命名 `Saran`，Trial Success。证据位于 `Validation/P10-Results.json`、`P10-Lead.png`、`P10-HorseCard.png`、`P10-Named.png` 和 `P10-Runs.txt`。

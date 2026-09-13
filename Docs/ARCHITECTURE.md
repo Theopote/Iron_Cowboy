@@ -85,4 +85,8 @@ GameMode 持有轻量的 `FSteppeTrialProgress`，在玩家与马群完成生成
 
 ## P9：捕获后安全接近
 
-`UHorseTrustComponent` 属于 WildHorse，捕获登记时由 HerdManager 注入当前 Rider，并开始评估二维距离、有符号接近速度和骑乘状态。组件持有 Secured、CalmApproach、Rejected、ReadyForContact 与 FirstContact；高速冲入通过 HorseBrain 提交短时后退意图，Movement 仍负责真实移动。HerdManager 记录首次接触的权威集合与计数，Trial 使用该计数完成任务。Rider 的 E 输入在徒步且靠近已捕获目标时优先交给接触流程，否则保持原上马行为。详见 P9_CAPTURE_AFTERMATH_SPEC.md。
+`UHorseTrustComponent` 属于 WildHorse，捕获登记时由 HerdManager 注入当前 Rider，并开始评估二维距离、有符号接近速度和骑乘状态。组件持有 Secured、CalmApproach、Rejected、ReadyForContact 与 FirstContact；高速冲入通过 HorseBrain 提交短时后退意图，Movement 仍负责真实移动。HerdManager 记录首次接触的权威集合与计数。Rider 的 E 输入在徒步且靠近已捕获目标时优先交给接触流程，否则保持原上马行为。详见 P9_CAPTURE_AFTERMATH_SPEC.md。
+
+## P10：牵回营地与命名
+
+第一次接触后，HorseTrust 进入 Leading，并让 HorseBrain 持有弱引用 LeadTarget。Brain 计算骑手后方锚点、跟随距离和环境安全方向，只向 HorseMovement 提交 Walk/Brake 意图。`ASteppeDeliveryZone` 提供可见围栏和空间判定；HerdManager 要求骑手与牵行目标同时在区域内才进入 Delivered。PlayerController 随后显示原生 UMG `UHorseNamingWidget`，UI 接管键盘焦点并通过 HerdManager 提交名字。Trial 读取 DeliveredCount 与 NamedCount，仅在命名达到目标后成功。详见 P10_LEAD_DELIVERY_NAMING_SPEC.md。

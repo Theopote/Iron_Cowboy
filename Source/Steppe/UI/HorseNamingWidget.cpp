@@ -22,9 +22,9 @@ void UHorseNamingWidget::Configure(UHorseTrustComponent* InHorse)
     RefreshCard();
 }
 
-void UHorseNamingWidget::NativeConstruct()
+void UHorseNamingWidget::NativeOnInitialized()
 {
-    Super::NativeConstruct();
+    Super::NativeOnInitialized();
     if (!WidgetTree->RootWidget)
     {
         auto* Canvas=WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(),TEXT("NamingCanvas"));
@@ -64,6 +64,12 @@ void UHorseNamingWidget::NativeConstruct()
         Stack->AddChildToVerticalBox(ConfirmButton)->SetPadding(FMargin(0,8));
         StatusText=AddText(TEXT("Status"),TEXT("Press Enter to confirm | F2 replay"),FLinearColor(.75f,.8f,.75f));
     }
+    RefreshCard();
+}
+
+void UHorseNamingWidget::NativeConstruct()
+{
+    Super::NativeConstruct();
     RefreshCard();
 }
 

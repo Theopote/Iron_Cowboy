@@ -157,10 +157,21 @@ bool UHorseTrustComponent::ConfirmName(const FString& NewName)
 void UHorseTrustComponent::TickComponent(float Dt, ELevelTick TickType, FActorComponentTickFunction* TickFunction)
 {
     Super::TickComponent(Dt,TickType,TickFunction);
-    if (State==EPostCaptureState::Inactive || State==EPostCaptureState::FirstContact || State==EPostCaptureState::Leading
+    if (State==EPostCaptureState::Inactive || State==EPostCaptureState::FirstContact
         || State==EPostCaptureState::Delivered || State==EPostCaptureState::Named) { return; }
     auto* Rider=Interactor.Get();
     if (!Rider) { Feedback=TEXT("Rider unavailable"); return; }
+    if (State==EPostCaptureState::Leading)
+    {
+        if (Rider->Riding->IsMounted())
+        {
+            State=EPostCaptureState::FirstContact;
+            bLeading=false;
+            Feedback=TEXT("Dismount and press E to take the lead rope again");
+            if (auto* Horse=Cast<ASteppeWildHorseCharacter>(GetOwner())) { Horse->Brain->SetLeadTarget(nullptr); }
+        }
+        return;
+    }
     const FVector ToHorse=(GetOwner()->GetActorLocation()-Rider->GetActorLocation()).GetSafeNormal2D();
     const AActor* MotionSource=Rider->GetAttachParentActor()?Rider->GetAttachParentActor():Rider;
     const float ApproachSpeed=FVector::DotProduct(MotionSource->GetVelocity(),ToHorse);

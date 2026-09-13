@@ -6,7 +6,7 @@
 2. `DESIGN_BASELINE.md`：当前事实、早期设想与现状的差异、文档权威顺序。
 3. `PROTOTYPE_GDD.md`：当前规则与下一版 6–10 分钟完整流程。
 4. `DEVELOPMENT_ROADMAP.md`：P9–P14 的执行顺序和退出条件。
-5. `P9_CAPTURE_AFTERMATH_SPEC.md`：已实现的捕获后接近规格与验证依据。
+5. `P10_LEAD_DELIVERY_NAMING_SPEC.md`：当前完整闭环的牵行、交付和命名规格。
 6. `DESIGN_DECISIONS.md`：已确认决策、待决事项和变更记录。
 
 ## 当前开发文档
@@ -16,6 +16,7 @@
 - PROTOTYPE_GDD.md：玩法规则、完整试玩流程、范围和原型验收指标。
 - DEVELOPMENT_ROADMAP.md：P9–P14 里程碑与验证门。
 - P9_CAPTURE_AFTERMATH_SPEC.md：已实现的安全接近、拒绝恢复与第一次接触规则。
+- P10_LEAD_DELIVERY_NAMING_SPEC.md：已实现的牵回营地、Horse Card、命名和最终结算规则。
 - DESIGN_DECISIONS.md：跨系统技术与产品决策。
 - References/：两份早期讨论 PDF 原件及使用说明。
 
@@ -35,4 +36,4 @@
 - DEVELOPMENT_STATUS.md：当前状态与最新验证。
 - Validation/：实际运行截图与精简结果。
 
-当前使用本机 UE 5.8.2。已实现 P9 捕获后安全接近与第一次接触；下一阶段为 P10 牵回营地和命名。
+当前使用本机 UE 5.8.2。已实现 P10 从营地出发到命名的完整灰盒闭环；下一阶段为 P11 可感知的马匹个体差异。

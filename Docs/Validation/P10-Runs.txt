@@ -1,0 +1,7 @@
+UE 5.8.2 / SteppeEditor Win64 Development
+Build: Succeeded
+Automation: 14 passed, 0 failed, 1 passed with warnings (existing RiderSeat fallback)
+Full loop: Secure 1/1, Contact 1/1, Deliver 1/1, Name 1/1, score 2080
+STEPPE_P10_SMOKE: PostState=EPostCaptureState::Named Leading=0 Delivered=1 Named=1 HorseName=Saran Travel=428.3 Trial=ESteppeTrialState::Success
+P9 regression: FirstContact remains Running until P10 delivery and naming
+Failure regression: urgency warning rendered and mission timed out without capture/contact/delivery/name

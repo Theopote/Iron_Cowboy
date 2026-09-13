@@ -83,7 +83,12 @@ void ASteppeHUD::DrawHUD()
                 if (PendingTrust->State==EPostCaptureState::Leading && Mode->DeliveryZone)
                 {
                     const float CampDistance=Rider?FVector::Dist2D(Rider->GetActorLocation(),Mode->DeliveryZone->GetActorLocation())/100.f:0.f;
-                    Objective=FString::Printf(TEXT("NEXT  Lead the horse to CAMP / PEN  |  %.1f m"),CampDistance);
+                    const auto* LeadHorse=Cast<ASteppeWildHorseCharacter>(PendingTrust->GetOwner());
+                    if (LeadHorse && LeadHorse->Brain->LeadDistance>LeadHorse->Brain->LeadMaxDistance)
+                    {
+                        Objective=TEXT("WAIT  The horse lost pace - go back and let it catch up");
+                    }
+                    else { Objective=FString::Printf(TEXT("NEXT  Lead the horse to CAMP / PEN  |  %.1f m"),CampDistance); }
                 }
                 else if (PendingTrust->State==EPostCaptureState::FirstContact)
                 {
