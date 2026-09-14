@@ -1,6 +1,6 @@
 # P12 套索技巧与失控后果规格
 
-**状态：第一增量已实现并验证；第二增量待实施**  
+**状态：两次增量均已实现并验证**
 **依赖：P11**  
 **当前范围：摆绳准备、投掷稳定性、Head/Neck/Torso 简化命中区域、Rider Balance、落马与短距离拖行**
 
@@ -71,7 +71,15 @@ P12 不实现物理套索绳、骨骼级精确缠绕、随机风偏、自动锁�
 
 - Aiming 状态按时间计算准备度、摆绳相位和 Stability；出手时锁定本次有效环口、速度和射程。
 - 实际命中点被确定性划分为 Head、Neck、Torso，并持续显示在 HUD；区域倍率进入张力与压制时间。
-- UE 5.8.2 Development 构建成功；新增 `Steppe.P12.SwingTimingAndHitZones`，P1–P12 共 **16 passed、0 failed**，保留 1 项既有 RiderSeat 占位警告。
+- UE 5.8.2 Development 构建成功；新增 `Steppe.P12.SwingTimingAndHitZones`，当时 P1–P12.1 共 **16 passed、0 failed**。
 - 实际渲染烟测记录 `Stability=1.00`、`Zone=Neck`、`Radius=80.0`、`Range=2600.0`；P10 完整捕获到命名路线继续通过。
 
-证据位于 `Validation/P12-Results.json`、`P12-Swing.png`、`P12-NeckHit.png`、`P12-FullLoop.png` 和 `P12-Runs.txt`。原始日志为 `Saved/Logs/P12-FinalAutomation.log`、`P12-LassoSkillRender.log` 与 `P12-FullLoopRegression.log`。
+## 第二增量实现与验证结果
+
+- 新增 RiderBalanceComponent，在 PostPhysics 读取已计算的套索张力，并结合侧向比例、坐骑速度、目标 Strength 和命中区计算负荷。
+- Balance 达到 WarningThreshold 时给出红色预警；达到 FallThreshold 后通过 RidingComponent 事故入口解除挂接、恢复碰撞并进入 Falling/Dragged。
+- Dragged 最长 1.25 秒，移动由 CharacterMovement 处理；LMB 主动松绳或超时都会进入 Recovering，恢复后仍可步行和重新上马。
+- 新增 `Steppe.P12.BalanceFallAndDraggedRecovery`；最终 P1–P12 共 **17 passed、0 failed**，2 项因测试触发 RiderSeat 灰盒回退而带既有警告。
+- 实际渲染记录 `Dragged / Mounted=0 / Lasso=Attached / Balance=1.00 / Side=1.00`，随后主动 Release 进入双 Recovering；完整命名闭环继续成功。
+
+证据位于 `Validation/P12-Results.json`、`P12-Swing.png`、`P12-NeckHit.png`、`P12-Dragged.png`、`P12-FullLoop.png` 和 `P12-Runs.txt`。原始日志为 `Saved/Logs/P12-FinalAutomation.log`、`P12-LassoSkillRender.log`、`P12-BalanceRender.log` 与 `P12-BalanceFullLoop.log`。

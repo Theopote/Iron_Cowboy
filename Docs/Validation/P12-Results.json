@@ -2,8 +2,8 @@
 	"devices": [
 		{
 			"deviceName": "THEOPOTE",
-			"instance": "C530B008479EEF67636E479610E356B5",
-			"instanceName": "THEOPOTE-4648",
+			"instance": "6CED5020443ACDE5E21648B0005ABD8F",
+			"instanceName": "THEOPOTE-5548",
 			"platform": "WindowsEditor",
 			"oSVersion": "Windows 11 (25H2) [10.0.26200.9445] ",
 			"model": "Default",
@@ -15,13 +15,13 @@
 			"appInstanceLog": ""
 		}
 	],
-	"reportCreatedOn": "2026.09.13-10.16.35",
+	"reportCreatedOn": "2026.09.14-02.32.40",
 	"succeeded": 15,
-	"succeededWithWarnings": 1,
+	"succeededWithWarnings": 2,
 	"failed": 0,
 	"notRun": 0,
 	"inProcess": 0,
-	"totalDuration": 2.1905148029327393,
+	"totalDuration": 1.1020915508270264,
 	"comparisonExported": false,
 	"comparisonExportDirectory": "",
 	"tests": [
@@ -31,10 +31,10 @@
 			"tags": [],
 			"state": "Success",
 			"deviceInstance": [
-				"C530B008479EEF67636E479610E356B5"
+				"6CED5020443ACDE5E21648B0005ABD8F"
 			],
-			"duration": 0.018082998692989349,
-			"dateTime": "2026.09.13-10.16.32",
+			"duration": 0.0084511004388332367,
+			"dateTime": "2026.09.14-02.32.38",
 			"entries": [],
 			"warnings": 0,
 			"errors": 0,
@@ -46,10 +46,10 @@
 			"tags": [],
 			"state": "Success",
 			"deviceInstance": [
-				"C530B008479EEF67636E479610E356B5"
+				"6CED5020443ACDE5E21648B0005ABD8F"
 			],
-			"duration": 0.7867845892906189,
-			"dateTime": "2026.09.13-10.16.32",
+			"duration": 0.38932210206985474,
+			"dateTime": "2026.09.14-02.32.38",
 			"entries": [
 				{
 					"event":
@@ -61,7 +61,7 @@
 					},
 					"filename": "",
 					"lineNumber": -1,
-					"timestamp": "2026.09.13-10.16.32"
+					"timestamp": "2026.09.14-02.32.38"
 				},
 				{
 					"event":
@@ -73,7 +73,7 @@
 					},
 					"filename": "",
 					"lineNumber": -1,
-					"timestamp": "2026.09.13-10.16.33"
+					"timestamp": "2026.09.14-02.32.38"
 				},
 				{
 					"event":
@@ -85,7 +85,7 @@
 					},
 					"filename": "",
 					"lineNumber": -1,
-					"timestamp": "2026.09.13-10.16.33"
+					"timestamp": "2026.09.14-02.32.39"
 				},
 				{
 					"event":
@@ -97,7 +97,7 @@
 					},
 					"filename": "",
 					"lineNumber": -1,
-					"timestamp": "2026.09.13-10.16.33"
+					"timestamp": "2026.09.14-02.32.39"
 				}
 			],
 			"warnings": 2,
@@ -110,10 +110,10 @@
 			"tags": [],
 			"state": "Success",
 			"deviceInstance": [
-				"C530B008479EEF67636E479610E356B5"
+				"6CED5020443ACDE5E21648B0005ABD8F"
 			],
-			"duration": 0.012393500655889511,
-			"dateTime": "2026.09.13-10.16.33",
+			"duration": 0.0068011991679668427,
+			"dateTime": "2026.09.14-02.32.39",
 			"entries": [],
 			"warnings": 0,
 			"errors": 0,
@@ -125,12 +125,52 @@
 			"tags": [],
 			"state": "Success",
 			"deviceInstance": [
-				"C530B008479EEF67636E479610E356B5"
+				"6CED5020443ACDE5E21648B0005ABD8F"
 			],
-			"duration": 0.011535599827766418,
-			"dateTime": "2026.09.13-10.16.33",
+			"duration": 0.0077963992953300476,
+			"dateTime": "2026.09.14-02.32.39",
 			"entries": [],
 			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "BalanceFallAndDraggedRecovery",
+			"fullTestPath": "Steppe.P12.BalanceFallAndDraggedRecovery",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"6CED5020443ACDE5E21648B0005ABD8F"
+			],
+			"duration": 0.024628400802612305,
+			"dateTime": "2026.09.14-02.32.39",
+			"entries": [
+				{
+					"event":
+					{
+						"type": "Warning",
+						"message": "LogSteppeRiding: RiderSeat socket missing on SteppeHorseCharacter_0; using editable fallback seat.",
+						"context": "log",
+						"artifact": "00000000000000000000000000000000"
+					},
+					"filename": "",
+					"lineNumber": -1,
+					"timestamp": "2026.09.14-02.32.39"
+				},
+				{
+					"event":
+					{
+						"type": "Warning",
+						"message": "LogSteppeRiding: RiderSeat socket missing on SteppeHorseCharacter_0; using editable fallback seat.",
+						"context": "log",
+						"artifact": "00000000000000000000000000000000"
+					},
+					"filename": "",
+					"lineNumber": -1,
+					"timestamp": "2026.09.14-02.32.39"
+				}
+			],
+			"warnings": 2,
 			"errors": 0,
 			"artifacts": []
 		},
@@ -140,10 +180,10 @@
 			"tags": [],
 			"state": "Success",
 			"deviceInstance": [
-				"C530B008479EEF67636E479610E356B5"
+				"6CED5020443ACDE5E21648B0005ABD8F"
 			],
-			"duration": 0.042224597185850143,
-			"dateTime": "2026.09.13-10.16.33",
+			"duration": 0.021770298480987549,
+			"dateTime": "2026.09.14-02.32.39",
 			"entries": [],
 			"warnings": 0,
 			"errors": 0,
@@ -155,10 +195,10 @@
 			"tags": [],
 			"state": "Success",
 			"deviceInstance": [
-				"C530B008479EEF67636E479610E356B5"
+				"6CED5020443ACDE5E21648B0005ABD8F"
 			],
-			"duration": 0.072483405470848083,
-			"dateTime": "2026.09.13-10.16.33",
+			"duration": 0.037295199930667877,
+			"dateTime": "2026.09.14-02.32.39",
 			"entries": [],
 			"warnings": 0,
 			"errors": 0,
@@ -170,10 +210,10 @@
 			"tags": [],
 			"state": "Success",
 			"deviceInstance": [
-				"C530B008479EEF67636E479610E356B5"
+				"6CED5020443ACDE5E21648B0005ABD8F"
 			],
-			"duration": 0.36248248815536499,
-			"dateTime": "2026.09.13-10.16.33",
+			"duration": 0.12310700118541718,
+			"dateTime": "2026.09.14-02.32.39",
 			"entries": [],
 			"warnings": 0,
 			"errors": 0,
@@ -185,10 +225,10 @@
 			"tags": [],
 			"state": "Success",
 			"deviceInstance": [
-				"C530B008479EEF67636E479610E356B5"
+				"6CED5020443ACDE5E21648B0005ABD8F"
 			],
-			"duration": 0.46346160769462585,
-			"dateTime": "2026.09.13-10.16.34",
+			"duration": 0.28211790323257446,
+			"dateTime": "2026.09.14-02.32.39",
 			"entries": [],
 			"warnings": 0,
 			"errors": 0,
@@ -200,10 +240,10 @@
 			"tags": [],
 			"state": "Success",
 			"deviceInstance": [
-				"C530B008479EEF67636E479610E356B5"
+				"6CED5020443ACDE5E21648B0005ABD8F"
 			],
-			"duration": 0.024323198944330215,
-			"dateTime": "2026.09.13-10.16.34",
+			"duration": 0.011436499655246735,
+			"dateTime": "2026.09.14-02.32.39",
 			"entries": [],
 			"warnings": 0,
 			"errors": 0,
@@ -215,10 +255,10 @@
 			"tags": [],
 			"state": "Success",
 			"deviceInstance": [
-				"C530B008479EEF67636E479610E356B5"
+				"6CED5020443ACDE5E21648B0005ABD8F"
 			],
-			"duration": 0.13414409756660461,
-			"dateTime": "2026.09.13-10.16.34",
+			"duration": 0.057739697396755219,
+			"dateTime": "2026.09.14-02.32.39",
 			"entries": [],
 			"warnings": 0,
 			"errors": 0,
@@ -230,10 +270,10 @@
 			"tags": [],
 			"state": "Success",
 			"deviceInstance": [
-				"C530B008479EEF67636E479610E356B5"
+				"6CED5020443ACDE5E21648B0005ABD8F"
 			],
-			"duration": 0.040220901370048523,
-			"dateTime": "2026.09.13-10.16.34",
+			"duration": 0.018600102514028549,
+			"dateTime": "2026.09.14-02.32.39",
 			"entries": [],
 			"warnings": 0,
 			"errors": 0,
@@ -245,10 +285,10 @@
 			"tags": [],
 			"state": "Success",
 			"deviceInstance": [
-				"C530B008479EEF67636E479610E356B5"
+				"6CED5020443ACDE5E21648B0005ABD8F"
 			],
-			"duration": 0.067840799689292908,
-			"dateTime": "2026.09.13-10.16.34",
+			"duration": 0.031085599213838577,
+			"dateTime": "2026.09.14-02.32.39",
 			"entries": [],
 			"warnings": 0,
 			"errors": 0,
@@ -260,10 +300,10 @@
 			"tags": [],
 			"state": "Success",
 			"deviceInstance": [
-				"C530B008479EEF67636E479610E356B5"
+				"6CED5020443ACDE5E21648B0005ABD8F"
 			],
-			"duration": 0.072497904300689697,
-			"dateTime": "2026.09.13-10.16.35",
+			"duration": 0.033459600061178207,
+			"dateTime": "2026.09.14-02.32.39",
 			"entries": [],
 			"warnings": 0,
 			"errors": 0,
@@ -275,10 +315,10 @@
 			"tags": [],
 			"state": "Success",
 			"deviceInstance": [
-				"C530B008479EEF67636E479610E356B5"
+				"6CED5020443ACDE5E21648B0005ABD8F"
 			],
-			"duration": 0.05997379869222641,
-			"dateTime": "2026.09.13-10.16.35",
+			"duration": 0.030964300036430359,
+			"dateTime": "2026.09.14-02.32.39",
 			"entries": [],
 			"warnings": 0,
 			"errors": 0,
@@ -290,10 +330,10 @@
 			"tags": [],
 			"state": "Success",
 			"deviceInstance": [
-				"C530B008479EEF67636E479610E356B5"
+				"6CED5020443ACDE5E21648B0005ABD8F"
 			],
-			"duration": 0.011426597833633423,
-			"dateTime": "2026.09.13-10.16.35",
+			"duration": 0.0081024020910263062,
+			"dateTime": "2026.09.14-02.32.40",
 			"entries": [],
 			"warnings": 0,
 			"errors": 0,
@@ -305,10 +345,10 @@
 			"tags": [],
 			"state": "Success",
 			"deviceInstance": [
-				"C530B008479EEF67636E479610E356B5"
+				"6CED5020443ACDE5E21648B0005ABD8F"
 			],
-			"duration": 0.010638900101184845,
-			"dateTime": "2026.09.13-10.16.35",
+			"duration": 0.0094138979911804199,
+			"dateTime": "2026.09.14-02.32.40",
 			"entries": [],
 			"warnings": 0,
 			"errors": 0,
