@@ -36,6 +36,7 @@ public:
     float GetEffectiveSubdueSeconds(const ASteppeWildHorseCharacter* Horse) const;
     ELassoHitZone ClassifyHitZone(const ASteppeWildHorseCharacter* Horse, FVector HitLocation) const;
     float GetHitZoneTensionMultiplier() const;
+    float CalculateShockLoad(float SeparatingSpeed, float AnchorDeceleration, float TensionValue) const;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lasso", meta=(ClampMin="100")) float ThrowSpeed = 3200.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lasso", meta=(ClampMin="100")) float MaximumRange = 2600.f;
@@ -50,7 +51,12 @@ public:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight", meta=(ClampMin="10")) float TensionRange = 500.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight", meta=(ClampMin="0", ClampMax="1")) float UsefulTensionMin = .2f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight", meta=(ClampMin="0", ClampMax="1.5")) float UsefulTensionMax = .85f;
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight", meta=(ClampMin="0.1")) float BreakHoldSeconds = .35f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight|Shock", meta=(ClampMin="1")) float ShockSpeedThreshold = 900.f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight|Shock", meta=(ClampMin="1")) float ShockDecelerationThreshold = 700.f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight|Shock", meta=(ClampMin="0.1")) float ShockBreakThreshold = 1.35f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight|Shock", meta=(ClampMin="0.1")) float BreakHoldSeconds = .8f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight|Shock", meta=(ClampMin="0.1")) float ShockDecayPerSecond = 1.5f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight|Shock", meta=(ClampMin="1.1")) float EmergencyBreakRangeMultiplier = 1.8f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso") ELassoState State = ELassoState::Stored;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso") FVector RopeStart = FVector::ZeroVector;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso") FVector LoopLocation = FVector::ZeroVector;
@@ -70,10 +76,16 @@ public:
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Rope Fight") float Tension = 0.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Rope Fight") float ControlProgress = 0.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Rope Fight") bool bBracing = false;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Rope Fight|Shock") float SeparatingSpeed = 0.f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Rope Fight|Shock") float AnchorDeceleration = 0.f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Rope Fight|Shock") float ShockLoad = 0.f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Rope Fight|Shock") bool bShockRisk = false;
 private:
     FVector ThrowDirection = FVector::ForwardVector;
     float RecoveryRemaining = 0.f;
-    float OverTensionSeconds = 0.f;
+    float ShockRiskSeconds = 0.f;
+    float PreviousAnchorSpeed = 0.f;
+    bool bHadAnchorSample = false;
     void StartRecovery(const TCHAR* Message);
     void UpdateSwing(float DeltaSeconds);
 };

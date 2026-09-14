@@ -488,8 +488,12 @@ bool FRiderBalanceTest::RunTest(const FString& Parameters)
     Fixture.Step(.18f);
     if (!TestEqual(TEXT("Second fall begins dragging"),Rider->Balance->State,ERiderBalanceState::Dragged)) { return false; }
     Fixture.Step(.2f);
-    TestEqual(TEXT("Maximum drag time forces rope recovery"),Rider->Lasso->State,ELassoState::Recovering);
-    TestEqual(TEXT("Maximum drag time starts rider recovery"),Rider->Balance->State,ERiderBalanceState::Recovering);
+    TestEqual(TEXT("Dragged rider regains their feet without dropping the rope"),Rider->Lasso->State,ELassoState::Attached);
+    TestEqual(TEXT("Standing rider remains pulled by the running horse"),Rider->Balance->State,ERiderBalanceState::Pulled);
+    TestEqual(TEXT("Pulled state exposes its gameplay tag"),Rider->GetRiderStateTag(),SteppeTags::Rider_State_Pulled.GetTag());
+    Rider->Lasso->Release();
+    Fixture.Step(.05f);
+    TestEqual(TEXT("Player release ends the on-foot rope struggle"),Rider->Balance->State,ERiderBalanceState::Recovering);
     return true;
 }
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FFeedbackSignalsTest,"Steppe.P13.FeedbackSignalsAndEvents",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
@@ -576,10 +580,15 @@ bool FRopeFightTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("A second rope fight can begin"),Rider->Lasso->BeginAimForTarget(Wild,true));
     TestTrue(TEXT("Second throw starts"),Rider->Lasso->ThrowFrom(FVector(0,0,170),FVector::ForwardVector));
     Fixture.Step(.5f);
-    Rider->SetActorLocation(FVector(-4000,0,100),false,nullptr,ETeleportType::TeleportPhysics);
-    Fixture.Step(.1f);
-    TestEqual(TEXT("Excess rope length breaks the rope"),Rider->Lasso->State,ELassoState::Recovering);
-    TestFalse(TEXT("Broken rope releases the horse"),Wild->Brain->bLassoed);
+    Rider->SetActorLocation(FVector(-2000,0,100),false,nullptr,ETeleportType::TeleportPhysics);
+    Fixture.Step(.6f);
+    TestEqual(TEXT("Sustained high tension keeps the rope attached"),Rider->Lasso->State,ELassoState::Attached);
+    TestTrue(TEXT("Sustained pull keeps the horse lassoed"),Wild->Brain->bLassoed);
+    TestEqual(TEXT("On-foot holder is pulled instead of losing the rope"),Rider->Balance->State,ERiderBalanceState::Pulled);
+    TestEqual(TEXT("Steady speed does not create a rope shock"),Rider->Lasso->CalculateShockLoad(1200.f,0.f,1.2f),0.f);
+    TestTrue(TEXT("High separating speed plus sudden deceleration creates a break-risk shock"),
+        Rider->Lasso->CalculateShockLoad(1200.f,2000.f,1.2f)>Rider->Lasso->ShockBreakThreshold);
+    Rider->Lasso->Release();
     return true;
 }
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCaptureTest,"Steppe.P7.CaptureSubduedHorse",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)

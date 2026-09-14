@@ -142,6 +142,7 @@ FGameplayTag ASteppeRiderCharacter::GetRiderStateTag() const
     if (Balance)
     {
         if (Balance->State==ERiderBalanceState::Dragged) { return SteppeTags::Rider_State_Dragged; }
+        if (Balance->State==ERiderBalanceState::Pulled) { return SteppeTags::Rider_State_Pulled; }
         if (Balance->State==ERiderBalanceState::Recovering) { return SteppeTags::Rider_State_Recovering; }
         if (Balance->State==ERiderBalanceState::Warning) { return SteppeTags::Rider_State_BalanceWarning; }
         if (Balance->State==ERiderBalanceState::Falling) { return SteppeTags::Rider_State_Falling; }

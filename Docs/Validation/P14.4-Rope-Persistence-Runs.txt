@@ -1,0 +1,22 @@
+P14.4 rope persistence and on-foot control — 2026-09-14 — Unreal Engine 5.8.2
+
+Human feedback trigger
+  Sustained tension broke the rope too easily.
+  A running wild horse should pull the mounted player before the rope gives way.
+  Dismounted or fallen players should keep the rope and continue calming while following or being dragged.
+
+Implementation
+  Ordinary high tension transmits force and no longer starts a break timer.
+  Break risk requires high separating speed plus sudden anchor-side deceleration.
+  The lassoed horse continues struggling away and slows as control progress rises.
+  Shock and lateral pull can force a rider fall.
+  A fallen rider is dragged for up to 2 seconds, then stands in Pulled state without dropping the rope.
+  On-foot tension accelerates the rider toward the horse while movement and Space control remain available.
+  HUD distinguishes sustained pull, sudden jolt, downed dragging and on-foot pulling.
+
+Build and automation
+  .\Scripts\Build.ps1 -EngineRoot 'C:\Program Files\Epic Games\UE_5.8'
+  Result: succeeded.
+  .\Scripts\RunEditor.ps1 -Tests -ExpectedTests 19 -Commands 'Automation RunTests Steppe;Quit' -LogName 'P14.4-Rope-Persistence-Automation'
+  Result: 19 passed, 0 failed, 3 existing RiderSeat fallback warnings.
+  Updated coverage proves sustained high tension remains attached, shock needs both speed and deceleration, dragged recovery preserves the rope, and Pulled exposes its gameplay tag.

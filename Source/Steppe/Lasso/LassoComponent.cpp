@@ -81,7 +81,12 @@ bool ULassoComponent::ThrowFrom(FVector Origin, FVector Direction)
     TravelDistance=0.f;
     ControlProgress=0.f;
     Tension=0.f;
-    OverTensionSeconds=0.f;
+    ShockRiskSeconds=0.f;
+    ShockLoad=0.f;
+    SeparatingSpeed=0.f;
+    AnchorDeceleration=0.f;
+    bShockRisk=false;
+    bHadAnchorSample=false;
     HitZone=ELassoHitZone::None;
     State=ELassoState::Thrown;
     Feedback=FString::Printf(TEXT("Lasso in flight | stability %.0f%%"),LastThrowStability*100.f);
@@ -95,6 +100,12 @@ void ULassoComponent::StartRecovery(const TCHAR* Message)
     bTargetIsolated=false;
     bBracing=false;
     Tension=0.f;
+    ShockLoad=0.f;
+    SeparatingSpeed=0.f;
+    AnchorDeceleration=0.f;
+    bShockRisk=false;
+    ShockRiskSeconds=0.f;
+    bHadAnchorSample=false;
     ControlProgress=0.f;
     HitZone=ELassoHitZone::None;
     State=ELassoState::Recovering;
@@ -162,6 +173,13 @@ float ULassoComponent::GetHitZoneTensionMultiplier() const
     return HitZone==ELassoHitZone::Head?1.15f:(HitZone==ELassoHitZone::Torso?.9f:1.f);
 }
 
+float ULassoComponent::CalculateShockLoad(float InSeparatingSpeed, float InAnchorDeceleration, float TensionValue) const
+{
+    const float SpeedRatio=FMath::Max(0.f,InSeparatingSpeed)/FMath::Max(1.f,ShockSpeedThreshold);
+    const float DecelerationRatio=FMath::Max(0.f,InAnchorDeceleration)/FMath::Max(1.f,ShockDecelerationThreshold);
+    return FMath::Clamp(SpeedRatio*DecelerationRatio*FMath::Max(.35f,TensionValue),0.f,2.f);
+}
+
 void ULassoComponent::UpdateSwing(float Dt)
 {
     if (const auto* Mode=GetWorld()?GetWorld()->GetAuthGameMode<ASteppeGameMode>():nullptr)
@@ -212,7 +230,7 @@ void ULassoComponent::TickComponent(float Dt, ELevelTick TickType, FActorCompone
             }
             if (State==ELassoState::Subdued)
             {
-                Horse->Brain->SetLassoConstraint(RopeStart,1.f,true);
+                Horse->Brain->SetLassoConstraint(RopeStart,1.f,true,1.f);
                 Feedback=FString::Printf(TEXT("%s LOOP | SUBDUED - press C"),*UEnum::GetDisplayValueAsText(HitZone).ToString().ToUpper());
                 return;
             }
@@ -222,13 +240,24 @@ void ULassoComponent::TickComponent(float Dt, ELevelTick TickType, FActorCompone
             {
                 if (Rider->Riding && Rider->Riding->GetHorse()) { AnchorVelocity=Rider->Riding->GetHorse()->GetVelocity(); }
             }
-            const float SeparatingSpeed=FVector::DotProduct(Horse->GetVelocity()-AnchorVelocity,RopeDirection);
+            const float AnchorSpeed=AnchorVelocity.Size2D();
+            SeparatingSpeed=FVector::DotProduct(Horse->GetVelocity()-AnchorVelocity,RopeDirection);
+            AnchorDeceleration=bHadAnchorSample && Dt>SMALL_NUMBER?FMath::Max(0.f,(PreviousAnchorSpeed-AnchorSpeed)/Dt):0.f;
+            PreviousAnchorSpeed=AnchorSpeed;
+            bHadAnchorSample=true;
             Tension=FMath::Clamp(((Distance-RopeLength)/FMath::Max(10.f,TensionRange)+FMath::Max(0.f,SeparatingSpeed)/1200.f)*GetHitZoneTensionMultiplier(),0.f,1.5f);
-            Horse->Brain->SetLassoConstraint(RopeStart,Tension,bBracing);
+            const float NewShock=CalculateShockLoad(SeparatingSpeed,AnchorDeceleration,Tension);
+            ShockLoad=FMath::Max(NewShock,FMath::Max(0.f,ShockLoad-ShockDecayPerSecond*Dt));
+            const auto* Rider=Cast<ASteppeRiderCharacter>(GetOwner());
+            const bool bMounted=Rider && Rider->Riding && Rider->Riding->IsMounted();
+            bShockRisk=bMounted && ShockLoad>=ShockBreakThreshold;
+            ShockRiskSeconds=bShockRisk?ShockRiskSeconds+Dt:FMath::Max(0.f,ShockRiskSeconds-Dt*3.f);
+            if (!bMounted) { ShockRiskSeconds=0.f; ShockLoad=FMath::Max(0.f,ShockLoad-ShockDecayPerSecond*3.f*Dt); }
+            Horse->Brain->SetLassoConstraint(RopeStart,Tension,bBracing,ControlProgress);
             const bool bUseful=bBracing && Tension>=UsefulTensionMin && Tension<=UsefulTensionMax;
             ControlProgress=FMath::Clamp(ControlProgress+(bUseful?Dt:-Dt*.6f)/GetEffectiveSubdueSeconds(Horse),0.f,1.f);
-            OverTensionSeconds=Tension>1.f?OverTensionSeconds+Dt:FMath::Max(0.f,OverTensionSeconds-Dt*2.f);
-            if (Distance>MaximumRange*1.1f || OverTensionSeconds>=BreakHoldSeconds) { StartRecovery(TEXT("Rope broke - recovering")); }
+            if (Distance>MaximumRange*EmergencyBreakRangeMultiplier) { StartRecovery(TEXT("Rope severed at extreme distance - recovering")); }
+            else if (ShockRiskSeconds>=BreakHoldSeconds) { StartRecovery(TEXT("Sudden stop snapped the rope - recovering")); }
             else if (ControlProgress>=1.f)
             {
                 State=ELassoState::Subdued;
@@ -268,6 +297,10 @@ void ULassoComponent::TickComponent(float Dt, ELevelTick TickType, FActorCompone
             HitZone=ClassifyHitZone(Target.Get(),Hit.ImpactPoint);
             RopeLength=FMath::Max(200.f,FVector::Dist(RopeStart,LoopLocation)-120.f);
             Tension=120.f/FMath::Max(10.f,TensionRange)*GetHitZoneTensionMultiplier();
+            ShockLoad=0.f;
+            ShockRiskSeconds=0.f;
+            bShockRisk=false;
+            bHadAnchorSample=false;
             Target->Brain->SetLassoed(true);
             Feedback=FString::Printf(TEXT("%s LOOP - Left Mouse to release"),*UEnum::GetDisplayValueAsText(HitZone).ToString().ToUpper());
         }

@@ -25,6 +25,7 @@ namespace SteppeTags
     UE_DEFINE_GAMEPLAY_TAG(Rider_State_Falling, "Rider.State.Falling");
     UE_DEFINE_GAMEPLAY_TAG(Rider_State_BalanceWarning, "Rider.State.BalanceWarning");
     UE_DEFINE_GAMEPLAY_TAG(Rider_State_Dragged, "Rider.State.Dragged");
+    UE_DEFINE_GAMEPLAY_TAG(Rider_State_Pulled, "Rider.State.Pulled");
     UE_DEFINE_GAMEPLAY_TAG(Rider_State_Recovering, "Rider.State.Recovering");
     UE_DEFINE_GAMEPLAY_TAG(Lasso_State_Stored, "Lasso.State.Stored");
     UE_DEFINE_GAMEPLAY_TAG(Lasso_State_Aiming, "Lasso.State.Aiming");

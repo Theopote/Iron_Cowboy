@@ -21,7 +21,7 @@ public:
     UFUNCTION(BlueprintCallable, Category="Wild Horse") void SetThreatTarget(AActor* Target);
     UFUNCTION(BlueprintCallable, Category="Wild Horse") void ReceiveHerdAlarm(float Strength, float Duration);
     UFUNCTION(BlueprintCallable, Category="Wild Horse") void SetLassoed(bool bNewLassoed);
-    void SetLassoConstraint(FVector Anchor, float Tension, bool bBraced);
+    void SetLassoConstraint(FVector Anchor, float Tension, bool bBraced, float ControlProgress);
     UFUNCTION(BlueprintCallable, Category="Wild Horse") void SetCaptured(bool bNewCaptured);
     void RequestCapturedRetreat(FVector Direction, float Speed, float Duration);
     void SetLeadTarget(AActor* Target);
@@ -51,6 +51,7 @@ public:
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") bool bIsolationFocus = false;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") bool bLassoed = false;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") float LassoTension = 0.f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") float LassoControlProgress = 0.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") bool bCaptured = false;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Archetype") float AwarenessRiseScale = 1.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Archetype") float AwarenessDecayScale = 1.f;

@@ -51,12 +51,12 @@ void ASteppeHUD::DrawHUD()
         {
             const bool bCaptureComplete=Lasso->State==ELassoState::Captured;
             const bool bGreen=bCaptureComplete || (Lasso->Tension>=Lasso->UsefulTensionMin && Lasso->Tension<=Lasso->UsefulTensionMax);
-            const FLinearColor TensionColor=bGreen?FLinearColor(.3f,1.f,.3f):FLinearColor(1.f,.3f,.15f);
+            const FLinearColor TensionColor=Lasso->bShockRisk?FLinearColor(1.f,.05f,.03f):(bGreen?FLinearColor(.3f,1.f,.3f):FLinearColor(1.f,.3f,.15f));
             DrawRect(FLinearColor(0,0,0,.6f),LassoX-6,73,558,43);
             const FString FightText=bCaptureComplete?TEXT("CAPTURE COMPLETE | LMB stow lasso"):
                 FString::Printf(TEXT("%s | TENSION %.0f%% %s | CONTROL %.0f%%"),
                     *UEnum::GetDisplayValueAsText(Lasso->HitZone).ToString().ToUpper(),Lasso->Tension*100.f,
-                    bGreen?TEXT("STEADY"):TEXT("ADJUST"),Lasso->ControlProgress*100.f);
+                    Lasso->bShockRisk?TEXT("SUDDEN JOLT"):(bGreen?TEXT("STEADY"):TEXT("ADJUST")),Lasso->ControlProgress*100.f);
             DrawText(FightText,TensionColor,LassoX,78,nullptr,1.f);
             DrawRect(FLinearColor(.12f,.12f,.12f,1),LassoX,99,520,8);
             DrawRect(FLinearColor(.3f,.8f,1.f,1),LassoX,99,520*Lasso->ControlProgress,8);
@@ -64,7 +64,7 @@ void ASteppeHUD::DrawHUD()
         if (Rider->Balance && (Lasso->State==ELassoState::Attached || Rider->Balance->State!=ERiderBalanceState::Stable))
         {
             const float NormalizedBalance=FMath::Clamp(Rider->Balance->Balance/FMath::Max(.01f,Rider->Balance->FallThreshold),0.f,1.f);
-            const bool bDanger=Rider->Balance->State==ERiderBalanceState::Warning || Rider->Balance->State==ERiderBalanceState::Falling || Rider->Balance->State==ERiderBalanceState::Dragged;
+            const bool bDanger=Rider->Balance->State==ERiderBalanceState::Warning || Rider->Balance->State==ERiderBalanceState::Falling || Rider->Balance->State==ERiderBalanceState::Dragged || Rider->Balance->State==ERiderBalanceState::Pulled;
             const FLinearColor BalanceColor=bDanger?FLinearColor(1.f,.28f,.12f):FLinearColor(.4f,1.f,.55f);
             DrawRect(FLinearColor(0,0,0,.6f),LassoX-6,121,558,43);
             DrawText(FString::Printf(TEXT("BALANCE %.0f%% | SIDE %.0f%% | %s"),NormalizedBalance*100.f,Rider->Balance->LateralPull*100.f,
@@ -284,9 +284,21 @@ void ASteppeHUD::DrawHUD()
             {
                 if (Rider && Rider->Balance && Rider->Balance->State==ERiderBalanceState::Dragged)
                 {
-                    ActionTitle=TEXT("YOU ARE BEING DRAGGED  |  [ LMB ] RELEASE");
-                    ActionDetail=FString::Printf(TEXT("Release before the drag timer ends  |  %.1f s"),Rider->Balance->DraggedRemaining);
+                    ActionTitle=TEXT("YOU ARE BEING DRAGGED");
+                    ActionDetail=FString::Printf(TEXT("Hold Space to keep controlling the horse  |  LMB releases  |  stand in %.1f s"),Rider->Balance->DraggedRemaining);
                     ActionColor=FLinearColor(1.f,.08f,.03f);
+                }
+                else if (Rider && Rider->Balance && Rider->Balance->State==ERiderBalanceState::Pulled)
+                {
+                    ActionTitle=TEXT("HORSE IS PULLING YOU  |  RUN WITH IT");
+                    ActionDetail=TEXT("Keep Space held and guide the tension into green  |  LMB releases");
+                    ActionColor=FLinearColor(1.f,.32f,.06f);
+                }
+                else if (Lasso->bShockRisk)
+                {
+                    ActionTitle=TEXT("SUDDEN JOLT  |  KEEP MOVING");
+                    ActionDetail=TEXT("An abrupt stop can pull you off the saddle or snap the rope");
+                    ActionColor=FLinearColor(1.f,.04f,.02f);
                 }
                 else if (Rider && Rider->Balance && Rider->Balance->State==ERiderBalanceState::Warning)
                 {
@@ -296,8 +308,8 @@ void ASteppeHUD::DrawHUD()
                 }
                 else if (Lasso->Tension>Lasso->UsefulTensionMax)
                 {
-                    ActionTitle=TEXT("ROPE STRAIN  |  MOVE CLOSER");
-                    ActionDetail=TEXT("Too much tension will break the rope and the horse will escape");
+                    ActionTitle=TEXT("HORSE PULLING HARD  |  MOVE WITH IT");
+                    ActionDetail=TEXT("Sustained pull drags the rider; avoid a sudden high-speed stop");
                     ActionColor=FLinearColor(1.f,.2f,.08f);
                 }
                 else if (!Lasso->bBracing)
@@ -387,7 +399,8 @@ void ASteppeHUD::DrawHUD()
             }
             if (Rider && Rider->Balance)
             {
-                if (Rider->Balance->State==ERiderBalanceState::Dragged) { Objective=TEXT("DRAGGED  Press LMB to release the rope"); }
+                if (Rider->Balance->State==ERiderBalanceState::Dragged) { Objective=TEXT("DRAGGED  Hold Space to control; LMB releases"); }
+                else if (Rider->Balance->State==ERiderBalanceState::Pulled) { Objective=TEXT("PULLED ON FOOT  Run with the horse and hold Space"); }
                 else if (Rider->Balance->State==ERiderBalanceState::Falling) { Objective=TEXT("FALL  Release the rope and recover"); }
                 else if (Rider->Balance->State==ERiderBalanceState::Warning) { Objective=TEXT("BALANCE WARNING  Turn toward the rope or slow down"); }
             }

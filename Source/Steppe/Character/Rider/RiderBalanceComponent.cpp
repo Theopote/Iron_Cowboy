@@ -32,6 +32,11 @@ void URiderBalanceComponent::TickComponent(float Dt,ELevelTick TickType,FActorCo
         if (StateRemaining<=0.f) { State=ERiderBalanceState::Stable; Balance=0.f; Feedback=TEXT("Balance recovered"); }
         return;
     }
+    auto* Rider=Cast<ASteppeRiderCharacter>(GetOwner());
+    const bool bOnFoot=Rider && Rider->Riding && !Rider->Riding->IsMounted();
+    const bool bHoldingRope=Rider && Rider->Lasso && Rider->Lasso->State==ELassoState::Attached && Rider->Lasso->Target.IsValid();
+    if (bOnFoot && bHoldingRope) { UpdateOnFootRope(Dt); return; }
+    if (State==ERiderBalanceState::Pulled) { BeginRecovery(TEXT("Rope released - recovering")); return; }
     UpdateMountedBalance(Dt);
 }
 
@@ -52,7 +57,7 @@ void URiderBalanceComponent::UpdateMountedBalance(float Dt)
     const FVector RopeDirection=(Lasso->Target->GetActorLocation()-Horse->GetActorLocation()).GetSafeNormal2D();
     LateralPull=FMath::Abs(FVector::DotProduct(Horse->GetActorRightVector(),RopeDirection));
     const float Strength=Lasso->Target->Attributes?Lasso->Target->Attributes->Strength:1.f;
-    CurrentLoad=CalculateLoad(Lasso->Tension,LateralPull,Horse->GetVelocity().Size2D(),Strength,Lasso->HitZone);
+    CurrentLoad=FMath::Max(CalculateLoad(Lasso->Tension,LateralPull,Horse->GetVelocity().Size2D(),Strength,Lasso->HitZone),Lasso->ShockLoad*.85f);
     Balance=FMath::Clamp(Balance+(CurrentLoad>=BuildThreshold?CurrentLoad*BuildPerSecond:-RecoveryPerSecond)*Dt,0.f,FallThreshold);
     if (Balance>=FallThreshold-KINDA_SMALL_NUMBER) { TriggerFall(); return; }
     State=Balance>=WarningThreshold?ERiderBalanceState::Warning:ERiderBalanceState::Stable;
@@ -80,7 +85,7 @@ void URiderBalanceComponent::TriggerFall()
     {
         State=ERiderBalanceState::Dragged;
         DraggedRemaining=MaximumDraggedSeconds;
-        Feedback=TEXT("DRAGGED - press LMB to release");
+        Feedback=TEXT("DRAGGED - keep Space held to control, or LMB to release");
     }
     else if (Lasso) { Lasso->Release(); }
 }
@@ -104,12 +109,37 @@ void URiderBalanceComponent::UpdateDragged(float Dt)
     const FVector PullDirection=(Lasso->Target->GetActorLocation()-Rider->GetActorLocation()).GetSafeNormal2D();
     auto* Movement=Rider->GetCharacterMovement();
     Movement->Velocity=PullDirection*DragSpeed+FVector(0,0,Movement->Velocity.Z);
-    Feedback=TEXT("DRAGGED - press LMB to release");
+    Feedback=TEXT("DRAGGED - keep Space held to control, or LMB to release");
     if (DraggedRemaining<=0.f)
     {
-        Lasso->Release();
-        BeginRecovery(TEXT("Drag limit reached - recovering"));
+        Movement->SetMovementMode(MOVE_Walking);
+        State=ERiderBalanceState::Pulled;
+        Balance=FMath::Min(Balance,WarningThreshold);
+        Feedback=TEXT("BACK ON YOUR FEET - run with the horse and hold Space");
     }
+}
+
+void URiderBalanceComponent::UpdateOnFootRope(float Dt)
+{
+    auto* Rider=Cast<ASteppeRiderCharacter>(GetOwner());
+    auto* Lasso=Rider?Rider->Lasso.Get():nullptr;
+    if (!Rider || !Lasso || Lasso->State!=ELassoState::Attached || !Lasso->Target.IsValid())
+    {
+        BeginRecovery(TEXT("Rope released - recovering"));
+        return;
+    }
+    const FVector PullDirection=(Lasso->Target->GetActorLocation()-Rider->GetActorLocation()).GetSafeNormal2D();
+    const float Pull=FMath::Clamp((Lasso->Tension-OnFootPullThreshold)/FMath::Max(.01f,1.5f-OnFootPullThreshold),0.f,1.f);
+    auto* Movement=Rider->GetCharacterMovement();
+    FVector Horizontal=FVector::VectorPlaneProject(Movement->Velocity,FVector::UpVector);
+    Horizontal+=PullDirection*OnFootPullAcceleration*Pull*Dt;
+    Horizontal=Horizontal.GetClampedToMaxSize(MaximumOnFootPullSpeed*FMath::Lerp(.45f,1.f,Pull));
+    Movement->Velocity=Horizontal+FVector(0,0,Movement->Velocity.Z);
+    State=ERiderBalanceState::Pulled;
+    CurrentLoad=Pull;
+    LateralPull=0.f;
+    Balance=FMath::Max(0.f,Balance-RecoveryPerSecond*Dt);
+    Feedback=Pull>.5f?TEXT("PULLED ON FOOT - run with the horse and hold Space"):TEXT("ON-FOOT ROPE CONTROL - hold Space and keep tension green");
 }
 
 void URiderBalanceComponent::BeginRecovery(const TCHAR* Message)

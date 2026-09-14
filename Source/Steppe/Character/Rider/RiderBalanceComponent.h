@@ -6,7 +6,7 @@
 #include "RiderBalanceComponent.generated.h"
 
 UENUM(BlueprintType)
-enum class ERiderBalanceState : uint8 { Stable, Warning, Falling, Dragged, Recovering };
+enum class ERiderBalanceState : uint8 { Stable, Warning, Falling, Dragged, Pulled, Recovering };
 
 UCLASS(ClassGroup=(Steppe), meta=(BlueprintSpawnableComponent))
 class STEPPE_API URiderBalanceComponent : public UActorComponent
@@ -31,6 +31,9 @@ public:
     UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Dragged",meta=(ClampMin="0.1")) float MaximumDraggedSeconds = 2.f;
     UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Dragged",meta=(ClampMin="100")) float MaximumDraggedDistance = 1800.f;
     UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Dragged",meta=(ClampMin="0")) float DragSpeed = 520.f;
+    UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="On Foot",meta=(ClampMin="0")) float OnFootPullAcceleration = 1500.f;
+    UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="On Foot",meta=(ClampMin="0")) float MaximumOnFootPullSpeed = 720.f;
+    UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="On Foot",meta=(ClampMin="0",ClampMax="1.5")) float OnFootPullThreshold = .15f;
     UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Recovery",meta=(ClampMin="0.1")) float PostFallRecoverySeconds = .8f;
 
     UPROPERTY(VisibleInstanceOnly,BlueprintReadOnly,Category="Balance") ERiderBalanceState State = ERiderBalanceState::Stable;
@@ -46,5 +49,6 @@ private:
     void TriggerFall();
     void UpdateFall(float DeltaSeconds);
     void UpdateDragged(float DeltaSeconds);
+    void UpdateOnFootRope(float DeltaSeconds);
     void BeginRecovery(const TCHAR* Message);
 };

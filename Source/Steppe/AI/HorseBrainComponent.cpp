@@ -68,11 +68,12 @@ void UHorseBrainComponent::SetLassoed(bool bNewLassoed)
     if (bLassoed) { ChangeState(EWildHorseState::Lassoed); }
     else if (State==EWildHorseState::Lassoed) { ChangeState(EWildHorseState::Recovering); }
 }
-void UHorseBrainComponent::SetLassoConstraint(FVector Anchor, float Tension, bool bBraced)
+void UHorseBrainComponent::SetLassoConstraint(FVector Anchor, float Tension, bool bBraced, float ControlProgress)
 {
     LassoAnchor=Anchor;
     LassoTension=FMath::Clamp(Tension,0.f,1.5f);
     bLassoBraced=bBraced;
+    LassoControlProgress=FMath::Clamp(ControlProgress,0.f,1.f);
 }
 void UHorseBrainComponent::SetCaptured(bool bNewCaptured)
 {
@@ -344,6 +345,16 @@ void UHorseBrainComponent::TickComponent(float Dt, ELevelTick TickType, FActorCo
         PauseRemaining = FMath::Max(0.f, PauseRemaining - Dt);
         Intent.DesiredSpeed = PauseRemaining > 0.f ? 0.f : C.RoamSpeed;
         Intent.RequestedGait = EHorseGait::Walk;
+    }
+    else if (State == EWildHorseState::Lassoed)
+    {
+        FVector Away=(Horse->GetActorLocation()-LassoAnchor).GetSafeNormal2D();
+        if (Away.IsNearlyZero()) { Away=Horse->GetActorForwardVector(); }
+        Goal=Horse->GetActorLocation()+Away*FMath::Max(1.f,C.EscapeLookAhead);
+        const float CalmScale=FMath::Lerp(1.f,.12f,LassoControlProgress);
+        const float RestraintScale=FMath::Lerp(1.f,.55f,FMath::Clamp(LassoTension/1.5f,0.f,1.f));
+        Intent.DesiredSpeed=C.FlightSpeed*StruggleSpeedScale*.8f*CalmScale*RestraintScale;
+        Intent.RequestedGait=Intent.DesiredSpeed>C.YieldSpeed*1.5f?EHorseGait::Gallop:EHorseGait::Walk;
     }
     if (Intent.DesiredSpeed > 0.f)
     {
