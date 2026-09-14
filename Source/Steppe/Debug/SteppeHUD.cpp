@@ -115,7 +115,16 @@ void ASteppeHUD::DrawHUD()
             const float Stress=FMath::Clamp(Lasso->Tension/1.2f,0.f,1.f);
             const bool bUseful=Lasso->Tension>=Lasso->UsefulTensionMin && Lasso->Tension<=Lasso->UsefulTensionMax;
             const FColor RopeColor=Lasso->Tension>1.f?FColor::Red:(Lasso->Tension>.85f?FColor(255,96,20):(bUseful?FColor::Green:FColor::Yellow));
-            DrawDebugLine(GetWorld(),Lasso->RopeStart,Lasso->LoopLocation,RopeColor,false,0,0,4.f+Stress*8.f);
+            if (Lasso->bRopeWrapped)
+            {
+                DrawDebugLine(GetWorld(),Lasso->RopeStart,Lasso->RopeBendPoint,RopeColor,false,0,0,4.f+Stress*8.f);
+                DrawDebugLine(GetWorld(),Lasso->RopeBendPoint,Lasso->LoopLocation,RopeColor,false,0,0,4.f+Stress*8.f);
+                DrawDebugSphere(GetWorld(),Lasso->RopeBendPoint,18.f,10,FColor(255,128,20),false,0,0,4.f);
+            }
+            else
+            {
+                DrawDebugLine(GetWorld(),Lasso->RopeStart,Lasso->LoopLocation,RopeColor,false,0,0,4.f+Stress*8.f);
+            }
             if (Lasso->State!=ELassoState::Captured)
             {
                 DrawDebugSphere(GetWorld(),Lasso->LoopLocation,Lasso->EffectiveCaptureRadius,16,RopeColor,false,0,0,4);
@@ -368,6 +377,10 @@ void ASteppeHUD::DrawHUD()
                 ActionTitle=TEXT("HORSE SURRENDERED  |  LEAD IT TO CAMP");
                 ActionDetail=TEXT("Walk toward CAMP / PEN; the horse will now follow you");
                 ActionColor=FLinearColor(.25f,1.f,.3f);
+            }
+            if (Lasso && Lasso->State==ELassoState::Attached && Lasso->bRopeWrapped && !ActionDetail.IsEmpty())
+            {
+                ActionDetail+=TEXT("  |  OBSTACLE BEND IS SLOWING THE HORSE");
             }
             if (!ActionTitle.IsEmpty())
             {

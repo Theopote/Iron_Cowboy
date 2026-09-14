@@ -81,6 +81,9 @@ bool ULassoComponent::ThrowFrom(FVector Origin, FVector Direction)
     TravelDistance=0.f;
     ControlProgress=0.f;
     OnFootSurrenderProgress=0.f;
+    bRopeWrapped=false;
+    RopeBendPoint=FVector::ZeroVector;
+    RopeWrapClearTime=0.f;
     Tension=0.f;
     ShockRiskSeconds=0.f;
     ShockLoad=0.f;
@@ -109,6 +112,9 @@ void ULassoComponent::StartRecovery(const TCHAR* Message)
     bHadAnchorSample=false;
     ControlProgress=0.f;
     OnFootSurrenderProgress=0.f;
+    bRopeWrapped=false;
+    RopeBendPoint=FVector::ZeroVector;
+    RopeWrapClearTime=0.f;
     HitZone=ELassoHitZone::None;
     State=ELassoState::Recovering;
     RecoveryRemaining=FMath::Max(.1f,RecoverySeconds);
@@ -217,6 +223,39 @@ void ULassoComponent::UpdateSwing(float Dt)
         (SwingStability>=.8f?TEXT("Stable window - throw now"):TEXT("Swinging - wait for the loop to open"));
 }
 
+void ULassoComponent::UpdateRopeObstacle(float Dt)
+{
+    auto* Horse=Target.Get();
+    UWorld* World=GetWorld();
+    if (!World || !Horse) { bRopeWrapped=false; RopeWrapClearTime=0.f; return; }
+    FCollisionQueryParams Params(SCENE_QUERY_STAT(SteppeRopeObstacle),false,GetOwner());
+    Params.AddIgnoredActor(Horse);
+    if (const auto* Rider=Cast<ASteppeRiderCharacter>(GetOwner()))
+    {
+        if (Rider->Riding && Rider->Riding->GetHorse()) { Params.AddIgnoredActor(Rider->Riding->GetHorse()); }
+    }
+    FCollisionObjectQueryParams Obstacles;
+    Obstacles.AddObjectTypesToQuery(ECC_WorldStatic);
+    Obstacles.AddObjectTypesToQuery(ECC_WorldDynamic);
+    FHitResult Hit;
+    if (World->LineTraceSingleByObjectType(Hit,RopeStart,LoopLocation,Obstacles,Params))
+    {
+        bRopeWrapped=true;
+        RopeBendPoint=Hit.ImpactPoint+Hit.ImpactNormal*12.f;
+        RopeWrapClearTime=0.f;
+    }
+    else if (bRopeWrapped)
+    {
+        RopeWrapClearTime+=Dt;
+        if (RopeWrapClearTime>=RopeWrapClearSeconds)
+        {
+            bRopeWrapped=false;
+            RopeBendPoint=FVector::ZeroVector;
+            RopeWrapClearTime=0.f;
+        }
+    }
+}
+
 void ULassoComponent::TickComponent(float Dt, ELevelTick TickType, FActorComponentTickFunction* TickFunction)
 {
     Super::TickComponent(Dt,TickType,TickFunction);
@@ -240,7 +279,11 @@ void ULassoComponent::TickComponent(float Dt, ELevelTick TickType, FActorCompone
         if (auto* Horse=Target.Get())
         {
             LoopLocation=Horse->GetActorLocation()+FVector(0,0,90);
-            const float Distance=FVector::Dist(RopeStart,LoopLocation);
+            UpdateRopeObstacle(Dt);
+            const FVector ConstraintAnchor=bRopeWrapped?RopeBendPoint:RopeStart;
+            const float Distance=bRopeWrapped
+                ?FVector::Dist(RopeStart,RopeBendPoint)+FVector::Dist(RopeBendPoint,LoopLocation)
+                :FVector::Dist(RopeStart,LoopLocation);
             if (State==ELassoState::Captured)
             {
                 Horse->Brain->SetCaptured(true);
@@ -249,33 +292,39 @@ void ULassoComponent::TickComponent(float Dt, ELevelTick TickType, FActorCompone
             }
             if (State==ELassoState::Subdued)
             {
-                Horse->Brain->SetLassoConstraint(RopeStart,1.f,true,1.f);
+                Horse->Brain->SetLassoConstraint(ConstraintAnchor,1.f,true,1.f,bRopeWrapped);
                 Feedback=FString::Printf(TEXT("%s LOOP | SUBDUED - press C"),*UEnum::GetDisplayValueAsText(HitZone).ToString().ToUpper());
                 return;
             }
-            const FVector RopeDirection=(LoopLocation-RopeStart).GetSafeNormal();
-            FVector AnchorVelocity=GetOwner()->GetVelocity();
-            if (const auto* Rider=Cast<ASteppeRiderCharacter>(GetOwner()))
+            const FVector RopeDirection=(LoopLocation-ConstraintAnchor).GetSafeNormal();
+            FVector AnchorVelocity=bRopeWrapped?FVector::ZeroVector:GetOwner()->GetVelocity();
+            if (!bRopeWrapped)
             {
-                if (Rider->Riding && Rider->Riding->GetHorse()) { AnchorVelocity=Rider->Riding->GetHorse()->GetVelocity(); }
+                if (const auto* Rider=Cast<ASteppeRiderCharacter>(GetOwner()))
+                {
+                    if (Rider->Riding && Rider->Riding->GetHorse()) { AnchorVelocity=Rider->Riding->GetHorse()->GetVelocity(); }
+                }
             }
             const float AnchorSpeed=AnchorVelocity.Size2D();
             SeparatingSpeed=FVector::DotProduct(Horse->GetVelocity()-AnchorVelocity,RopeDirection);
             AnchorDeceleration=bHadAnchorSample && Dt>SMALL_NUMBER?FMath::Max(0.f,(PreviousAnchorSpeed-AnchorSpeed)/Dt):0.f;
             PreviousAnchorSpeed=AnchorSpeed;
             bHadAnchorSample=true;
-            Tension=FMath::Clamp(((Distance-RopeLength)/FMath::Max(10.f,TensionRange)+FMath::Max(0.f,SeparatingSpeed)/1200.f)*GetHitZoneTensionMultiplier(),0.f,1.5f);
+            Tension=FMath::Clamp(((Distance-RopeLength)/FMath::Max(10.f,TensionRange)+FMath::Max(0.f,SeparatingSpeed)/1200.f)*GetHitZoneTensionMultiplier()
+                +(bRopeWrapped?ObstacleWrapTensionBonus:0.f),0.f,1.5f);
             const float NewShock=CalculateShockLoad(SeparatingSpeed,AnchorDeceleration,Tension);
             ShockLoad=FMath::Max(NewShock,FMath::Max(0.f,ShockLoad-ShockDecayPerSecond*Dt));
             auto* Rider=Cast<ASteppeRiderCharacter>(GetOwner());
             const bool bMounted=Rider && Rider->Riding && Rider->Riding->IsMounted();
-            bShockRisk=bMounted && ShockLoad>=ShockBreakThreshold;
+            bShockRisk=bMounted && !bRopeWrapped && ShockLoad>=ShockBreakThreshold;
             ShockRiskSeconds=bShockRisk?ShockRiskSeconds+Dt:FMath::Max(0.f,ShockRiskSeconds-Dt*3.f);
             if (!bMounted) { ShockRiskSeconds=0.f; ShockLoad=FMath::Max(0.f,ShockLoad-ShockDecayPerSecond*3.f*Dt); }
-            Horse->Brain->SetLassoConstraint(RopeStart,Tension,bBracing,ControlProgress);
-            const bool bUseful=bBracing && Tension>=UsefulTensionMin && Tension<=UsefulTensionMax;
+            Horse->Brain->SetLassoConstraint(ConstraintAnchor,Tension,bBracing,ControlProgress,bRopeWrapped);
+            const bool bSpeedFullyRatchet=Horse->Brain->LassoSpeedLimitScale<=Horse->Brain->MinimumLassoSpeedLimitScale+.02f;
+            const float EffectiveUsefulTensionMax=(bRopeWrapped || bSpeedFullyRatchet)?1.5f:UsefulTensionMax;
+            const bool bUseful=bBracing && Tension>=UsefulTensionMin && Tension<=EffectiveUsefulTensionMax;
             ControlProgress=FMath::Clamp(ControlProgress+(bUseful?Dt:-Dt*.6f)/GetEffectiveSubdueSeconds(Horse),0.f,1.f);
-            const bool bCloseOnFoot=!bMounted && Rider && bBracing && Distance<=OnFootSurrenderDistance
+            const bool bCloseOnFoot=!bMounted && Rider && bBracing && FVector::Dist2D(Rider->GetActorLocation(),Horse->GetActorLocation())<=OnFootSurrenderDistance
                 && FMath::Abs(SeparatingSpeed)<=OnFootSurrenderMaxRelativeSpeed;
             OnFootSurrenderProgress=FMath::Clamp(OnFootSurrenderProgress+(bCloseOnFoot?Dt:-Dt*.75f)/FMath::Max(.1f,OnFootSurrenderSeconds),0.f,1.f);
             if (Distance>MaximumRange*EmergencyBreakRangeMultiplier) { StartRecovery(TEXT("Rope severed at extreme distance - recovering")); }
@@ -329,6 +378,9 @@ void ULassoComponent::TickComponent(float Dt, ELevelTick TickType, FActorCompone
             bShockRisk=false;
             bHadAnchorSample=false;
             OnFootSurrenderProgress=0.f;
+            bRopeWrapped=false;
+            RopeBendPoint=FVector::ZeroVector;
+            RopeWrapClearTime=0.f;
             Target->Brain->SetLassoed(true);
             Feedback=FString::Printf(TEXT("%s LOOP - Left Mouse to release"),*UEnum::GetDisplayValueAsText(HitZone).ToString().ToUpper());
         }

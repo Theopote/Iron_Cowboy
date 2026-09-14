@@ -21,11 +21,11 @@ public:
     UFUNCTION(BlueprintCallable, Category="Wild Horse") void SetThreatTarget(AActor* Target);
     UFUNCTION(BlueprintCallable, Category="Wild Horse") void ReceiveHerdAlarm(float Strength, float Duration);
     UFUNCTION(BlueprintCallable, Category="Wild Horse") void SetLassoed(bool bNewLassoed);
-    void SetLassoConstraint(FVector Anchor, float Tension, bool bBraced, float ControlProgress);
+    void SetLassoConstraint(FVector Anchor, float Tension, bool bBraced, float ControlProgress, bool bObstacleWrapped=false);
     UFUNCTION(BlueprintCallable, Category="Wild Horse") void SetCaptured(bool bNewCaptured);
     void RequestCapturedRetreat(FVector Direction, float Speed, float Duration);
     void SetLeadTarget(AActor* Target);
-    void SetHerdGuidance(FVector Center, FVector Velocity, FVector Separation, int32 NeighborCount);
+    void SetHerdGuidance(FVector Center, FVector Velocity, FVector EscapeDirection, FVector Separation, int32 NeighborCount);
     void SetHerdIdentity(int32 MemberIndex, int32 HerdSeed);
     UFUNCTION(BlueprintPure, Category="Wild Horse") FGameplayTag GetBehaviorTag() const;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Wild Horse") TObjectPtr<UWildHorseConfig> Config;
@@ -51,6 +51,9 @@ public:
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") bool bIsolationFocus = false;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") bool bLassoed = false;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") float LassoTension = 0.f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") float LassoSpeedLimitScale = .68f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Wild Horse|Lasso", meta=(ClampMin="0.1",ClampMax="1")) float InitialLassoSpeedLimitScale = .68f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Wild Horse|Lasso", meta=(ClampMin="0.05",ClampMax="1")) float MinimumLassoSpeedLimitScale = .2f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") float LassoControlProgress = 0.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") bool bCaptured = false;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Archetype") float AwarenessRiseScale = 1.f;
@@ -85,8 +88,10 @@ private:
     float HerdAlarmStrength = 0.f;
     FVector HerdCenter = FVector::ZeroVector;
     FVector HerdVelocity = FVector::ZeroVector;
+    FVector HerdEscapeDirection = FVector::ZeroVector;
     FVector LassoAnchor = FVector::ZeroVector;
     bool bLassoBraced = false;
+    bool bLassoObstacleWrapped = false;
     FVector CapturedRetreatDirection = FVector::ZeroVector;
     float CapturedRetreatSpeed = 0.f;
     float CapturedRetreatSeconds = 0.f;

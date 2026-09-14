@@ -1,6 +1,6 @@
 # 《套马的汉子》 / Project STEPPE
 
-UE **5.8.2** 的 C++ 骑乘游戏原型。当前处于 P14.4 真人试玩修复：骑手可驱赶具有 Fast、Strong、Nervous 行为差异的马群，切出目标，在摆绳稳定窗口投掷并处理张力、失衡和拖行；徒步贴近被套野马持续稳绳可使其归顺并直接牵行，坐骑具有轻量近距离避障辅助。Grass/Hard 反馈、可替换 Sound/Niagara/AnimBP 接口、Horse Card 和分层结算已接入，完整安抚、牵回与命名流程保持可玩。
+UE **5.8.2** 的 C++ 骑乘游戏原型。当前处于 P14.4 真人试玩修复：默认 12 匹野马会保持共同逃跑方向和群体凝聚，并保留少量个体脱群；被套目标的挣扎速度会随每次有效紧绳持续下降，障碍可形成一个临时绳索弯折阻力点。徒步贴近持续稳绳可使其归顺并直接牵行，坐骑具有轻量近距离避障辅助。
 
 ## 打开与试玩
 
@@ -11,7 +11,7 @@ UE **5.8.2** 的 C++ 骑乘游戏原型。当前处于 P14.4 真人试玩修复�
 ```
 
 2. 用 UE 5.8.2 打开 `Steppe.uproject`。默认加载 `L_Prototype_Grassland`。
-3. 点击 Play，默认已骑上占位马。前方约 38 m 有五匹野马，Fast、Strong、Nervous 会以不同速度、恐惧和控制参数行动；可用 Q 选择一匹尝试切出。无需下载模型或手工创建输入资产。
+3. 点击 Play，默认已骑上占位马。前方约 38 m 有十二匹野马，Fast、Strong、Nervous 会以不同速度、恐惧和控制参数行动；可用 Q 选择一匹尝试切出。无需下载模型或手工创建输入资产。
 
 当前是灰盒原型：方块马身、圆柱骑手、2 km 平地、距离标记、绕桩与坡道；声音为程序化占位音，尘土和绳索仍是调试表现，没有最终动画或美术。代码通过与手感满意是不同验收，追逐、控绳和捕获后接近仍需持续人工试玩调参。
 
@@ -47,7 +47,7 @@ UE **5.8.2** 的 C++ 骑乘游戏原型。当前处于 P14.4 真人试玩修复�
 ## 验证
 
 ```powershell
-.\Scripts\RunEditor.ps1 -Tests -ExpectedTests 20 -Commands 'Automation RunTests Steppe;Quit' -LogName P14.4-Tests
+.\Scripts\RunEditor.ps1 -Tests -ExpectedTests 21 -Commands 'Automation RunTests Steppe;Quit' -LogName P14.4-Tests
 .\Scripts\RunEditor.ps1 -Game -Render -Smoke -PresentationSmoke -Commands '' -LogName P14.4-Presentation-Smoke
 .\Scripts\RunEditor.ps1 -Game -Render -Smoke -FullLoopSmoke -Commands '' -LogName P14.4-FullLoop-Smoke
 ```

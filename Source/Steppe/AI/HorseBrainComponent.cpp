@@ -64,16 +64,22 @@ void UHorseBrainComponent::ReceiveHerdAlarm(float Strength, float Duration)
 }
 void UHorseBrainComponent::SetLassoed(bool bNewLassoed)
 {
+    if (bNewLassoed && !bLassoed) { LassoSpeedLimitScale=FMath::Clamp(InitialLassoSpeedLimitScale,MinimumLassoSpeedLimitScale,1.f); }
     bLassoed=bNewLassoed;
     if (bLassoed) { ChangeState(EWildHorseState::Lassoed); }
     else if (State==EWildHorseState::Lassoed) { ChangeState(EWildHorseState::Recovering); }
 }
-void UHorseBrainComponent::SetLassoConstraint(FVector Anchor, float Tension, bool bBraced, float ControlProgress)
+void UHorseBrainComponent::SetLassoConstraint(FVector Anchor, float Tension, bool bBraced, float ControlProgress, bool bObstacleWrapped)
 {
     LassoAnchor=Anchor;
     LassoTension=FMath::Clamp(Tension,0.f,1.5f);
     bLassoBraced=bBraced;
     LassoControlProgress=FMath::Clamp(ControlProgress,0.f,1.f);
+    bLassoObstacleWrapped=bObstacleWrapped;
+    const float Tightening=FMath::Max(LassoControlProgress,FMath::Clamp((LassoTension-.15f)/.7f,0.f,1.f));
+    float NewLimit=FMath::Lerp(InitialLassoSpeedLimitScale,MinimumLassoSpeedLimitScale,Tightening);
+    if (bLassoObstacleWrapped) { NewLimit*=.65f; }
+    if (bLassoBraced || bLassoObstacleWrapped) { LassoSpeedLimitScale=FMath::Min(LassoSpeedLimitScale,FMath::Max(.08f,NewLimit)); }
 }
 void UHorseBrainComponent::SetCaptured(bool bNewCaptured)
 {
@@ -98,10 +104,11 @@ void UHorseBrainComponent::SetLeadTarget(AActor* Target)
     bLeading=LeadTarget.IsValid();
     LeadDistance=0.f;
 }
-void UHorseBrainComponent::SetHerdGuidance(FVector Center, FVector Velocity, FVector Separation, int32 NeighborCount)
+void UHorseBrainComponent::SetHerdGuidance(FVector Center, FVector Velocity, FVector EscapeDirection, FVector Separation, int32 NeighborCount)
 {
     HerdCenter=Center;
     HerdVelocity=Velocity;
+    HerdEscapeDirection=EscapeDirection.GetSafeNormal2D();
     HerdSeparation=Separation;
     HerdNeighborCount=FMath::Max(0,NeighborCount);
 }
@@ -280,8 +287,7 @@ void UHorseBrainComponent::TickComponent(float Dt, ELevelTick TickType, FActorCo
         {
             const float HeadingError=FMath::FindDeltaAngleDegrees(Horse->GetActorRotation().Yaw,SafeDirection.Rotation().Yaw);
             const float CalmScale=FMath::Lerp(1.f,.12f,LassoControlProgress);
-            const float RestraintScale=FMath::Lerp(1.f,.55f,FMath::Clamp(LassoTension/1.5f,0.f,1.f));
-            StruggleIntent.DesiredSpeed=C.FlightSpeed*StruggleSpeedScale*.8f*CalmScale*RestraintScale;
+            StruggleIntent.DesiredSpeed=C.FlightSpeed*StruggleSpeedScale*CalmScale*LassoSpeedLimitScale;
             StruggleIntent.DesiredTurn=FMath::Clamp(HeadingError/FMath::Max(1.f,C.FullTurnAngle),-1.f,1.f);
             StruggleIntent.RequestedGait=StruggleIntent.DesiredSpeed>C.YieldSpeed*1.5f?EHorseGait::Gallop:EHorseGait::Walk;
             SteeringDirection=SafeDirection;
@@ -359,7 +365,9 @@ void UHorseBrainComponent::TickComponent(float Dt, ELevelTick TickType, FActorCo
             FVector Social=Desired+C.SeparationWeight*HerdSeparation+C.DynamicAvoidanceWeight*DynamicAvoidance;
             if (State==EWildHorseState::Fleeing && !bIsolationFocus)
             {
+                Social+=C.FlightDirectionWeight*HerdEscapeDirection;
                 Social+=C.FlightAlignmentWeight*HerdVelocity.GetSafeNormal2D();
+                Social+=C.FlightCohesionWeight*(HerdCenter-Horse->GetActorLocation()).GetSafeNormal2D();
             }
             else if (!bIsolationFocus)
             {
@@ -372,7 +380,8 @@ void UHorseBrainComponent::TickComponent(float Dt, ELevelTick TickType, FActorCo
         {
             Desired=(Desired+C.DynamicAvoidanceWeight*DynamicAvoidance).GetSafeNormal2D();
         }
-        Desired=Desired.RotateAngleAxis(IndividualSteeringBias,FVector::UpVector);
+        const float BiasScale=State==EWildHorseState::Fleeing && !bIsolationFocus?.3f:1.f;
+        Desired=Desired.RotateAngleAxis(IndividualSteeringBias*BiasScale,FVector::UpVector);
         SteeringDirection = FindSafeDirection(*Horse, Desired);
         const float HeadingError = FMath::FindDeltaAngleDegrees(Horse->GetActorRotation().Yaw, SteeringDirection.Rotation().Yaw);
         Intent.DesiredTurn = FMath::Clamp(HeadingError / FMath::Max(1.f,C.FullTurnAngle), -1.f, 1.f);

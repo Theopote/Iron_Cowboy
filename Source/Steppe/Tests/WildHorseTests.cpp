@@ -14,6 +14,7 @@
 #include "Lasso/LassoComponent.h"
 #include "Core/SteppeGameplayTags.h"
 #include "Game/SteppeTrialState.h"
+#include "Game/SteppeGameMode.h"
 #include "Playtest/SteppePlaytestMetrics.h"
 #include "Capture/HorseTrustComponent.h"
 #include "Camp/SteppeDeliveryZone.h"
@@ -209,6 +210,7 @@ bool FWildApproachTest::RunTest(const FString& Parameters)
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSmallHerdTest,"Steppe.P3.SmallHerdFormationAndAlarm",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FSmallHerdTest::RunTest(const FString& Parameters)
 {
+    TestEqual(TEXT("Playable scene defaults to a visible twelve-horse herd"),GetDefault<ASteppeGameMode>()->WildHorseCount,12);
     FWildTestWorld Fixture;
     auto* Rider=Fixture.World->SpawnActor<ASteppeRiderCharacter>(FVector(-2000,0,100),FRotator::ZeroRotator);
     const FTransform HerdTransform(FRotator::ZeroRotator,FVector(0,0,100));
@@ -261,6 +263,8 @@ bool FSmallHerdTest::RunTest(const FString& Parameters)
 
     Fixture.Step(.2f);
     TestEqual(TEXT("Nearest directly threatened horse flees first"),Herd->Members[0]->Brain->State,EWildHorseState::Fleeing);
+    TestTrue(TEXT("Manager supplies a common escape direction away from the rider"),
+        FVector::DotProduct(Herd->HerdEscapeDirection,FVector::ForwardVector)>.8f);
     int32 SecondaryFleeing=0;
     for (int32 Index=1; Index<Herd->Members.Num(); ++Index) { SecondaryFleeing+=Herd->Members[Index]->Brain->State==EWildHorseState::Fleeing; }
     TestEqual(TEXT("Alarm is not broadcast as an instantaneous group state"),SecondaryFleeing,0);
@@ -588,6 +592,37 @@ bool FRopeFightTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Steady speed does not create a rope shock"),Rider->Lasso->CalculateShockLoad(1200.f,0.f,1.2f),0.f);
     TestTrue(TEXT("High separating speed plus sudden deceleration creates a break-risk shock"),
         Rider->Lasso->CalculateShockLoad(1200.f,2000.f,1.2f)>Rider->Lasso->ShockBreakThreshold);
+    Rider->Lasso->Release();
+    return true;
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FRopeRatchetAndWrapTest,"Steppe.P14.RopeRatchetAndObstacleWrap",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FRopeRatchetAndWrapTest::RunTest(const FString& Parameters)
+{
+    FWildTestWorld Fixture;
+    auto* Rider=Fixture.World->SpawnActor<ASteppeRiderCharacter>(FVector(0,0,100),FRotator::ZeroRotator);
+    auto* Wild=Fixture.World->SpawnActor<ASteppeWildHorseCharacter>(FVector(1000,0,100),FRotator::ZeroRotator);
+    Fixture.Begin();
+    Rider->GetCharacterMovement()->SetComponentTickEnabled(false);
+    Wild->GetCharacterMovement()->SetComponentTickEnabled(false);
+    TestTrue(TEXT("Ratchet fixture aims"),Rider->Lasso->BeginAimForTarget(Wild,true));
+    TestTrue(TEXT("Ratchet fixture throws"),Rider->Lasso->ThrowFrom(FVector(0,0,170),FVector::ForwardVector));
+    Fixture.Step(.5f);
+    if (!TestEqual(TEXT("Ratchet fixture attaches"),Rider->Lasso->State,ELassoState::Attached)) { return false; }
+
+    Wild->Brain->SetLassoConstraint(Rider->GetActorLocation(),.7f,true,.35f,false);
+    const float TightenedLimit=Wild->Brain->LassoSpeedLimitScale;
+    Wild->Brain->SetLassoConstraint(Rider->GetActorLocation(),.05f,false,0.f,false);
+    TestEqual(TEXT("Released tension cannot restore a previously tightened speed limit"),Wild->Brain->LassoSpeedLimitScale,TightenedLimit);
+
+    auto* Tree=Fixture.Block(FVector(500,20,150),FVector(.5f,.5f,2.5f));
+    Rider->Lasso->SetBracing(true);
+    Fixture.Step(.25f);
+    TestTrue(TEXT("Obstacle between rider and horse creates one rope bend"),Rider->Lasso->bRopeWrapped);
+    TestTrue(TEXT("Obstacle bend further limits the horse"),Wild->Brain->LassoSpeedLimitScale<TightenedLimit);
+    TestTrue(TEXT("Obstacle bend adds rope resistance"),Rider->Lasso->Tension>=Rider->Lasso->ObstacleWrapTensionBonus);
+    Tree->Destroy();
+    Fixture.Step(.5f);
+    TestFalse(TEXT("Clear line releases the temporary obstacle bend"),Rider->Lasso->bRopeWrapped);
     Rider->Lasso->Release();
     return true;
 }

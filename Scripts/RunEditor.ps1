@@ -123,8 +123,12 @@ if ($RetrySmoke) {
         }
     }
     if ($retryLog -match 'STEPPE_P3_SMOKE:') {
-        if ($retryLog -notmatch 'STEPPE_P3_SMOKE: Members=5 .*Fleeing=[1-5]') {
-            throw "P3 smoke did not confirm a five-horse herd with an active fleeing response; see $logPath"
+        if ($retryLog -notmatch 'STEPPE_P3_SMOKE: Members=12 .*Fleeing=(?:[1-9]|1[0-2])') {
+            throw "P3 smoke did not confirm a twelve-horse herd with an active fleeing response; see $logPath"
+        }
+        $coherenceMatch = [regex]::Match($retryLog, 'STEPPE_P3_SMOKE: Members=12 .*Fleeing=12 .*Coherence=([0-9.]+)')
+        if (!$coherenceMatch.Success -or [double]$coherenceMatch.Groups[1].Value -lt 0.65) {
+            throw "P3 smoke did not confirm coherent group flight; see $logPath"
         }
     }
     elseif ($retryLog -notmatch 'STEPPE_P2_SMOKE: State=EWildHorseState::Fleeing') {
@@ -134,14 +138,14 @@ if ($RetrySmoke) {
 }
 if ($HerdIdleSmoke) {
     $idleLog = Get-Content $logPath -Raw
-    if ($idleLog -notmatch 'STEPPE_P3_SMOKE: Members=5 Alert=0 Yielding=0 Fleeing=0 Moving=[1-5] Headings=[2-5] Blocked=0') {
+    if ($idleLog -notmatch 'STEPPE_P3_SMOKE: Members=12 Alert=0 Yielding=0 Fleeing=0 Moving=(?:[8-9]|1[0-2]) Headings=(?:[2-9]|1[0-2]) Blocked=0') {
         throw "Idle herd smoke did not confirm varied calm movement without blockage; see $logPath"
     }
-    Write-Output 'Idle herd smoke: five calm horses, varied headings, no blockage or flight.'
+    Write-Output 'Idle herd smoke: twelve calm horses, varied headings, no blockage or flight.'
 }
 if ($IsolationSmoke) {
     $isolationLog = Get-Content $logPath -Raw
-    if ($isolationLog -notmatch 'STEPPE_P4_SMOKE: Focus=H[1-5]') {
+    if ($isolationLog -notmatch 'STEPPE_P4_SMOKE: Focus=H(?:[1-9]|1[0-5])') {
         throw "Isolation smoke did not select a visible herd member; see $logPath"
     }
     Write-Output 'Isolation smoke: a visible herd member was selected.'

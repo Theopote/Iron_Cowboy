@@ -31,7 +31,7 @@ public:
     void SetDeliveryZone(ASteppeDeliveryZone* Zone);
     void EnsureMembersSpawned();
 
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Herd", meta=(ClampMin="1", ClampMax="12")) int32 HerdSize = 5;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Herd", meta=(ClampMin="1", ClampMax="15")) int32 HerdSize = 12;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Herd", meta=(ClampMin="100")) float FormationSpacing = 450.f;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Herd", meta=(ClampMin="100")) float NeighborRadius = 1800.f;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Herd", meta=(ClampMin="50")) float SeparationDistance = 550.f;
@@ -50,6 +50,8 @@ public:
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Herd") TArray<TObjectPtr<ASteppeWildHorseCharacter>> Members;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Herd") FVector HerdCenter = FVector::ZeroVector;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Herd") FVector AverageVelocity = FVector::ZeroVector;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Herd") FVector HerdEscapeDirection = FVector::ForwardVector;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Herd") float MovementCoherence = 0.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Herd") int32 AlarmSourceCount = 0;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Herd") float MinimumMemberSpacing = 0.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Isolation") TObjectPtr<ASteppeWildHorseCharacter> FocusedHorse;

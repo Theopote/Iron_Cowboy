@@ -61,7 +61,7 @@ Movement 的物理和体力实现保持共用。Brain 只选择目标与意图�
 
 ## P3：小规模马群
 
-`ASteppeHerdManager` 集中生成和登记 1–12 匹完整 WildHorse Actor，以 5 Hz 汇总中心、平均速度、邻居和分离向量，并按空间距离传播警报。Brain 将群体摘要与自己的目标方向混合后继续输出 `FHorseMovementIntent`。Manager 不直接移动成员，也不替代每匹马的感知、状态机、避障或 CMC。当前原型规模为 5，详细范围见 P3_SMALL_HERD.md。
+`ASteppeHerdManager` 集中生成和登记 1–15 匹完整 WildHorse Actor，以 5 Hz 汇总中心、平均速度、相对威胁的共同逃跑方向、邻居和分离向量，并按空间距离传播警报。Brain 在普通逃跑时同时混合共同逃跑方向、速度对齐、中心凝聚、成员分离和动态避障，并降低个体航向偏差；Isolation Focus 仍可脱离群体。Manager 不直接移动成员，也不替代每匹马的感知、状态机、避障或 CMC。当前原型默认规模为 12，详细范围见 P3_SMALL_HERD.md。
 
 ## P4：目标切出
 
@@ -73,7 +73,7 @@ Q 输入经 Rider 转发到 PlayerController，再由 GameMode 的 HerdManager �
 
 ## P6：绳索对抗
 
-Attached 后，LassoComponent 根据绳距和两端沿绳方向的相对速度计算张力。Rider 的空格输入设置 Bracing；Brain 接收锚点、张力与稳绳状态，并继续通过 HorseMovement 产生向外挣扎或受控制动。LassoComponent 在有效张力区间累计 ControlProgress，高速分离时玩家端突然急减速才累计断绳冲击，完成后进入 Subdued。若骑手已经徒步、与目标保持 3 米内且相对速度稳定，持续稳绳约 2.5 秒会调用 HerdManager 的原子降伏入口，同时完成 Captured、FirstContact 和 Leading 三个权威状态，使野马立刻跟随骑手。该分层让未来的绳索网格、动画或物理表现读取同一状态，而不接管判定。详细范围见 P6_ROPE_FIGHT.md。
+Attached 后，LassoComponent 根据绳索路径长度和两端沿绳方向的相对速度计算张力。直线穿过 WorldStatic/WorldDynamic 障碍时记录一个临时 BendPoint，绳线分成两段，障碍点成为野马侧锚点并增加约束；直线持续恢复后自动解开。Brain 的 `LassoSpeedLimitScale` 在首次附着时已低于正常逃跑，随后只会随有效张力、ControlProgress 和障碍弯折继续下降，在本次套索内不会回升。若骑手已经徒步、与目标保持 3 米内且相对速度稳定，持续稳绳约 2.5 秒会调用 HerdManager 的原子降伏入口，同时完成 Captured、FirstContact 和 Leading 三个权威状态。详细范围见 P6_ROPE_FIGHT.md。
 
 ## P7：捕获结果
 

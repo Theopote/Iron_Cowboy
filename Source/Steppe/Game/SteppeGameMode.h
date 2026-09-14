@@ -26,7 +26,7 @@ public:
     UPROPERTY(EditDefaultsOnly, Category="Wild Horse") FTransform WildHorseSpawnTransform = FTransform(FVector(4000,0,110));
     UPROPERTY(EditDefaultsOnly, Category="Wild Horse") TSubclassOf<ASteppeWildHorseCharacter> WildHorseClass;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") TObjectPtr<ASteppeWildHorseCharacter> WildHorse;
-    UPROPERTY(EditDefaultsOnly, Category="Wild Horse", meta=(ClampMin="1", ClampMax="12")) int32 WildHorseCount = 5;
+    UPROPERTY(EditDefaultsOnly, Category="Wild Horse", meta=(ClampMin="1", ClampMax="15")) int32 WildHorseCount = 12;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") TObjectPtr<ASteppeHerdManager> HerdManager;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Wild Horse") TArray<TObjectPtr<ASteppeWildHorseCharacter>> WildHorses;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Camp") FTransform DeliveryZoneTransform = FTransform(FVector(-300,-900,100));

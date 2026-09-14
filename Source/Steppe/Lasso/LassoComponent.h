@@ -61,6 +61,8 @@ public:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight|Shock", meta=(ClampMin="0.1")) float BreakHoldSeconds = .8f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight|Shock", meta=(ClampMin="0.1")) float ShockDecayPerSecond = .75f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight|Shock", meta=(ClampMin="1.1")) float EmergencyBreakRangeMultiplier = 1.8f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight|Obstacle", meta=(ClampMin="0",ClampMax="1")) float ObstacleWrapTensionBonus = .25f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight|Obstacle", meta=(ClampMin="0.05")) float RopeWrapClearSeconds = .35f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso") ELassoState State = ELassoState::Stored;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso") FVector RopeStart = FVector::ZeroVector;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso") FVector LoopLocation = FVector::ZeroVector;
@@ -79,6 +81,8 @@ public:
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Rope Fight") float RopeLength = 0.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Rope Fight") float Tension = 0.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Rope Fight") float ControlProgress = 0.f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Rope Fight|Obstacle") bool bRopeWrapped = false;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Rope Fight|Obstacle") FVector RopeBendPoint = FVector::ZeroVector;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Rope Fight|On Foot") float OnFootSurrenderProgress = 0.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Rope Fight") bool bBracing = false;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Rope Fight|Shock") float SeparatingSpeed = 0.f;
@@ -91,6 +95,8 @@ private:
     float ShockRiskSeconds = 0.f;
     float PreviousAnchorSpeed = 0.f;
     bool bHadAnchorSample = false;
+    float RopeWrapClearTime = 0.f;
     void StartRecovery(const TCHAR* Message);
     void UpdateSwing(float DeltaSeconds);
+    void UpdateRopeObstacle(float DeltaSeconds);
 };

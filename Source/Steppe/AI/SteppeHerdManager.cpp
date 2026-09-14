@@ -51,7 +51,8 @@ void ASteppeHerdManager::EnsureMembersSpawned()
     static const FVector2D Pattern[] = {
         {0,0}, {-.75f,-1}, {-.75f,1}, {.75f,-.65f}, {.75f,.65f},
         {-1.5f,-.35f}, {-1.5f,.35f}, {1.5f,-1.25f}, {1.5f,1.25f},
-        {0,-1.75f}, {0,1.75f}, {1.75f,0}
+        {0,-1.75f}, {0,1.75f}, {1.75f,0},
+        {-2.1f,-1.25f}, {-2.1f,1.25f}, {2.2f,0}
     };
     const int32 Count = FMath::Clamp(HerdSize, 1, UE_ARRAY_COUNT(Pattern));
     for (int32 Index=0; Index<Count; ++Index)
@@ -227,13 +228,25 @@ void ASteppeHerdManager::Tick(float Dt)
 
     HerdCenter=FVector::ZeroVector;
     AverageVelocity=FVector::ZeroVector;
+    FVector MovingDirectionSum=FVector::ZeroVector;
+    int32 MovingDirectionCount=0;
     MinimumMemberSpacing=Members.Num()>1?BIG_NUMBER:0.f;
     for (const TObjectPtr<ASteppeWildHorseCharacter>& HorsePtr : Members)
     {
         const auto* Horse=HorsePtr.Get(); HerdCenter+=Horse->GetActorLocation(); AverageVelocity+=Horse->GetVelocity();
+        if (Horse->GetVelocity().Size2D()>100.f) { MovingDirectionSum+=Horse->GetVelocity().GetSafeNormal2D(); ++MovingDirectionCount; }
     }
     HerdCenter/=Members.Num();
     AverageVelocity/=Members.Num();
+    MovementCoherence=MovingDirectionCount>0?MovingDirectionSum.Size2D()/MovingDirectionCount:0.f;
+    if (ThreatTarget.IsValid())
+    {
+        HerdEscapeDirection=(HerdCenter-ThreatTarget->GetActorLocation()).GetSafeNormal2D();
+    }
+    if (HerdEscapeDirection.IsNearlyZero())
+    {
+        HerdEscapeDirection=AverageVelocity.IsNearlyZero()?GetActorForwardVector():AverageVelocity.GetSafeNormal2D();
+    }
 
     RestHerdCenter=HerdCenter;
     IsolationDistance=0.f;
@@ -286,7 +299,7 @@ void ASteppeHerdManager::Tick(float Dt)
             const float Side=Horse->Brain->IndividualSteeringBias>=0.f?1.f:-1.f;
             Separation+=Horse->GetActorRightVector()*Side*StrongestCrowding*.65f;
         }
-        Horse->Brain->SetHerdGuidance(HerdCenter,AverageVelocity,Separation,Neighbors);
+        Horse->Brain->SetHerdGuidance(HerdCenter,AverageVelocity,HerdEscapeDirection,Separation,Neighbors);
     }
     AlarmSourceCount=Sources.Num();
 

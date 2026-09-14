@@ -325,7 +325,7 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
                 if (!Target || !DeliveryZone || !HerdManager) { return; }
                 HerdManager->HandleFirstContactInteraction(Rider);
                 const FVector Direction=FVector(1,0,0);
-                DeliveryZone->SetActorLocation(Target->GetActorLocation()+Direction*1000.f);
+                DeliveryZone->SetActorLocation(Target->GetActorLocation()+Direction*900.f);
                 Rider->SetActorLocation(DeliveryZone->GetActorLocation(),false,nullptr,ETeleportType::TeleportPhysics);
                 Rider->SetActorRotation(Direction.Rotation());
                 Rider->GetCharacterMovement()->Velocity=FVector::ZeroVector;
@@ -415,9 +415,10 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
                     Recovering+=Member->Brain->bRecoveringFromBlockage;
                     HeadingBuckets.Add(FMath::RoundToInt(Member->GetActorRotation().Yaw/10.f));
                 }
-                UE_LOG(LogSteppe,Display,TEXT("STEPPE_P3_SMOKE: Members=%d Alert=%d Yielding=%d Fleeing=%d Moving=%d Headings=%d Blocked=%d Recovering=%d Sources=%d MinSpacing=%.1f Spread=%.1f"),
+                UE_LOG(LogSteppe,Display,TEXT("STEPPE_P3_SMOKE: Members=%d Alert=%d Yielding=%d Fleeing=%d Moving=%d Headings=%d Blocked=%d Recovering=%d Sources=%d MinSpacing=%.1f Spread=%.1f Coherence=%.2f"),
                     HerdManager->Members.Num(),Alert,Yielding,Fleeing,Moving,HeadingBuckets.Num(),Blocked,Recovering,HerdManager->AlarmSourceCount,HerdManager->MinimumMemberSpacing,
-                    HerdManager->Members.Num()>1?FVector::Dist2D(HerdManager->Members[0]->GetActorLocation(),HerdManager->Members.Last()->GetActorLocation()):0.f);
+                    HerdManager->Members.Num()>1?FVector::Dist2D(HerdManager->Members[0]->GetActorLocation(),HerdManager->Members.Last()->GetActorLocation()):0.f,
+                    HerdManager->MovementCoherence);
                 const int32 FocusIndex=WildHorses.IndexOfByKey(HerdManager->FocusedHorse);
                 UE_LOG(LogSteppe,Display,TEXT("STEPPE_P4_SMOKE: Focus=%s Distance=%.1f Progress=%.2f Isolated=%d"),
                     FocusIndex==INDEX_NONE?TEXT("None"):*FString::Printf(TEXT("H%d"),FocusIndex+1),
