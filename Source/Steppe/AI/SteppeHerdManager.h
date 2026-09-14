@@ -20,6 +20,7 @@ public:
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
 
     UFUNCTION(BlueprintCallable, Category="Herd") void SetThreatTarget(AActor* Target);
+    UFUNCTION(BlueprintPure, Category="Herd") ASteppeWildHorseCharacter* FindFocusHorse(FVector ObserverLocation, FVector ViewDirection) const;
     UFUNCTION(BlueprintCallable, Category="Herd") ASteppeWildHorseCharacter* SelectFocusHorse(FVector ObserverLocation, FVector ViewDirection);
     UFUNCTION(BlueprintCallable, Category="Herd") void SetFocusedHorse(ASteppeWildHorseCharacter* Horse);
     UFUNCTION(BlueprintCallable, Category="Herd") void ClearFocusedHorse();

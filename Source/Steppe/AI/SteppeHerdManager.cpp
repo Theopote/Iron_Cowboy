@@ -80,7 +80,7 @@ void ASteppeHerdManager::SetThreatTarget(AActor* Target)
     }
 }
 
-ASteppeWildHorseCharacter* ASteppeHerdManager::SelectFocusHorse(FVector ObserverLocation, FVector ViewDirection)
+ASteppeWildHorseCharacter* ASteppeHerdManager::FindFocusHorse(FVector ObserverLocation, FVector ViewDirection) const
 {
     ViewDirection=ViewDirection.GetSafeNormal2D();
     ASteppeWildHorseCharacter* Best=nullptr;
@@ -96,6 +96,12 @@ ASteppeWildHorseCharacter* ASteppeHerdManager::SelectFocusHorse(FVector Observer
         const float Score=Facing*2.f-Distance/FMath::Max(1.f,FocusSelectionDistance);
         if (Score>BestScore) { BestScore=Score; Best=Member; }
     }
+    return Best;
+}
+
+ASteppeWildHorseCharacter* ASteppeHerdManager::SelectFocusHorse(FVector ObserverLocation, FVector ViewDirection)
+{
+    ASteppeWildHorseCharacter* Best=FindFocusHorse(ObserverLocation,ViewDirection);
     if (Best==FocusedHorse) { ClearFocusedHorse(); return nullptr; }
     SetFocusedHorse(Best);
     return Best;

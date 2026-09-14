@@ -308,6 +308,9 @@ bool FTargetIsolationTest::RunTest(const FString& Parameters)
         Herd->Members[Index]->SetActorLocation(FVector(0,(Index-2.5f)*300.f,100),false,nullptr,ETeleportType::TeleportPhysics);
     }
     for (const auto& Member : Herd->Members) { Member->GetCharacterMovement()->SetComponentTickEnabled(false); }
+    auto* Preview=Herd->FindFocusHorse(FVector(1000,0,100),FVector::ForwardVector);
+    TestEqual(TEXT("Focus preview finds the intended horse"),Preview,Herd->Members[0].Get());
+    TestNull(TEXT("Focus preview does not select the horse"),Herd->FocusedHorse.Get());
     auto* Selected=Herd->SelectFocusHorse(FVector(1000,0,100),FVector::ForwardVector);
     TestEqual(TEXT("View direction selects the intended horse"),Selected,Herd->Members[0].Get());
     TestTrue(TEXT("Selected brain drops herd direction pull"),Selected && Selected->Brain->bIsolationFocus);

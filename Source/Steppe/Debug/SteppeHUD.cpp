@@ -24,6 +24,7 @@ void ASteppeHUD::DrawHUD()
     Super::DrawHUD();
     DrawText(TEXT("STEPPE | W/S urge/slow  A/D reins  Mouse look  Shift sprint  Ctrl brake  E mount  Q target  RMB swing  LMB throw/release  Space brace  C capture  F1/F2"),FLinearColor::White,24,20,nullptr,.85f);
     auto* Rider=PlayerOwner?Cast<ASteppeRiderCharacter>(PlayerOwner->GetPawn()):nullptr;
+    auto* Mode=GetWorld()->GetAuthGameMode<ASteppeGameMode>();
     auto* Lasso=Rider?Rider->Lasso.Get():nullptr;
     if (Lasso)
     {
@@ -83,6 +84,22 @@ void ASteppeHUD::DrawHUD()
         {
             const FLinearColor ReticleColor=Lasso->SwingStability>=.8f?FLinearColor(.3f,1.f,.3f):FLinearColor::White;
             DrawText(TEXT("+"),ReticleColor,Canvas->ClipX*.5f-5,Canvas->ClipY*.5f-12,nullptr,1.5f);
+
+            // A readable screen-space loop makes the lasso visible before it is thrown.
+            const FVector2D LoopCenter(Canvas->ClipX*.5f,Canvas->ClipY*.5f);
+            const float Pulse=.88f+.12f*FMath::Sin(Lasso->SwingPhase*2.f*PI);
+            const float RadiusX=(48.f+Lasso->SwingStability*22.f)*Pulse;
+            const float RadiusY=RadiusX*.62f;
+            const FLinearColor LoopColor=Lasso->SwingStability>=.8f?FLinearColor(.2f,1.f,.25f):FLinearColor(1.f,.72f,.12f);
+            constexpr int32 LoopSegments=40;
+            for (int32 Segment=0; Segment<LoopSegments; ++Segment)
+            {
+                const float A0=2.f*PI*Segment/LoopSegments;
+                const float A1=2.f*PI*(Segment+1)/LoopSegments;
+                const FVector2D P0=LoopCenter+FVector2D(FMath::Cos(A0)*RadiusX,FMath::Sin(A0)*RadiusY);
+                const FVector2D P1=LoopCenter+FVector2D(FMath::Cos(A1)*RadiusX,FMath::Sin(A1)*RadiusY);
+                DrawLine(P0.X,P0.Y,P1.X,P1.Y,LoopColor,Lasso->SwingStability>=.8f?6.f:4.f);
+            }
         }
         if (Lasso->State==ELassoState::Thrown || Lasso->State==ELassoState::Attached || Lasso->State==ELassoState::Subdued || Lasso->State==ELassoState::Captured)
         {
@@ -109,7 +126,6 @@ void ASteppeHUD::DrawHUD()
             DrawDebugSphere(GetWorld(),Rear-Horse->GetActorForwardVector()*65.f,Radius*.65f,8,FColor(194,142,84),false,0,0,1.5f);
         }
     }
-    auto* Mode=GetWorld()->GetAuthGameMode<ASteppeGameMode>();
     if (Mode && Mode->bEnableTrial && Mode->Trial.State!=ESteppeTrialState::NotStarted)
     {
         const int32 Seconds=FMath::CeilToInt(Mode->Trial.RemainingSeconds);
@@ -182,6 +198,74 @@ void ASteppeHUD::DrawHUD()
                 default: break;
                 }
             }
+
+            // Keep the current action near the player's focal area instead of relying on the small top help line.
+            FString ActionTitle;
+            FString ActionDetail;
+            FLinearColor ActionColor(1.f,.82f,.2f);
+            const auto* Herd=Mode->HerdManager.Get();
+            ASteppeWildHorseCharacter* FocusHorse=Herd?Herd->FocusedHorse.Get():nullptr;
+            ASteppeWildHorseCharacter* PreviewHorse=nullptr;
+            if (Herd && Rider && !FocusHorse && PlayerOwner)
+            {
+                PreviewHorse=Herd->FindFocusHorse(Rider->GetActorLocation(),PlayerOwner->GetControlRotation().Vector());
+            }
+            if ((!Lasso || Lasso->State==ELassoState::Stored) && !FocusHorse)
+            {
+                ActionTitle=PreviewHorse?TEXT("[ Q ]  SELECT THIS HORSE"):TEXT("FIND A WILD HORSE");
+                ActionDetail=PreviewHorse?TEXT("Press Q now, then chase the marked horse away from the herd"):TEXT("Look at a horse and place it near the screen center");
+            }
+            else if ((!Lasso || Lasso->State==ELassoState::Stored) && FocusHorse && Herd && !Herd->bTargetIsolated)
+            {
+                ActionTitle=TEXT("TARGET MARKED");
+                ActionDetail=FString::Printf(TEXT("Chase this horse away from the herd  %.0f%%"),Herd->IsolationProgress*100.f);
+                ActionColor=FLinearColor(.2f,1.f,1.f);
+            }
+            else if ((!Lasso || Lasso->State==ELassoState::Stored) && FocusHorse && Herd && Herd->bTargetIsolated)
+            {
+                ActionTitle=TEXT("TARGET ISOLATED  |  HOLD [ RMB ]");
+                ActionDetail=TEXT("Keep Right Mouse held to swing the lasso");
+                ActionColor=FLinearColor(.3f,1.f,.35f);
+            }
+            else if (Lasso && Lasso->State==ELassoState::Aiming)
+            {
+                const bool bReady=Lasso->SwingStability>=.8f;
+                ActionTitle=bReady?TEXT("GREEN LOOP  |  PRESS [ LMB ] NOW"):TEXT("KEEP [ RMB ] HELD");
+                ActionDetail=bReady?TEXT("Throw while the loop is green and the horse is inside it"):TEXT("Wait for the visible loop to open and turn green");
+                ActionColor=bReady?FLinearColor(.2f,1.f,.25f):FLinearColor(1.f,.72f,.12f);
+            }
+            if (!ActionTitle.IsEmpty())
+            {
+                const float CardW=FMath::Min(760.f,Canvas->ClipX-36.f);
+                const float CardX=(Canvas->ClipX-CardW)*.5f;
+                const float CardY=Canvas->ClipY*.67f;
+                DrawRect(FLinearColor(0,0,0,.82f),CardX,CardY,CardW,76.f);
+                DrawRect(ActionColor,CardX,CardY,CardW,5.f);
+                DrawText(ActionTitle,ActionColor,CardX+22.f,CardY+13.f,nullptr,1.35f);
+                DrawText(ActionDetail,FLinearColor::White,CardX+22.f,CardY+48.f,nullptr,.95f);
+            }
+
+            // Brackets show exactly which horse Q will select, and remain on the chosen target afterward.
+            ASteppeWildHorseCharacter* MarkedHorse=FocusHorse?FocusHorse:PreviewHorse;
+            if (MarkedHorse && PlayerOwner)
+            {
+                FVector2D HorseScreen;
+                if (PlayerOwner->ProjectWorldLocationToScreen(MarkedHorse->GetActorLocation()+FVector(0,0,105),HorseScreen))
+                {
+                    const bool bSelected=FocusHorse!=nullptr;
+                    const FLinearColor MarkerColor=bSelected?FLinearColor(.2f,1.f,1.f):FLinearColor(1.f,.82f,.2f);
+                    const float HalfW=48.f, HalfH=58.f, Corner=18.f, Thick=bSelected?4.f:6.f;
+                    DrawLine(HorseScreen.X-HalfW,HorseScreen.Y-HalfH,HorseScreen.X-HalfW+Corner,HorseScreen.Y-HalfH,MarkerColor,Thick);
+                    DrawLine(HorseScreen.X-HalfW,HorseScreen.Y-HalfH,HorseScreen.X-HalfW,HorseScreen.Y-HalfH+Corner,MarkerColor,Thick);
+                    DrawLine(HorseScreen.X+HalfW,HorseScreen.Y-HalfH,HorseScreen.X+HalfW-Corner,HorseScreen.Y-HalfH,MarkerColor,Thick);
+                    DrawLine(HorseScreen.X+HalfW,HorseScreen.Y-HalfH,HorseScreen.X+HalfW,HorseScreen.Y-HalfH+Corner,MarkerColor,Thick);
+                    DrawLine(HorseScreen.X-HalfW,HorseScreen.Y+HalfH,HorseScreen.X-HalfW+Corner,HorseScreen.Y+HalfH,MarkerColor,Thick);
+                    DrawLine(HorseScreen.X-HalfW,HorseScreen.Y+HalfH,HorseScreen.X-HalfW,HorseScreen.Y+HalfH-Corner,MarkerColor,Thick);
+                    DrawLine(HorseScreen.X+HalfW,HorseScreen.Y+HalfH,HorseScreen.X+HalfW-Corner,HorseScreen.Y+HalfH,MarkerColor,Thick);
+                    DrawLine(HorseScreen.X+HalfW,HorseScreen.Y+HalfH,HorseScreen.X+HalfW,HorseScreen.Y+HalfH-Corner,MarkerColor,Thick);
+                    DrawText(bSelected?TEXT("TARGET"):TEXT("Q  SELECT"),MarkerColor,HorseScreen.X-42.f,HorseScreen.Y-HalfH-25.f,nullptr,1.05f);
+                }
+            }
             if (Rider && Rider->Balance)
             {
                 if (Rider->Balance->State==ERiderBalanceState::Dragged) { Objective=TEXT("DRAGGED  Press LMB to release the rope"); }
@@ -191,12 +275,12 @@ void ASteppeHUD::DrawHUD()
             DrawRect(FLinearColor(0,0,0,.68f),18,MissionY-42,760,30);
             DrawText(Objective,FLinearColor(.55f,1.f,1.f),26,MissionY-36,nullptr,1.f);
 
-            if (Mode->Trial.ElapsedSeconds<4.f)
+            if (Mode->Trial.ElapsedSeconds<4.f && (!Herd || !Herd->FocusedHorse))
             {
                 const float Opacity=FMath::Clamp(4.f-Mode->Trial.ElapsedSeconds,0.f,1.f);
                 DrawRect(FLinearColor(0,0,0,.78f*Opacity),Canvas->ClipX*.5f-270,130,540,92);
                 DrawText(TEXT("ROUND START"),FLinearColor(1.f,.88f,.25f,Opacity),Canvas->ClipX*.5f-105,146,nullptr,1.65f);
-                DrawText(TEXT("Capture, befriend, deliver and name one horse"),FLinearColor(1,1,1,Opacity),Canvas->ClipX*.5f-215,188,nullptr,1.05f);
+                DrawText(TEXT("LOOK AT A HORSE  >  PRESS Q TO MARK IT"),FLinearColor(1,1,1,Opacity),Canvas->ClipX*.5f-220,188,nullptr,1.05f);
             }
             if (Mode->Trial.RemainingSeconds<=10.f)
             {

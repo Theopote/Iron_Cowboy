@@ -1,0 +1,31 @@
+P14.4 lasso clarity repair — 2026-09-14 — Unreal Engine 5.8.2
+
+Trigger from human playtest
+  Players could not see the lasso before throwing.
+  Players did not know when to press Q.
+  Existing screen guidance was too easy to miss.
+
+Implemented feedback
+  Yellow brackets show which horse Q will select.
+  Cyan brackets persist on the selected target.
+  A central context card explains the current action and key.
+  RMB aiming renders an animated screen-space lasso loop.
+  The loop turns green at stability >= 80% and calls for LMB immediately.
+  Target selection, isolation and lasso collision rules are unchanged.
+
+Build and automation
+  .\Scripts\Build.ps1 -EngineRoot 'C:\Program Files\Epic Games\UE_5.8'
+  Result: succeeded.
+  .\Scripts\RunEditor.ps1 -Tests -Commands 'Automation RunTests Steppe;Quit' -LogName 'P14.4-Clarity-Automation' -ExpectedTests 19
+  Result: 19 passed, 0 failed, 3 existing RiderSeat fallback warnings.
+
+Render smoke
+  .\Scripts\RunEditor.ps1 -Game -Render -Smoke -LassoSkillSmoke -Commands '' -LogName 'P14.4-Clarity-Render-Final'
+  Result: stable-window throw attached at the neck; target brackets, green loop and central LMB callout rendered.
+  Screenshot: Saved/Screenshots/SteppeP12Swing.png
+
+Windows Shipping package
+  Packages/ProjectSTEPPE-Windows-20260914-1655.zip
+  314,391,122 bytes
+  SHA256 C719FADC429345A5DEC98FE1D5937AD858ED696B96956A4DB931D52E852638C7
+  Packaged launch smoke exited with code 0.
