@@ -28,6 +28,7 @@
 - P14_PLAYTEST_VALIDATION.md：已实现的逐轮 JSON、数据字典、人工验证流程和决策门槛。
 - CORE_GAMEPLAY_AUDIT.md：已核实的核心体验技术债和 P14.3–P17 顺序。
 - Playtests/：匿名测试者说明、15 轮记录表和访谈模板。
+- P14.3_PACKAGING_AND_DISTRIBUTION.md：Win64 Shipping 一键打包、ZIP 分发和结果回收方法。
 - DESIGN_DECISIONS.md：跨系统技术与产品决策。
 - References/：两份早期讨论 PDF 原件及使用说明。
 

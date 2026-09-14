@@ -1,0 +1,28 @@
+P14.3 Windows package validation — 2026-09-14 — Unreal Engine 5.8.2
+
+Command
+  .\Scripts\PackageWindows.ps1 -EngineRoot 'C:\Program Files\Epic Games\UE_5.8' -Clean -Zip
+
+AutomationTool
+  Steppe Win64 Shipping: Succeeded
+  Cook: 506 packages, 0 errors, 0 warnings
+  Stage/Pak/IoStore/Archive: Succeeded
+  IoStore output: 120.89 MiB
+
+Distribution archive
+  Packages/ProjectSTEPPE-Windows-20260914-1624.zip
+  314,149,685 bytes
+  66 ZIP entries
+  SHA256 3631BA9591F66CEEF29D75570E93B261061294F7D89C9A721558242AE8A2B3E9
+  Required Steppe.exe, player/organizer guides, round log and collection script present.
+
+Packaged launch
+  Packages/ProjectSTEPPE-Windows/Windows/Steppe.exe
+  Short failure route completed and exited with code 0.
+  Record created at %LOCALAPPDATA%\Steppe\Saved\Playtests.
+  schemaVersion=1.1, isAutomated=true, result=Failed.
+
+Collection script
+  PowerShell syntax validation: passed.
+  Isolated fixture: newest 3 human rounds selected.
+  Automated and older human records excluded.

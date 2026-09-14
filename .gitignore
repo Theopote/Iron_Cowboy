@@ -2,6 +2,9 @@ Binaries/
 DerivedDataCache/
 Intermediate/
 Saved/
+Packages/
+PlaytestResults/
+/Build/Windows/FileOpenOrder/
 .vs/
 .idea/
 .vscode/

@@ -34,6 +34,9 @@
 - `Docs/Playtests/` 提供 15 轮匿名记录表、访谈模板和现场说明；`SummarizePlaytests.ps1` 汇总客观 JSON。
 - 试玩 JSON 升级为 schema 1.1 并记录 `isAutomated`；真人汇总默认排除自动 Smoke 与旧版无来源记录。
 - `.idea/`、`.vscode/` 已加入忽略；6 个 `.idea` 文件停止 Git 跟踪，本机副本保留。
+- P14.3 玩家教程覆盖启动、完整操作、三轮流程、卡住恢复和数据说明；组织者指南规定教程协助标记、逐轮口述和 JSON 对应方法。
+- `PackageWindows.ps1` 提供 UE 5.8.2 Win64 Shipping 的 Build/Cook/Stage/Pak/Archive 与可选 ZIP；分发包自动附带 PlaytestKit 和本地结果收集脚本。
+- Win64 Shipping 已实际完成打包和启动验证：Cook 506 个包、0 error/0 warning；ZIP 66 项、314,150,531 bytes，Shipping 进程退出码 0，并在 LocalAppData 写出正确来源的 JSON。
 
 # Build Result
 
