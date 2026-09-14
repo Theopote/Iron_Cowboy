@@ -1,0 +1,24 @@
+Project STEPPE P14.4 herd cohesion and rope ratchet validation
+Date: 2026-09-14
+Engine: Unreal Engine 5.8.2
+
+Editor build
+  .\Scripts\Build.ps1 -EngineRoot 'C:\Program Files\Epic Games\UE_5.8'
+  Result: Succeeded
+
+Automation
+  .\Scripts\RunEditor.ps1 -Tests -ExpectedTests 21 -Commands 'Automation RunTests Steppe;Quit' -LogName P14.4-Herd-Rope-Tests-Release
+  Result: 21 passed, 0 failed, 3 passed with existing RiderSeat fallback warnings
+
+Rendered smoke
+  P14.4-Twelve-Horse-Herd-Smoke-Final: 12 calm horses, 11 moving, no blockage or flight
+  P14.4-Herd-Coherence-Smoke: 12/12 fleeing, 12 moving, coherence 0.91, retry reset passed
+  P14.4-Twelve-Horse-Full-Loop-Smoke-Final3: captured, first contact, 302.9 cm natural lead, delivered and named Saran
+
+Windows Shipping
+  Build/Cook/Stage/Pak/Archive: Succeeded
+  Cook: 506 packages, 0 errors, 0 warnings
+  Startup smoke: ExitCode=0
+  ZIP: Packages\ProjectSTEPPE-Windows-20260914-2146.zip
+  Bytes: 314709339
+  SHA256: 04BEFD2103C265A7D670C5A5009523CA60CE6B7B330BC8844F64BFA053055D94
