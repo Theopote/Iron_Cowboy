@@ -1,0 +1,40 @@
+P14.4 target range and rope-fight clarity — 2026-09-14 — Unreal Engine 5.8.2
+
+Human feedback trigger
+  Focus marker remained after the horse ran far away.
+  Aim feedback was unavailable while the horse was still close to the herd.
+  Rope break, balance loss, dragging and calming were difficult to read.
+
+Implementation
+  Q selection range: 35 m. Automatic focus loss: 42 m.
+  Isolation requirement: 10 m from the rest of the herd for 1 second.
+  RMB can show the aiming loop before isolation; throwing stays locked.
+  Grey loop means separate the target, red means beyond 26 m, orange means wait, green means throw.
+  Attached state uses a central tension gauge, useful green band and calming bar.
+  Slack, strain, balance warning, dragging, rope break and subdued states have explicit central calls to action.
+  Drag response lasts up to 2 seconds; recovery outcome remains visible for 1.5 seconds.
+
+Build and automation
+  Initial build met a transient Live Coding lock; no Unreal process remained and the retry succeeded.
+  .\Scripts\Build.ps1 -EngineRoot 'C:\Program Files\Epic Games\UE_5.8'
+  Result: succeeded.
+  .\Scripts\RunEditor.ps1 -Tests -Commands 'Automation RunTests Steppe;Quit' -LogName 'P14.4-Rope-Clarity-Automation-Retry' -ExpectedTests 19
+  Result: 19 passed, 0 failed, 3 existing RiderSeat fallback warnings.
+  The first automation run exposed two tests still waiting for the old 0.75-second recovery; their timing was updated to the new 1.5-second readable outcome window before the passing retry.
+  Coverage includes automatic focus loss, early visible aim with locked throw, recovery, rope break, balance and dragging.
+
+Rendered gameplay
+  P14.4-Rope-Control.png: attached target, central Space instruction, tension green band and calming bar.
+  P14.4-Dragged-Warning.png: fallen rider, visible rope, central red dragged warning, release key and remaining time.
+  Lasso skill and balance render smokes passed.
+
+Full loop
+  .\Scripts\RunEditor.ps1 -Game -Render -Smoke -FullLoopSmoke -Commands '' -LogName 'P14.4-Rope-Clarity-FullLoop'
+  Result: capture, first contact, natural lead, camp delivery and naming completed successfully.
+
+Windows Shipping package
+  Packages/ProjectSTEPPE-Windows-20260914-1731.zip
+  314,556,171 bytes
+  SHA256 42CF4DCCB74A868326A381C931AD081DBB9566709FF7B4EB1E5FF722C4B0B4D4
+  Packaged launch smoke exited with code 0.
+  Distribution ZIP contains the updated 35/42 m target guidance and rope-strain instructions.

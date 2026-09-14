@@ -28,7 +28,7 @@ public:
     UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Fall",meta=(ClampMin="0")) float FallHorizontalSpeed = 420.f;
     UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Fall",meta=(ClampMin="0")) float FallUpSpeed = 260.f;
     UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Fall",meta=(ClampMin="0.1")) float FallSeconds = .35f;
-    UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Dragged",meta=(ClampMin="0.1")) float MaximumDraggedSeconds = 1.25f;
+    UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Dragged",meta=(ClampMin="0.1")) float MaximumDraggedSeconds = 2.f;
     UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Dragged",meta=(ClampMin="100")) float MaximumDraggedDistance = 1800.f;
     UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Dragged",meta=(ClampMin="0")) float DragSpeed = 520.f;
     UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Recovery",meta=(ClampMin="0.1")) float PostFallRecoverySeconds = .8f;

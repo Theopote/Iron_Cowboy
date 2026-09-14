@@ -38,10 +38,11 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Herd", meta=(ClampMin="0.1")) float AlarmHoldSeconds = 1.5f;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Herd", meta=(ClampMin="0", ClampMax="1")) float AlarmStrength = .85f;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Herd") int32 HerdSeed = 8347;
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Isolation", meta=(ClampMin="100")) float FocusSelectionDistance = 6000.f;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Isolation", meta=(ClampMin="100")) float FocusSelectionDistance = 3500.f;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Isolation", meta=(ClampMin="100")) float FocusLostDistance = 4200.f;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Isolation", meta=(ClampMin="-1", ClampMax="1")) float FocusSelectionMinDot = .4f;
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Isolation", meta=(ClampMin="100")) float IsolationDistanceRequired = 1800.f;
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Isolation", meta=(ClampMin="0.1")) float IsolationHoldSeconds = 2.f;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Isolation", meta=(ClampMin="100")) float IsolationDistanceRequired = 1000.f;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Isolation", meta=(ClampMin="0.1")) float IsolationHoldSeconds = 1.f;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Herd") TSubclassOf<ASteppeWildHorseCharacter> HorseClass;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Archetype") TArray<FWildHorseArchetypeProfile> ArchetypeProfiles;
 

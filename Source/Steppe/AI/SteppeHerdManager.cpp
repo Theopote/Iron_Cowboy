@@ -7,6 +7,7 @@
 #include "Engine/World.h"
 #include "Camp/SteppeDeliveryZone.h"
 #include "Player/SteppePlayerController.h"
+#include "Lasso/LassoComponent.h"
 
 ASteppeHerdManager::ASteppeHerdManager()
 {
@@ -186,6 +187,18 @@ void ASteppeHerdManager::Tick(float Dt)
     Super::Tick(Dt);
     Members.RemoveAll([](const TObjectPtr<ASteppeWildHorseCharacter>& Horse) { return !IsValid(Horse); });
     if (FocusedHorse && !Members.Contains(FocusedHorse)) { ClearFocusedHorse(); }
+    if (FocusedHorse && ThreatTarget.IsValid()
+        && FVector::Dist2D(FocusedHorse->GetActorLocation(),ThreatTarget->GetActorLocation())>FocusLostDistance)
+    {
+        if (auto* Rider=Cast<ASteppeRiderCharacter>(ThreatTarget.Get()))
+        {
+            if (Rider->Lasso && Rider->Lasso->State==ELassoState::Aiming && Rider->Lasso->Target.Get()==FocusedHorse)
+            {
+                Rider->Lasso->CancelAim();
+            }
+        }
+        ClearFocusedHorse();
+    }
     if (LeadingHorse && LeadingHorse->Trust && DeliveryZone)
     {
         auto* Rider=Cast<ASteppeRiderCharacter>(ThreatTarget.Get());

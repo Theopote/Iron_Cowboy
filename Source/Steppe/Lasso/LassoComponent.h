@@ -40,7 +40,7 @@ public:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lasso", meta=(ClampMin="100")) float ThrowSpeed = 3200.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lasso", meta=(ClampMin="100")) float MaximumRange = 2600.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lasso", meta=(ClampMin="1")) float CaptureRadius = 80.f;
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lasso", meta=(ClampMin="0.1")) float RecoverySeconds = .75f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lasso", meta=(ClampMin="0.1")) float RecoverySeconds = 1.5f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lasso|Swing", meta=(ClampMin="0.1")) float ReadySeconds = .35f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lasso|Swing", meta=(ClampMin="0.2")) float SwingPeriod = 1.2f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lasso|Swing", meta=(ClampMin="0.1", ClampMax="1")) float UnstableRadiusMultiplier = .45f;
@@ -65,6 +65,7 @@ public:
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso|Hit Zone") ELassoHitZone HitZone = ELassoHitZone::None;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso") FString Feedback = TEXT("Select and isolate a target");
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso") TWeakObjectPtr<ASteppeWildHorseCharacter> Target;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso") bool bTargetIsolated = false;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Rope Fight") float RopeLength = 0.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Rope Fight") float Tension = 0.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Rope Fight") float ControlProgress = 0.f;

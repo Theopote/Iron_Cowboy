@@ -331,6 +331,13 @@ bool FTargetIsolationTest::RunTest(const FString& Parameters)
         Herd->SelectFocusHorse(FVector(1000,0,100),FVector::ForwardVector));
     TestNull(TEXT("Focus clears from manager"),Herd->FocusedHorse.Get());
     TestFalse(TEXT("Focus clears from horse brain"),Selected->Brain->bIsolationFocus);
+    auto* Observer=Fixture.World->SpawnActor<AActor>(AActor::StaticClass(),FVector::ZeroVector,FRotator::ZeroRotator);
+    Herd->FocusLostDistance=1000.f;
+    Herd->SetThreatTarget(Observer);
+    Herd->SetFocusedHorse(Herd->Members[1]);
+    Herd->Members[1]->SetActorLocation(FVector(2000,0,100),false,nullptr,ETeleportType::TeleportPhysics);
+    Fixture.Step(.3f);
+    TestNull(TEXT("Focus automatically clears beyond its tracking range"),Herd->FocusedHorse.Get());
     Herd->SetFocusedHorse(Herd->Members[1]);
     Herd->Members[1]->Destroy();
     Fixture.Step(.3f);
@@ -347,8 +354,10 @@ bool FLassoLoopTest::RunTest(const FString& Parameters)
     Rider->GetCharacterMovement()->SetComponentTickEnabled(false);
     Wild->GetCharacterMovement()->SetComponentTickEnabled(false);
 
-    TestFalse(TEXT("Non-isolated target cannot be aimed"),Rider->Lasso->BeginAimForTarget(Wild,false));
-    TestEqual(TEXT("Rejected aim leaves lasso stored"),Rider->Lasso->State,ELassoState::Stored);
+    TestTrue(TEXT("Non-isolated target can show aim feedback"),Rider->Lasso->BeginAimForTarget(Wild,false));
+    TestEqual(TEXT("Early aim enters visible aiming state"),Rider->Lasso->State,ELassoState::Aiming);
+    TestFalse(TEXT("Non-isolated target still cannot be thrown at"),Rider->Lasso->ThrowFrom(FVector(0,0,170),FVector::ForwardVector));
+    Rider->Lasso->CancelAim();
     TestTrue(TEXT("Isolated target enables aiming"),Rider->Lasso->BeginAimForTarget(Wild,true));
     TestTrue(TEXT("Aimed throw starts"),Rider->Lasso->ThrowFrom(FVector(0,0,170),FVector::ForwardVector));
     Fixture.Step(.5f);
@@ -360,7 +369,7 @@ bool FLassoLoopTest::RunTest(const FString& Parameters)
     Rider->Lasso->Release();
     TestEqual(TEXT("Release starts recovery"),Rider->Lasso->State,ELassoState::Recovering);
     TestFalse(TEXT("Release frees the horse"),Wild->Brain->bLassoed);
-    Fixture.Step(1.f);
+    Fixture.Step(1.6f);
     TestEqual(TEXT("Recovery returns the lasso to storage"),Rider->Lasso->State,ELassoState::Stored);
 
     auto* Obstacle=Fixture.Block(FVector(0,800,170),FVector(2,.2f,3));
@@ -369,14 +378,14 @@ bool FLassoLoopTest::RunTest(const FString& Parameters)
     Fixture.Step(.4f);
     TestEqual(TEXT("World obstacle blocks the lasso"),Rider->Lasso->State,ELassoState::Recovering);
     TestTrue(TEXT("Blocked throw reports its cause"),Rider->Lasso->Feedback.Contains(TEXT("blocked")));
-    Fixture.Step(1.f);
+    Fixture.Step(1.6f);
     Obstacle->Destroy();
 
     TestTrue(TEXT("Lasso can be aimed again"),Rider->Lasso->BeginAimForTarget(Wild,true));
     TestTrue(TEXT("Missed throw starts"),Rider->Lasso->ThrowFrom(FVector(0,0,170),FVector::RightVector));
     Fixture.Step(1.f);
     TestEqual(TEXT("Out-of-range miss enters recovery"),Rider->Lasso->State,ELassoState::Recovering);
-    Fixture.Step(1.f);
+    Fixture.Step(1.6f);
     TestEqual(TEXT("Miss recovery completes"),Rider->Lasso->State,ELassoState::Stored);
     return true;
 }
@@ -396,7 +405,7 @@ bool FLassoSkillTest::RunTest(const FString& Parameters)
     const float RushedRange=Rider->Lasso->EffectiveMaximumRange;
     TestTrue(TEXT("Rushed throw locks low stability"),Rider->Lasso->LastThrowStability<.3f);
     Fixture.Step(1.f);
-    Fixture.Step(1.f);
+    Fixture.Step(1.6f);
 
     TestTrue(TEXT("Lasso can prepare a stable swing"),Rider->Lasso->BeginAimForTarget(Wild,true));
     Fixture.Step(.6f);
@@ -460,7 +469,7 @@ bool FRiderBalanceTest::RunTest(const FString& Parameters)
     Rider->Lasso->Release();
     Fixture.Step(.05f);
     TestEqual(TEXT("Active rope release ends dragging"),Rider->Balance->State,ERiderBalanceState::Recovering);
-    Fixture.Step(1.f);
+    Fixture.Step(1.6f);
     TestEqual(TEXT("Fall recovery returns to stable"),Rider->Balance->State,ERiderBalanceState::Stable);
     TestTrue(TEXT("Rider survives and remains movable"),IsValid(Rider) && Rider->GetCharacterMovement()->MovementMode!=MOVE_None);
 
@@ -563,7 +572,7 @@ bool FRopeFightTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Subdued horse remains lassoed"),Wild->Brain->bLassoed);
 
     Rider->Lasso->Release();
-    Fixture.Step(1.f);
+    Fixture.Step(1.6f);
     TestTrue(TEXT("A second rope fight can begin"),Rider->Lasso->BeginAimForTarget(Wild,true));
     TestTrue(TEXT("Second throw starts"),Rider->Lasso->ThrowFrom(FVector(0,0,170),FVector::ForwardVector));
     Fixture.Step(.5f);
@@ -611,7 +620,7 @@ bool FCaptureTest::RunTest(const FString& Parameters)
     TestNull(TEXT("Capture clears old focus"),Herd->FocusedHorse.Get());
 
     Rider->Lasso->Release();
-    Fixture.Step(1.f);
+    Fixture.Step(1.6f);
     TestEqual(TEXT("Lasso can be stored after securing capture"),Rider->Lasso->State,ELassoState::Stored);
     TestTrue(TEXT("Stowing rope does not undo capture"),Wild->Brain->bCaptured);
     return true;

@@ -27,14 +27,14 @@ bool ULassoComponent::BeginAimForTarget(ASteppeWildHorseCharacter* NewTarget, bo
     if (State==ELassoState::Attached || State==ELassoState::Subdued || State==ELassoState::Captured) { Feedback=TEXT("Release the attached lasso first"); return false; }
     if (State==ELassoState::Thrown || State==ELassoState::Recovering) { return false; }
     if (!IsValid(NewTarget)) { Feedback=TEXT("Select a target with Q"); return false; }
-    if (!bIsolated) { Feedback=TEXT("Isolate the target before throwing"); return false; }
     Target=NewTarget;
+    bTargetIsolated=bIsolated;
     State=ELassoState::Aiming;
     AimSeconds=0.f;
     SwingPhase=0.f;
     SwingStability=0.f;
     HitZone=ELassoHitZone::None;
-    Feedback=TEXT("Build the swing, then throw in the stable window");
+    Feedback=bTargetIsolated?TEXT("Build the swing, then throw in the stable window"):TEXT("Aim ready - separate the target from the herd");
     return true;
 }
 
@@ -44,6 +44,7 @@ void ULassoComponent::CancelAim()
     {
         State=ELassoState::Stored;
         Target.Reset();
+        bTargetIsolated=false;
         AimSeconds=0.f;
         SwingPhase=0.f;
         SwingStability=0.f;
@@ -64,6 +65,12 @@ bool ULassoComponent::Throw()
 bool ULassoComponent::ThrowFrom(FVector Origin, FVector Direction)
 {
     if (State!=ELassoState::Aiming || !Target.IsValid()) { Feedback=TEXT("Hold Right Mouse to aim first"); return false; }
+    if (!bTargetIsolated) { Feedback=TEXT("Move the target away from the herd before throwing"); return false; }
+    if (FVector::Dist2D(GetOwner()->GetActorLocation(),Target->GetActorLocation())>MaximumRange)
+    {
+        Feedback=TEXT("Target too far - move within lasso range");
+        return false;
+    }
     RopeStart=Origin;
     LoopLocation=Origin;
     ThrowDirection=Direction.GetSafeNormal();
@@ -85,6 +92,7 @@ void ULassoComponent::StartRecovery(const TCHAR* Message)
 {
     if (auto* Horse=Target.Get()) { Horse->Brain->SetLassoed(false); }
     Target.Reset();
+    bTargetIsolated=false;
     bBracing=false;
     Tension=0.f;
     ControlProgress=0.f;
@@ -156,12 +164,20 @@ float ULassoComponent::GetHitZoneTensionMultiplier() const
 
 void ULassoComponent::UpdateSwing(float Dt)
 {
+    if (const auto* Mode=GetWorld()?GetWorld()->GetAuthGameMode<ASteppeGameMode>():nullptr)
+    {
+        if (const auto* Herd=Mode->HerdManager.Get(); Herd && Herd->FocusedHorse==Target.Get())
+        {
+            bTargetIsolated=Herd->bTargetIsolated;
+        }
+    }
     AimSeconds+=FMath::Max(0.f,Dt);
     SwingPhase=FMath::Fmod(AimSeconds/FMath::Max(.2f,SwingPeriod),1.f);
     const float Ready=FMath::Clamp(AimSeconds/FMath::Max(.1f,ReadySeconds),0.f,1.f);
     const float Timing=1.f-FMath::Abs(SwingPhase-.5f)*2.f;
     SwingStability=Ready*FMath::Lerp(.25f,1.f,FMath::Clamp(Timing,0.f,1.f));
-    Feedback=SwingStability>=.8f?TEXT("Stable window - throw now"):TEXT("Swinging - wait for the loop to open");
+    Feedback=!bTargetIsolated?TEXT("Aim ready - separate the target from the herd"):
+        (SwingStability>=.8f?TEXT("Stable window - throw now"):TEXT("Swinging - wait for the loop to open"));
 }
 
 void ULassoComponent::TickComponent(float Dt, ELevelTick TickType, FActorComponentTickFunction* TickFunction)

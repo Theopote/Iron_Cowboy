@@ -36,11 +36,14 @@ void ASteppeHUD::DrawHUD()
         DrawText(LassoText,LassoColor,LassoX,48,nullptr,.95f);
         if (Lasso->State==ELassoState::Aiming)
         {
-            const bool bStable=Lasso->SwingStability>=.8f;
-            const FLinearColor SwingColor=bStable?FLinearColor(.3f,1.f,.3f):FLinearColor(1.f,.75f,.15f);
+            const float TargetDistance=Lasso->Target.IsValid() && Rider?FVector::Dist2D(Rider->GetActorLocation(),Lasso->Target->GetActorLocation()):BIG_NUMBER;
+            const bool bInRange=TargetDistance<=Lasso->MaximumRange;
+            const bool bStable=Lasso->bTargetIsolated && bInRange && Lasso->SwingStability>=.8f;
+            const FLinearColor SwingColor=!Lasso->bTargetIsolated?FLinearColor(.65f,.65f,.65f):
+                (!bInRange?FLinearColor(1.f,.2f,.12f):(bStable?FLinearColor(.3f,1.f,.3f):FLinearColor(1.f,.75f,.15f)));
             DrawRect(FLinearColor(0,0,0,.6f),LassoX-6,73,558,43);
             DrawText(FString::Printf(TEXT("SWING %.0f%% | OPEN %.0f%% %s"),Lasso->SwingPhase*100.f,Lasso->SwingStability*100.f,
-                bStable?TEXT("THROW"):TEXT("WAIT")),SwingColor,LassoX,78,nullptr,1.f);
+                bStable?TEXT("THROW"):(!Lasso->bTargetIsolated?TEXT("SEPARATE"):(!bInRange?TEXT("TOO FAR"):TEXT("WAIT")))),SwingColor,LassoX,78,nullptr,1.f);
             DrawRect(FLinearColor(.12f,.12f,.12f,1),LassoX,99,520,8);
             DrawRect(SwingColor,LassoX,99,520*Lasso->SwingStability,8);
         }
@@ -82,7 +85,10 @@ void ASteppeHUD::DrawHUD()
         }
         if (Lasso->State==ELassoState::Aiming)
         {
-            const FLinearColor ReticleColor=Lasso->SwingStability>=.8f?FLinearColor(.3f,1.f,.3f):FLinearColor::White;
+            const float TargetDistance=Lasso->Target.IsValid() && Rider?FVector::Dist2D(Rider->GetActorLocation(),Lasso->Target->GetActorLocation()):BIG_NUMBER;
+            const bool bInRange=TargetDistance<=Lasso->MaximumRange;
+            const bool bThrowReady=Lasso->bTargetIsolated && bInRange && Lasso->SwingStability>=.8f;
+            const FLinearColor ReticleColor=bThrowReady?FLinearColor(.3f,1.f,.3f):FLinearColor::White;
             DrawText(TEXT("+"),ReticleColor,Canvas->ClipX*.5f-5,Canvas->ClipY*.5f-12,nullptr,1.5f);
 
             // A readable screen-space loop makes the lasso visible before it is thrown.
@@ -90,7 +96,8 @@ void ASteppeHUD::DrawHUD()
             const float Pulse=.88f+.12f*FMath::Sin(Lasso->SwingPhase*2.f*PI);
             const float RadiusX=(48.f+Lasso->SwingStability*22.f)*Pulse;
             const float RadiusY=RadiusX*.62f;
-            const FLinearColor LoopColor=Lasso->SwingStability>=.8f?FLinearColor(.2f,1.f,.25f):FLinearColor(1.f,.72f,.12f);
+            const FLinearColor LoopColor=!Lasso->bTargetIsolated?FLinearColor(.62f,.62f,.62f):
+                (!bInRange?FLinearColor(1.f,.15f,.08f):(bThrowReady?FLinearColor(.2f,1.f,.25f):FLinearColor(1.f,.72f,.12f)));
             constexpr int32 LoopSegments=40;
             for (int32 Segment=0; Segment<LoopSegments; ++Segment)
             {
@@ -98,7 +105,7 @@ void ASteppeHUD::DrawHUD()
                 const float A1=2.f*PI*(Segment+1)/LoopSegments;
                 const FVector2D P0=LoopCenter+FVector2D(FMath::Cos(A0)*RadiusX,FMath::Sin(A0)*RadiusY);
                 const FVector2D P1=LoopCenter+FVector2D(FMath::Cos(A1)*RadiusX,FMath::Sin(A1)*RadiusY);
-                DrawLine(P0.X,P0.Y,P1.X,P1.Y,LoopColor,Lasso->SwingStability>=.8f?6.f:4.f);
+                DrawLine(P0.X,P0.Y,P1.X,P1.Y,LoopColor,bThrowReady?6.f:4.f);
             }
         }
         if (Lasso->State==ELassoState::Thrown || Lasso->State==ELassoState::Attached || Lasso->State==ELassoState::Subdued || Lasso->State==ELassoState::Captured)
@@ -189,7 +196,12 @@ void ASteppeHUD::DrawHUD()
             {
                 switch (Lasso->State)
                 {
-                case ELassoState::Aiming: Objective=Lasso->SwingStability>=.8f?TEXT("THROW  Stable loop - press LMB now"):TEXT("WAIT  Build the swing and watch OPEN"); break;
+                case ELassoState::Aiming:
+                    if (!Lasso->bTargetIsolated) { Objective=TEXT("AIM ACTIVE  Separate the target from the herd"); }
+                    else if (Lasso->Target.IsValid() && Rider && FVector::Dist2D(Rider->GetActorLocation(),Lasso->Target->GetActorLocation())>Lasso->MaximumRange)
+                    { Objective=TEXT("TARGET TOO FAR  Close the distance before throwing"); }
+                    else { Objective=Lasso->SwingStability>=.8f?TEXT("THROW  Stable loop - press LMB now"):TEXT("WAIT  Build the swing and watch OPEN"); }
+                    break;
                 case ELassoState::Thrown: Objective=TEXT("LOOP IN FLIGHT  Keep the target in line"); break;
                 case ELassoState::Attached: Objective=TEXT("NEXT  Hold Space and keep tension in the green zone"); break;
                 case ELassoState::Subdued: Objective=TEXT("NEXT  Press C to secure the horse"); break;
@@ -223,26 +235,130 @@ void ASteppeHUD::DrawHUD()
             }
             else if ((!Lasso || Lasso->State==ELassoState::Stored) && FocusHorse && Herd && Herd->bTargetIsolated)
             {
-                ActionTitle=TEXT("TARGET ISOLATED  |  HOLD [ RMB ]");
-                ActionDetail=TEXT("Keep Right Mouse held to swing the lasso");
-                ActionColor=FLinearColor(.3f,1.f,.35f);
+                const float Distance=Rider?FVector::Dist2D(Rider->GetActorLocation(),FocusHorse->GetActorLocation()):0.f;
+                if (Lasso && Distance>Lasso->MaximumRange)
+                {
+                    ActionTitle=TEXT("TARGET TOO FAR  |  CLOSE THE DISTANCE");
+                    ActionDetail=FString::Printf(TEXT("Distance %.0f m  |  Lasso range %.0f m"),Distance/100.f,Lasso->MaximumRange/100.f);
+                    ActionColor=FLinearColor(1.f,.25f,.12f);
+                }
+                else
+                {
+                    ActionTitle=TEXT("TARGET ISOLATED  |  HOLD [ RMB ]");
+                    ActionDetail=TEXT("Keep Right Mouse held to swing the lasso");
+                    ActionColor=FLinearColor(.3f,1.f,.35f);
+                }
             }
             else if (Lasso && Lasso->State==ELassoState::Aiming)
             {
-                const bool bReady=Lasso->SwingStability>=.8f;
-                ActionTitle=bReady?TEXT("GREEN LOOP  |  PRESS [ LMB ] NOW"):TEXT("KEEP [ RMB ] HELD");
-                ActionDetail=bReady?TEXT("Throw while the loop is green and the horse is inside it"):TEXT("Wait for the visible loop to open and turn green");
-                ActionColor=bReady?FLinearColor(.2f,1.f,.25f):FLinearColor(1.f,.72f,.12f);
+                const float Distance=Lasso->Target.IsValid() && Rider?FVector::Dist2D(Rider->GetActorLocation(),Lasso->Target->GetActorLocation()):BIG_NUMBER;
+                const bool bInRange=Distance<=Lasso->MaximumRange;
+                const bool bReady=Lasso->bTargetIsolated && bInRange && Lasso->SwingStability>=.8f;
+                if (!Lasso->bTargetIsolated)
+                {
+                    ActionTitle=TEXT("AIM ACTIVE  |  SEPARATE THE TARGET");
+                    ActionDetail=FString::Printf(TEXT("Move it %.0f m from the herd to unlock the throw  %.0f%%"),
+                        Herd?Herd->IsolationDistanceRequired/100.f:0.f,Herd?Herd->IsolationProgress*100.f:0.f);
+                    ActionColor=FLinearColor(.72f,.72f,.72f);
+                }
+                else if (!bInRange)
+                {
+                    ActionTitle=TEXT("RED LOOP  |  TARGET TOO FAR");
+                    ActionDetail=FString::Printf(TEXT("Close to %.0f m or less before throwing  |  now %.0f m"),Lasso->MaximumRange/100.f,Distance/100.f);
+                    ActionColor=FLinearColor(1.f,.2f,.1f);
+                }
+                else
+                {
+                    ActionTitle=bReady?TEXT("GREEN LOOP  |  PRESS [ LMB ] NOW"):TEXT("KEEP [ RMB ] HELD");
+                    ActionDetail=bReady?TEXT("Throw while the loop is green and the horse is inside it"):TEXT("Wait for the visible loop to open and turn green");
+                    ActionColor=bReady?FLinearColor(.2f,1.f,.25f):FLinearColor(1.f,.72f,.12f);
+                }
+            }
+            else if (Lasso && Lasso->State==ELassoState::Thrown)
+            {
+                ActionTitle=TEXT("LOOP IN FLIGHT");
+                ActionDetail=TEXT("Keep the horse inside the loop");
+                ActionColor=FLinearColor(1.f,.65f,.12f);
+            }
+            else if (Lasso && Lasso->State==ELassoState::Attached)
+            {
+                if (Rider && Rider->Balance && Rider->Balance->State==ERiderBalanceState::Dragged)
+                {
+                    ActionTitle=TEXT("YOU ARE BEING DRAGGED  |  [ LMB ] RELEASE");
+                    ActionDetail=FString::Printf(TEXT("Release before the drag timer ends  |  %.1f s"),Rider->Balance->DraggedRemaining);
+                    ActionColor=FLinearColor(1.f,.08f,.03f);
+                }
+                else if (Rider && Rider->Balance && Rider->Balance->State==ERiderBalanceState::Warning)
+                {
+                    ActionTitle=TEXT("HORSE IS PULLING YOU OFF BALANCE");
+                    ActionDetail=TEXT("Turn toward the rope or slow down  |  LMB releases the rope");
+                    ActionColor=FLinearColor(1.f,.18f,.05f);
+                }
+                else if (Lasso->Tension>Lasso->UsefulTensionMax)
+                {
+                    ActionTitle=TEXT("ROPE STRAIN  |  MOVE CLOSER");
+                    ActionDetail=TEXT("Too much tension will break the rope and the horse will escape");
+                    ActionColor=FLinearColor(1.f,.2f,.08f);
+                }
+                else if (!Lasso->bBracing)
+                {
+                    ActionTitle=TEXT("[ SPACE ]  HOLD TO CONTROL THE HORSE");
+                    ActionDetail=TEXT("Keep rope tension inside the green zone");
+                    ActionColor=FLinearColor(1.f,.75f,.12f);
+                }
+                else if (Lasso->Tension<Lasso->UsefulTensionMin)
+                {
+                    ActionTitle=TEXT("ROPE SLACK  |  CREATE SOME DISTANCE");
+                    ActionDetail=TEXT("Keep holding Space and move until tension enters green");
+                    ActionColor=FLinearColor(1.f,.75f,.12f);
+                }
+                else
+                {
+                    ActionTitle=FString::Printf(TEXT("KEEP STEADY  |  HORSE CALMING %.0f%%"),Lasso->ControlProgress*100.f);
+                    ActionDetail=TEXT("Hold Space and keep the tension marker inside green");
+                    ActionColor=FLinearColor(.25f,1.f,.3f);
+                }
+            }
+            else if (Lasso && Lasso->State==ELassoState::Subdued)
+            {
+                ActionTitle=TEXT("HORSE CALM  |  PRESS [ C ] TO SECURE");
+                ActionDetail=TEXT("The struggle is over; complete the capture");
+                ActionColor=FLinearColor(.25f,1.f,.3f);
+            }
+            else if (Lasso && Lasso->State==ELassoState::Recovering)
+            {
+                const bool bBroke=Lasso->Feedback.Contains(TEXT("broke"),ESearchCase::IgnoreCase);
+                ActionTitle=bBroke?TEXT("ROPE BROKE  |  HORSE ESCAPED"):TEXT("LASSO MISSED  |  RECOVERING");
+                ActionDetail=TEXT("Follow the marked horse and prepare another throw");
+                ActionColor=bBroke?FLinearColor(1.f,.1f,.04f):FLinearColor(1.f,.62f,.12f);
             }
             if (!ActionTitle.IsEmpty())
             {
                 const float CardW=FMath::Min(760.f,Canvas->ClipX-36.f);
                 const float CardX=(Canvas->ClipX-CardW)*.5f;
                 const float CardY=Canvas->ClipY*.67f;
-                DrawRect(FLinearColor(0,0,0,.82f),CardX,CardY,CardW,76.f);
+                const bool bRopeFight=Lasso && Lasso->State==ELassoState::Attached;
+                const float CardH=bRopeFight?128.f:76.f;
+                DrawRect(FLinearColor(0,0,0,.82f),CardX,CardY,CardW,CardH);
                 DrawRect(ActionColor,CardX,CardY,CardW,5.f);
                 DrawText(ActionTitle,ActionColor,CardX+22.f,CardY+13.f,nullptr,1.35f);
                 DrawText(ActionDetail,FLinearColor::White,CardX+22.f,CardY+48.f,nullptr,.95f);
+                if (bRopeFight)
+                {
+                    const float BarX=CardX+150.f;
+                    const float BarW=CardW-174.f;
+                    const float TensionY=CardY+78.f;
+                    const float ControlY=CardY+104.f;
+                    DrawText(TEXT("TENSION"),FLinearColor::White,CardX+22.f,TensionY-4.f,nullptr,.85f);
+                    DrawRect(FLinearColor(.13f,.13f,.13f,1.f),BarX,TensionY,BarW,12.f);
+                    DrawRect(FLinearColor(.12f,.6f,.16f,1.f),BarX+BarW*(Lasso->UsefulTensionMin/1.2f),TensionY,
+                        BarW*((Lasso->UsefulTensionMax-Lasso->UsefulTensionMin)/1.2f),12.f);
+                    const float MarkerX=BarX+BarW*FMath::Clamp(Lasso->Tension/1.2f,0.f,1.f);
+                    DrawRect(FLinearColor::White,MarkerX-3.f,TensionY-4.f,6.f,20.f);
+                    DrawText(TEXT("CALMING"),FLinearColor::White,CardX+22.f,ControlY-4.f,nullptr,.85f);
+                    DrawRect(FLinearColor(.13f,.13f,.13f,1.f),BarX,ControlY,BarW,12.f);
+                    DrawRect(FLinearColor(.2f,.65f,1.f,1.f),BarX,ControlY,BarW*Lasso->ControlProgress,12.f);
+                }
             }
 
             // Brackets show exactly which horse Q will select, and remain on the chosen target afterward.
@@ -253,7 +369,9 @@ void ASteppeHUD::DrawHUD()
                 if (PlayerOwner->ProjectWorldLocationToScreen(MarkedHorse->GetActorLocation()+FVector(0,0,105),HorseScreen))
                 {
                     const bool bSelected=FocusHorse!=nullptr;
-                    const FLinearColor MarkerColor=bSelected?FLinearColor(.2f,1.f,1.f):FLinearColor(1.f,.82f,.2f);
+                    const float Distance=Rider?FVector::Dist2D(Rider->GetActorLocation(),MarkedHorse->GetActorLocation()):0.f;
+                    const bool bTooFar=bSelected && Lasso && Distance>Lasso->MaximumRange;
+                    const FLinearColor MarkerColor=bTooFar?FLinearColor(1.f,.2f,.08f):(bSelected?FLinearColor(.2f,1.f,1.f):FLinearColor(1.f,.82f,.2f));
                     const float HalfW=48.f, HalfH=58.f, Corner=18.f, Thick=bSelected?4.f:6.f;
                     DrawLine(HorseScreen.X-HalfW,HorseScreen.Y-HalfH,HorseScreen.X-HalfW+Corner,HorseScreen.Y-HalfH,MarkerColor,Thick);
                     DrawLine(HorseScreen.X-HalfW,HorseScreen.Y-HalfH,HorseScreen.X-HalfW,HorseScreen.Y-HalfH+Corner,MarkerColor,Thick);
@@ -263,7 +381,8 @@ void ASteppeHUD::DrawHUD()
                     DrawLine(HorseScreen.X-HalfW,HorseScreen.Y+HalfH,HorseScreen.X-HalfW,HorseScreen.Y+HalfH-Corner,MarkerColor,Thick);
                     DrawLine(HorseScreen.X+HalfW,HorseScreen.Y+HalfH,HorseScreen.X+HalfW-Corner,HorseScreen.Y+HalfH,MarkerColor,Thick);
                     DrawLine(HorseScreen.X+HalfW,HorseScreen.Y+HalfH,HorseScreen.X+HalfW,HorseScreen.Y+HalfH-Corner,MarkerColor,Thick);
-                    DrawText(bSelected?TEXT("TARGET"):TEXT("Q  SELECT"),MarkerColor,HorseScreen.X-42.f,HorseScreen.Y-HalfH-25.f,nullptr,1.05f);
+                    const FString MarkerText=bSelected?FString::Printf(TEXT("%s  %.0f m"),bTooFar?TEXT("TOO FAR"):TEXT("TARGET"),Distance/100.f):TEXT("Q  SELECT");
+                    DrawText(MarkerText,MarkerColor,HorseScreen.X-52.f,HorseScreen.Y-HalfH-25.f,nullptr,1.05f);
                 }
             }
             if (Rider && Rider->Balance)
