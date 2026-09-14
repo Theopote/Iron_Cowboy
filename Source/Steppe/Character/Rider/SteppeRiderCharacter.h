@@ -11,6 +11,7 @@ class UCameraComponent;
 class USteppeInputConfig;
 class ULassoComponent;
 class URiderBalanceComponent;
+class USteppeFeedbackComponent;
 struct FInputActionValue;
 UCLASS()
 class STEPPE_API ASteppeRiderCharacter : public ACharacter
@@ -27,6 +28,7 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<URidingCameraComponent> RidingCamera;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<ULassoComponent> Lasso;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<URiderBalanceComponent> Balance;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<USteppeFeedbackComponent> Feedback;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Input") TObjectPtr<USteppeInputConfig> InputConfig;
     UPROPERTY(EditDefaultsOnly, Category="Input") float LookSensitivity = 1.f;
     void RefreshInputContext();

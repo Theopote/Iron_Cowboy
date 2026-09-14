@@ -9,6 +9,7 @@
 #include "Character/Rider/SteppeRiderCharacter.h"
 #include "Character/Rider/RidingComponent.h"
 #include "Character/Rider/RiderBalanceComponent.h"
+#include "Feedback/SteppeFeedbackComponent.h"
 #include "Lasso/LassoComponent.h"
 #include "Core/SteppeGameplayTags.h"
 #include "Game/SteppeTrialState.h"
@@ -477,6 +478,50 @@ bool FRiderBalanceTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Maximum drag time starts rider recovery"),Rider->Balance->State,ERiderBalanceState::Recovering);
     return true;
 }
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FFeedbackSignalsTest,"Steppe.P13.FeedbackSignalsAndEvents",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FFeedbackSignalsTest::RunTest(const FString& Parameters)
+{
+    FWildTestWorld Fixture;
+    auto* Mount=Fixture.World->SpawnActor<ASteppeHorseCharacter>(FVector(0,0,100),FRotator::ZeroRotator);
+    auto* Rider=Fixture.World->SpawnActor<ASteppeRiderCharacter>(FVector(0,180,100),FRotator::ZeroRotator);
+    auto* Wild=Fixture.World->SpawnActor<ASteppeWildHorseCharacter>(FVector(1100,0,100),FRotator::ZeroRotator);
+    Fixture.Begin();
+    Rider->Feedback->bEnablePlaceholderAudio=false;
+    TestTrue(TEXT("Sprint hoof cadence is faster than walking"),
+        Rider->Feedback->GetHoofbeatInterval(EHorseGait::Sprint)<Rider->Feedback->GetHoofbeatInterval(EHorseGait::Walk));
+    TestTrue(TEXT("Fatigued sprint breathing exceeds rested walking"),
+        Rider->Feedback->CalculateBreathIntensity(1.f,.2f,EHorseGait::Sprint)>
+        Rider->Feedback->CalculateBreathIntensity(.2f,1.f,EHorseGait::Walk));
+
+    TestTrue(TEXT("Feedback fixture mounts safely"),Rider->Riding->TryMount(Mount));
+    auto* Move=CastChecked<UHorseMovementComponent>(Mount->GetCharacterMovement());
+    Move->SetComponentTickEnabled(false);
+    Wild->GetCharacterMovement()->SetComponentTickEnabled(false);
+    Move->CurrentSpeed=1200.f;
+    Move->Gait=EHorseGait::Gallop;
+    Mount->Attributes->CurrentStamina=30.f;
+    Fixture.Step(.65f);
+    TestTrue(TEXT("Mounted gallop emits multiple hoofbeats"),Rider->Feedback->HoofbeatCount>=2);
+    TestTrue(TEXT("Mounted speed drives wind feedback"),Rider->Feedback->WindIntensity>.1f);
+    TestTrue(TEXT("Fatigue and speed drive breath feedback"),Rider->Feedback->BreathIntensity>.2f);
+    TestTrue(TEXT("Hoofbeats drive a dust pulse"),Rider->Feedback->DustPulse>0.f);
+
+    TestTrue(TEXT("Isolated target can enter feedback swing"),Rider->Lasso->BeginAimForTarget(Wild,true));
+    Fixture.Step(.55f);
+    const FVector Origin=Rider->GetActorLocation()+FVector(0,0,100);
+    TestTrue(TEXT("Feedback throw starts"),Rider->Lasso->ThrowFrom(Origin,(Wild->GetActorLocation()+FVector(0,0,70)-Origin).GetSafeNormal()));
+    Fixture.Step(.6f);
+    TestEqual(TEXT("Feedback throw attaches"),Rider->Lasso->State,ELassoState::Attached);
+    Rider->Lasso->Release();
+    Fixture.Step(.05f);
+    TestTrue(TEXT("Swing, throw, attach and release emit lasso events"),Rider->Feedback->LassoEventCount>=3);
+    const int32 RiskBefore=Rider->Feedback->RiskEventCount;
+    Rider->Feedback->EmitEvent(ESteppeFeedbackEvent::BalanceWarning);
+    TestEqual(TEXT("Balance warning is counted as risk feedback"),Rider->Feedback->RiskEventCount,RiskBefore+1);
+    TestTrue(TEXT("Disabling placeholder sound does not suppress signals"),Rider->Feedback->EventCount>Rider->Feedback->HoofbeatCount);
+    return true;
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FRopeFightTest,"Steppe.P6.RopeFightTensionAndSubdue",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FRopeFightTest::RunTest(const FString& Parameters)
 {

@@ -1,6 +1,6 @@
 # 《套马的汉子》 / Project STEPPE
 
-UE **5.8.2** 的 C++ 骑乘游戏原型。当前已完成 P12：骑手可驱赶具有 Fast、Strong、Nervous 行为差异的马群，切出目标，在摆绳稳定窗口投掷并选择 Head/Neck/Torso 命中区域；高速侧向拉力会造成失衡、落马和短暂拖行，随后仍可恢复并完成安抚、牵回与命名。
+UE **5.8.2** 的 C++ 骑乘游戏原型。当前已完成 P13 第一增量：骑手可驱赶具有 Fast、Strong、Nervous 行为差异的马群，切出目标，在摆绳稳定窗口投掷并处理失衡风险；马蹄节拍、速度风感、体力呼吸、套索事件、扬尘和张力颜色已经接入独立反馈层，完整安抚、牵回与命名流程保持可玩。
 
 ## 打开与试玩
 
@@ -13,7 +13,7 @@ UE **5.8.2** 的 C++ 骑乘游戏原型。当前已完成 P12：骑手可驱赶�
 2. 用 UE 5.8.2 打开 `Steppe.uproject`。默认加载 `L_Prototype_Grassland`。
 3. 点击 Play，默认已骑上占位马。前方约 38 m 有五匹野马，Fast、Strong、Nervous 会以不同速度、恐惧和控制参数行动；可用 Q 选择一匹尝试切出。无需下载模型或手工创建输入资产。
 
-当前是灰盒原型：方块马身、圆柱骑手、2 km 平地、距离标记、绕桩与坡道；没有最终动画、音效或美术。代码通过与手感满意是不同验收，追逐、控绳和捕获后接近仍需持续人工试玩调参。
+当前是灰盒原型：方块马身、圆柱骑手、2 km 平地、距离标记、绕桩与坡道；声音为程序化占位音，尘土和绳索仍是调试表现，没有最终动画或美术。代码通过与手感满意是不同验收，追逐、控绳和捕获后接近仍需持续人工试玩调参。
 
 ## 按键
 
@@ -45,14 +45,13 @@ UE **5.8.2** 的 C++ 骑乘游戏原型。当前已完成 P12：骑手可驱赶�
 ## 验证
 
 ```powershell
-.\Scripts\RunEditor.ps1 -Tests -ExpectedTests 17 -Commands 'Automation RunTests Steppe' -LogName P12-FinalAutomation
-.\Scripts\RunEditor.ps1 -Game -Render -Smoke -LassoSkillSmoke -Commands '' -LogName P12-LassoSkillRender
-.\Scripts\RunEditor.ps1 -Game -Render -Smoke -BalanceSmoke -Commands '' -LogName P12-BalanceRender
-.\Scripts\RunEditor.ps1 -Game -Render -Smoke -FullLoopSmoke -Commands '' -LogName P12-BalanceFullLoop
+.\Scripts\RunEditor.ps1 -Tests -ExpectedTests 18 -Commands 'Automation RunTests Steppe;Quit' -LogName P13-Tests
+.\Scripts\RunEditor.ps1 -Game -Render -Smoke -FeedbackSmoke -Commands '' -LogName P13-Feedback-Smoke
+.\Scripts\RunEditor.ps1 -Game -Render -Smoke -FullLoopSmoke -Commands '' -LogName P13-FullLoop-Smoke
 ```
 
 第一条运行全部数学和真实 UWorld 集成测试，报告位于 `Saved/Automation/index.json`。第二条验证摆绳稳定窗口、有效环口/射程和 Neck 命中反馈；第三条验证侧向失衡、落马、拖行和主动松绳；第四条自动走完捕获、接近、牵行、交付和命名。这些烟测不用于人工试玩。
 
 当前构建使用 V7 / Unreal5_8 IncludeOrder；因本机共享 PCH 编译停顿，模块禁用 PCH，构建脚本传入 `-NoUBA` 禁用 detouring。没有修改引擎安装。Editor 开启 Live Coding 时应先保存关闭再运行外部构建。
 
-后续开发先阅读 `Docs/GAME_DESIGN_VISION.md`、`Docs/DESIGN_BASELINE.md`、`Docs/PROTOTYPE_GDD.md` 和 `Docs/DEVELOPMENT_ROADMAP.md`。真实结果见 `Docs/DEVELOPMENT_STATUS.md`，工程分层见 `Docs/ARCHITECTURE.md`，P12 规格与验证依据见 `Docs/P12_LASSO_SKILL_SPEC.md`；下一阶段按路线图进入 P13 垂直切片音画。
+后续开发先阅读 `Docs/GAME_DESIGN_VISION.md`、`Docs/DESIGN_BASELINE.md`、`Docs/PROTOTYPE_GDD.md` 和 `Docs/DEVELOPMENT_ROADMAP.md`。真实结果见 `Docs/DEVELOPMENT_STATUS.md`，工程分层见 `Docs/ARCHITECTURE.md`，P13 规格与验证依据见 `Docs/P13_AUDIO_VISUAL_SPEC.md`；下一步继续 P13.2 的正式表现接入。

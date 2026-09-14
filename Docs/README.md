@@ -7,6 +7,7 @@
 3. `PROTOTYPE_GDD.md`：当前规则与下一版 6–10 分钟完整流程。
 4. `DEVELOPMENT_ROADMAP.md`：P9–P14 的执行顺序和退出条件。
 5. `P12_LASSO_SKILL_SPEC.md`：当前套索摆绳、稳定性、命中区域、骑手平衡、落马与拖行规格。
+6. `P13_AUDIO_VISUAL_SPEC.md`：当前反馈信号、程序化占位音、马蹄/尘土与绳索风险表现规格。
 6. `P11_HORSE_ARCHETYPES_SPEC.md`：三类野马原型及 Gameplay 接入规格。
 7. `P10_LEAD_DELIVERY_NAMING_SPEC.md`：完整闭环的牵行、交付和命名规格。
 8. `DESIGN_DECISIONS.md`：已确认决策、待决事项和变更记录。
@@ -21,6 +22,7 @@
 - P10_LEAD_DELIVERY_NAMING_SPEC.md：已实现的牵回营地、Horse Card、命名和最终结算规则。
 - P11_HORSE_ARCHETYPES_SPEC.md：已实现的 Fast、Strong、Nervous 原型、参数接入和验证结果。
 - P12_LASSO_SKILL_SPEC.md：已实现的摆绳/命中区、Rider Balance、落马与短距离拖行规则。
+- P13_AUDIO_VISUAL_SPEC.md：已实现的 P13.1 反馈层、占位音画与后续正式资源边界。
 - DESIGN_DECISIONS.md：跨系统技术与产品决策。
 - References/：两份早期讨论 PDF 原件及使用说明。
 
@@ -40,4 +42,4 @@
 - DEVELOPMENT_STATUS.md：当前状态与最新验证。
 - Validation/：实际运行截图与精简结果。
 
-当前使用本机 UE 5.8.2。P12 套索技巧与失控后果已经完成；下一阶段为 P13 垂直切片音画。
+当前使用本机 UE 5.8.2。P13 第一增量已经完成；下一步为 P13.2 正式音频、Niagara、动画接口与 UI 层级。

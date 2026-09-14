@@ -1,0 +1,17 @@
+Project STEPPE P13.1 validation — 2026-09-14 — UE 5.8.2
+
+Build
+.\Scripts\Build.ps1 -EngineRoot 'C:\Program Files\Epic Games\UE_5.8'
+Result: SteppeEditor Win64 Development succeeded.
+
+Automation
+.\Scripts\RunEditor.ps1 -Tests -ExpectedTests 18 -Commands 'Automation RunTests Steppe;Quit' -LogName 'P13-Tests'
+Result: 18 passed, 0 failed, 3 passed with warnings. Warnings are the existing RiderSeat greybox fallback in riding-path tests.
+
+P13 rendered feedback smoke
+.\Scripts\RunEditor.ps1 -Game -Smoke -Render -FeedbackSmoke -Commands '' -LogName 'P13-Feedback-Smoke'
+Result: Hoofbeats=9, LassoEvents=3, RiskEvents=0, Wind=0.31, Breath=0.14, Rope=0.00, Last=Hoofbeat. Screenshot captured with the Neck rope still attached; fresh SteppeP13Feedback.png produced.
+
+Full-loop regression
+.\Scripts\RunEditor.ps1 -Game -Smoke -Render -FullLoopSmoke -Commands '' -LogName 'P13-FullLoop-Smoke'
+Result: capture, first contact, Movement-driven lead, Horse Card, naming Saran and Trial Success passed. Fresh P10 lead/card screenshots produced.

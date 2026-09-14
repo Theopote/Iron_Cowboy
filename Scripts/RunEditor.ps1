@@ -20,6 +20,7 @@ param(
     [switch]$ArchetypeSmoke,
     [switch]$LassoSkillSmoke,
     [switch]$BalanceSmoke,
+    [switch]$FeedbackSmoke,
     [ValidateRange(1,10000)][int]$ExpectedTests = 2
 )
 $ErrorActionPreference = 'Stop'
@@ -69,6 +70,10 @@ if ($LassoSkillSmoke) {
 if ($BalanceSmoke) {
     if (!$Smoke -or !$Game) { throw 'BalanceSmoke requires Game and Smoke.' }
     $editorArgs += '-SteppeLassoSmoke'; $editorArgs += '-SteppeBalanceSmoke'
+}
+if ($FeedbackSmoke) {
+    if (!$Smoke -or !$Game) { throw 'FeedbackSmoke requires Game and Smoke.' }
+    $editorArgs += '-SteppeLassoSmoke'; $editorArgs += '-SteppeLassoSkillSmoke'; $editorArgs += '-SteppeFeedbackSmoke'
 }
 if ($RetrySmoke) { if (!$Smoke -or !$Game) { throw 'RetrySmoke requires Game and Smoke.' }; $editorArgs += '-SteppeRetrySmoke' }
 if ($Tests) { $editorArgs += '-TestExit=Automation Test Queue Empty'; $editorArgs += "-ReportExportPath=$PSScriptRoot\..\Saved\Automation" }
@@ -212,5 +217,14 @@ if ($BalanceSmoke) {
         throw "P12 balance smoke did not recover after active rope release; see $logPath"
     }
     Write-Output 'P12 balance smoke: side load forced a fall and short drag; active release started recovery.'
+}
+if ($FeedbackSmoke) {
+    $feedbackLog = Get-Content $logPath -Raw
+    $feedbackPath = Join-Path $PSScriptRoot '..\Saved\Screenshots\SteppeP13Feedback.png'
+    if (!(Test-Path $feedbackPath) -or (Get-Item $feedbackPath).LastWriteTime -lt $runStarted) { throw "P13 feedback screenshot is missing or stale; see $logPath" }
+    if ($feedbackLog -notmatch 'STEPPE_P13_SMOKE: Hoofbeats=[1-9][0-9]* LassoEvents=[2-9][0-9]*? RiskEvents=[0-9]+ Wind=0\.[0-9]+ Breath=0\.[0-9]+ Rope=0\.[0-9]+ Last=') {
+        throw "P13 feedback smoke did not produce movement and lasso signals; see $logPath"
+    }
+    Write-Output 'P13 feedback smoke: hoof cadence, movement ambience, rope events and visual feedback rendered.'
 }
 Write-Output "Editor exited successfully. Log: $logPath"

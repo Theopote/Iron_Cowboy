@@ -14,6 +14,8 @@
 #include "Character/Rider/SteppeRiderCharacter.h"
 #include "Lasso/LassoComponent.h"
 #include "Character/Rider/RiderBalanceComponent.h"
+#include "Character/Rider/RidingComponent.h"
+#include "Feedback/SteppeFeedbackComponent.h"
 #include "Capture/HorseTrustComponent.h"
 #include "Engine/Canvas.h"
 #include "Camp/SteppeDeliveryZone.h"
@@ -66,6 +68,16 @@ void ASteppeHUD::DrawHUD()
             DrawRect(FLinearColor(.12f,.12f,.12f,1),LassoX,147,520,8);
             DrawRect(BalanceColor,LassoX,147,520*NormalizedBalance,8);
         }
+        if (Rider->Feedback)
+        {
+            const auto EventText=UEnum::GetDisplayValueAsText(Rider->Feedback->LastEvent).ToString().ToUpper();
+            DrawRect(FLinearColor(0,0,0,.6f),LassoX-6,169,558,43);
+            DrawText(FString::Printf(TEXT("FEEDBACK HOOF %d | WIND %.0f%% | BREATH %.0f%% | %s"),
+                Rider->Feedback->HoofbeatCount,Rider->Feedback->WindIntensity*100.f,Rider->Feedback->BreathIntensity*100.f,*EventText),
+                FLinearColor(.65f,.9f,1.f),LassoX,174,nullptr,.9f);
+            DrawRect(FLinearColor(.12f,.12f,.12f,1),LassoX,197,520,7);
+            DrawRect(FLinearColor(1.f,.48f,.12f,1),LassoX,197,520*Rider->Feedback->RopeStress,7);
+        }
         if (Lasso->State==ELassoState::Aiming)
         {
             const FLinearColor ReticleColor=Lasso->SwingStability>=.8f?FLinearColor(.3f,1.f,.3f):FLinearColor::White;
@@ -73,11 +85,27 @@ void ASteppeHUD::DrawHUD()
         }
         if (Lasso->State==ELassoState::Thrown || Lasso->State==ELassoState::Attached || Lasso->State==ELassoState::Subdued || Lasso->State==ELassoState::Captured)
         {
-            DrawDebugLine(GetWorld(),Lasso->RopeStart,Lasso->LoopLocation,FColor::Orange,false,0,0,6);
+            const float Stress=FMath::Clamp(Lasso->Tension/1.2f,0.f,1.f);
+            const bool bUseful=Lasso->Tension>=Lasso->UsefulTensionMin && Lasso->Tension<=Lasso->UsefulTensionMax;
+            const FColor RopeColor=Lasso->Tension>1.f?FColor::Red:(Lasso->Tension>.85f?FColor(255,96,20):(bUseful?FColor::Green:FColor::Yellow));
+            DrawDebugLine(GetWorld(),Lasso->RopeStart,Lasso->LoopLocation,RopeColor,false,0,0,4.f+Stress*8.f);
             if (Lasso->State!=ELassoState::Captured)
             {
-                DrawDebugSphere(GetWorld(),Lasso->LoopLocation,Lasso->EffectiveCaptureRadius,16,FColor::Yellow,false,0,0,4);
+                DrawDebugSphere(GetWorld(),Lasso->LoopLocation,Lasso->EffectiveCaptureRadius,16,RopeColor,false,0,0,4);
             }
+        }
+    }
+    if (Rider && Rider->Feedback && Rider->Feedback->DustPulse>0.f && Rider->Riding)
+    {
+        if (const auto* Horse=Rider->Riding->GetHorse())
+        {
+            const FVector Rear=Horse->GetActorLocation()-Horse->GetActorForwardVector()*185.f+FVector(0,0,-55.f);
+            const FVector Side=Horse->GetActorRightVector()*82.f;
+            const float Radius=18.f+Rider->Feedback->DustPulse*48.f;
+            const FColor Dust(166,112,62);
+            DrawDebugSphere(GetWorld(),Rear+Side,Radius,8,Dust,false,0,0,2.5f);
+            DrawDebugSphere(GetWorld(),Rear-Side,Radius*.8f,8,Dust,false,0,0,2.f);
+            DrawDebugSphere(GetWorld(),Rear-Horse->GetActorForwardVector()*65.f,Radius*.65f,8,FColor(194,142,84),false,0,0,1.5f);
         }
     }
     auto* Mode=GetWorld()->GetAuthGameMode<ASteppeGameMode>();

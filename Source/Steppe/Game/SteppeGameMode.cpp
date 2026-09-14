@@ -23,6 +23,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Camp/SteppeDeliveryZone.h"
 #include "UI/HorseNamingWidget.h"
+#include "Feedback/SteppeFeedbackComponent.h"
 ASteppeGameMode::ASteppeGameMode()
 {
     PrimaryActorTick.bCanEverTick=true;
@@ -108,7 +109,8 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
         const bool bArchetypeSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeArchetypeSmoke"));
         const bool bLassoSkillSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeLassoSkillSmoke"));
         const bool bBalanceSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeBalanceSmoke"));
-        const bool bTimedLassoSmoke=bLassoSkillSmoke || bBalanceSmoke;
+        const bool bFeedbackSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeFeedbackSmoke"));
+        const bool bTimedLassoSmoke=bLassoSkillSmoke || bBalanceSmoke || bFeedbackSmoke;
         const bool bFullLoopSequence=bVerticalSliceSmoke || bFullLoopSmoke;
         const bool bPostCaptureSequence=bVerticalSliceSmoke || bPostCaptureSmoke || bFullLoopSmoke;
         // Process-local count is restricted to this opt-in standalone smoke run.
@@ -125,7 +127,7 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
                 { CastChecked<ASteppePlayerController>(NewPlayer)->SteppeRestartTrial(); }),3.f,false);
             }
         }
-        FTimerHandle StartHandle,FocusHandle,LassoSetupHandle,LassoAimHandle,LassoThrowHandle,LassoSwingShotHandle,LassoHitShotHandle,BalanceLoadHandle,BalanceShotHandle,BalanceLogHandle,BalanceReleaseHandle,BalanceRecoveryLogHandle,BraceHandle,CaptureHandle,DismountHandle,ApproachHandle,ContactHandle,LeadHandle,LeadShotHandle,CardShotHandle,NameHandle,ArchetypeSetupHandle,ArchetypeShotHandle,GuidanceShotHandle,PostCaptureShotHandle,ShotHandle,ExitHandle;
+        FTimerHandle StartHandle,FocusHandle,LassoSetupHandle,LassoAimHandle,LassoThrowHandle,LassoSwingShotHandle,LassoHitShotHandle,BalanceLoadHandle,BalanceShotHandle,BalanceLogHandle,BalanceReleaseHandle,BalanceRecoveryLogHandle,FeedbackReleaseHandle,FeedbackDriveHandle,FeedbackShotHandle,BraceHandle,CaptureHandle,DismountHandle,ApproachHandle,ContactHandle,LeadHandle,LeadShotHandle,CardShotHandle,NameHandle,ArchetypeSetupHandle,ArchetypeShotHandle,GuidanceShotHandle,PostCaptureShotHandle,ShotHandle,ExitHandle;
         if (bArchetypeSmoke && HerdManager)
         {
             GetWorldTimerManager().SetTimer(ArchetypeSetupHandle,FTimerDelegate::CreateWeakLambda(this,[this,Rider,NewPlayer]()
@@ -242,6 +244,17 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
                         *UEnum::GetValueAsString(Rider->Balance->State),*UEnum::GetValueAsString(Rider->Lasso->State));
                 }),3.1f,false);
             }
+            if (bFeedbackSmoke)
+            {
+                GetWorldTimerManager().SetTimer(FeedbackReleaseHandle,FTimerDelegate::CreateWeakLambda(Rider,[Rider]()
+                { Rider->Lasso->Release(); }),5.2f,false);
+                GetWorldTimerManager().SetTimer(FeedbackDriveHandle,FTimerDelegate::CreateWeakLambda(Rider,[Rider]()
+                {
+                    FRidingIntent Intent; Intent.Forward=1.f; Intent.bSprint=true; Rider->Riding->SetIntent(Intent);
+                }),2.6f,false);
+                GetWorldTimerManager().SetTimer(FeedbackShotHandle,FTimerDelegate::CreateWeakLambda(this,[]()
+                { FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeP13Feedback.png"),true,false); }),4.7f,false);
+            }
         }
         if (bPostCaptureSequence)
         {
@@ -309,7 +322,7 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
             GetWorldTimerManager().SetTimer(PostCaptureShotHandle,FTimerDelegate::CreateWeakLambda(this,[]()
             { FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeP9Approach.png"),true,false); }),7.f,false);
         }
-        GetWorldTimerManager().SetTimer(ShotHandle,FTimerDelegate::CreateWeakLambda(this,[this,Rider,bVerticalSliceSmoke,bVerticalFailureSmoke,bPostCaptureSmoke,bFullLoopSequence,bArchetypeSmoke,bLassoSkillSmoke]()
+        GetWorldTimerManager().SetTimer(ShotHandle,FTimerDelegate::CreateWeakLambda(this,[this,Rider,bVerticalSliceSmoke,bVerticalFailureSmoke,bPostCaptureSmoke,bFullLoopSequence,bArchetypeSmoke,bLassoSkillSmoke,bFeedbackSmoke]()
         {
             UE_LOG(LogSteppe,Display,TEXT("STEPPE_SMOKE: Horse=%s Speed=%.1f Mounted=%d"),*GetNameSafe(PlaygroundHorse),PlaygroundHorse?PlaygroundHorse->GetVelocity().Size2D():0.f,PlaygroundHorse && PlaygroundHorse->MountedRider.IsValid());
             if (WildHorse)
@@ -390,6 +403,13 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
                 UE_LOG(LogSteppe,Display,TEXT("STEPPE_P12_SMOKE: Stability=%.2f Zone=%s Radius=%.1f Range=%.1f"),
                     Rider->Lasso->LastThrowStability,*UEnum::GetValueAsString(Rider->Lasso->HitZone),
                     Rider->Lasso->EffectiveCaptureRadius,Rider->Lasso->EffectiveMaximumRange);
+            }
+            if (bFeedbackSmoke && Rider->Feedback)
+            {
+                UE_LOG(LogSteppe,Display,TEXT("STEPPE_P13_SMOKE: Hoofbeats=%d LassoEvents=%d RiskEvents=%d Wind=%.2f Breath=%.2f Rope=%.2f Last=%s"),
+                    Rider->Feedback->HoofbeatCount,Rider->Feedback->LassoEventCount,Rider->Feedback->RiskEventCount,
+                    Rider->Feedback->WindIntensity,Rider->Feedback->BreathIntensity,Rider->Feedback->RopeStress,
+                    *UEnum::GetValueAsString(Rider->Feedback->LastEvent));
             }
             FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeSmoke.png"),true,false);
         }),bArchetypeSmoke?1.5f:(bHerdIdleSmoke?3.5f:(bVerticalFailureSmoke?4.f:(bFullLoopSequence?13.f:(bPostCaptureSequence?10.f:7.f)))),false);

@@ -102,3 +102,7 @@ LassoComponent 在 Aiming 内累计时间，并用可编辑周期计算 SwingPha
 ## P12 第二增量：骑手平衡、落马与拖行
 
 RiderBalanceComponent 在 PostPhysics 且晚于 LassoComponent 更新，读取本帧张力、绳索相对坐骑的侧向比例、坐骑速度、目标 Strength 和命中区，累计可恢复的 Balance。达到阈值后调用 RidingComponent 的 ForceDismount，一次性清理 MountedHorse 双向关系、Tick 前置和输入，恢复 Rider 碰撞并设置 Falling 速度。短距离 Dragged 仍由 CharacterMovement 的速度处理；组件只在限定时间内提交朝向目标的受限速度，并在 LMB Release 或超时时让 Lasso 进入既有 Recovery。Rider Gameplay Tags 和 HUD 读取 Warning、Dragged、Recovering 状态，不决定结果。
+
+## P13 第一增量：派生反馈层
+
+`USteppeFeedbackComponent` 属于 Rider，在 HorseMovement、LassoComponent 与 RiderBalanceComponent 更新后读取本帧状态。它把坐骑实际速度、Gait 和 Stamina 转换为 Hoofbeat、Wind 与 Breath，把 Lasso/Balance 状态转换为离散事件与 RopeStress，但不写回任何 Gameplay 组件。HUD、调试扬尘和 `USteppeProceduralTone` 都是信号消费者；程序化音频被禁用或未来替换成 SoundCue、MetaSound、Niagara、动画时，运动、命中、张力、落马和任务结果保持不变。详见 P13_AUDIO_VISUAL_SPEC.md。

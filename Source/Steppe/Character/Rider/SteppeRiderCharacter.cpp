@@ -19,6 +19,7 @@
 #include "Core/SteppeGameplayTags.h"
 #include "Lasso/LassoComponent.h"
 #include "Character/Rider/RiderBalanceComponent.h"
+#include "Feedback/SteppeFeedbackComponent.h"
 #include "Game/SteppeGameMode.h"
 #include "AI/SteppeHerdManager.h"
 ASteppeRiderCharacter::ASteppeRiderCharacter()
@@ -28,6 +29,9 @@ ASteppeRiderCharacter::ASteppeRiderCharacter()
     Lasso=CreateDefaultSubobject<ULassoComponent>(TEXT("Lasso"));
     Balance=CreateDefaultSubobject<URiderBalanceComponent>(TEXT("RiderBalance"));
     Balance->AddTickPrerequisiteComponent(Lasso);
+    Feedback=CreateDefaultSubobject<USteppeFeedbackComponent>(TEXT("SteppeFeedback"));
+    Feedback->AddTickPrerequisiteComponent(Lasso);
+    Feedback->AddTickPrerequisiteComponent(Balance);
     CameraBoom=CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
     CameraBoom->SetupAttachment(GetRootComponent()); CameraBoom->TargetArmLength=350;
     CameraBoom->bUsePawnControlRotation=true; CameraBoom->bEnableCameraLag=true;
