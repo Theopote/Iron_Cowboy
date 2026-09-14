@@ -1,6 +1,6 @@
 # Current Phase
 
-**P14.2 — 可辨识的组合式灰盒马模型已经实现并验证。**
+**P14.3 — 核心玩法审计完成，人工试玩执行包已经就绪，等待真人样本。**
 
 项目使用 UE 5.8.2。完整灰盒闭环继续可玩；Sound、Niagara 和 AnimBP 所需的数据边界已经建立，灰盒马匹与骑手会实际表现步态起伏、加速俯仰、转向侧倾和受力姿态。
 
@@ -30,6 +30,10 @@
 - 原长方体马已改为 16 个低成本基础几何部件：躯干、胸部、斜颈、头、口鼻、双耳、尾巴、四腿与四蹄。
 - 全马共用不缩放的表现根节点，继续响应已有 BodyBob/Pitch/Roll；四腿使用肩/胯枢轴按对角步态交替摆动，蹄部随腿运动。
 - 野马全部部件继承原 Blueprint 躯干材质；视觉组件无碰撞，原 Capsule、移动、AI、套索命中和骑乘规则保持不变。
+- 已核实当前套索是直线 Sphere Sweep 且只附着 Q 目标，马匹速度每帧对齐 Heading；两项分别冻结到 P15 和 P16，避免在人工基线前改变规则。
+- `Docs/Playtests/` 提供 15 轮匿名记录表、访谈模板和现场说明；`SummarizePlaytests.ps1` 汇总客观 JSON。
+- 试玩 JSON 升级为 schema 1.1 并记录 `isAutomated`；真人汇总默认排除自动 Smoke 与旧版无来源记录。
+- `.idea/`、`.vscode/` 已加入忽略；6 个 `.idea` 文件停止 Git 跟踪，本机副本保留。
 
 # Build Result
 
@@ -51,6 +55,8 @@ P14 成功路线记录 12.0 秒、1 次投索、1 次 Neck 附着、0 次脱靶/
 
 P14.2 模型证据：`Validation/P14.2-HorseModel.png`、`P14.2-Results.json` 和 `P14.2-Runs.txt`；原始日志为 `Saved/Logs/P14.2-Automation.log` 与 `P14.2-HorseModel.log`。
 
+P14.3 准备证据：`Validation/P14.3-Audit-Results.json`、`P14.3-Automated-Metrics.json` 和 `P14.3-Audit-Runs.txt`；UE 5.8.2 构建成功，19 passed、0 failed。
+
 # Manual Steps
 
 完成目标切出后按住 RMB，观察 OPEN 条，在绿色 THROW 窗口用 LMB 出手。调整准星高度尝试 Head、Neck、Torso。附着后按 Space 控绳，同时观察 BALANCE 与 SIDE：高 SIDE 时转向绳索方向或减速；持续高负荷会落马并显示 DRAGGED，此时 LMB 松绳。恢复后可以继续步行和重新上马。F2 重玩。
@@ -67,7 +73,7 @@ P14.2 模型证据：`Validation/P14.2-HorseModel.png`、`P14.2-Results.json` �
 
 # Next Recommended Work
 
-执行 P14 人工验证：按 `P14_PLAYTEST_VALIDATION.md` 完成至少 5 人 × 3 轮，结合自动 JSON 和简短访谈分类 Blocker、Core Feel、Clarity、Polish，再决定节奏调优或范围扩展。
+执行 P14.3 人工验证：按 `CORE_GAMEPLAY_AUDIT.md` 和 `Playtests/P14.3-README.md` 完成至少 5 人 × 3 轮，结合自动 JSON 和简短访谈分类 Blocker、Core Feel、Clarity、Polish。随后 P14.4 只修最多 3 个高频核心手感问题；P15/P16 前不扩展功能。
 
 # Milestones
 
@@ -83,3 +89,4 @@ P14.2 模型证据：`Validation/P14.2-HorseModel.png`、`P14.2-Results.json` �
 - 2026-09-14 P13.3：完成连续步态相位、马匹/骑手姿态数据、灰盒表现与无重叠结算；18 项测试、侧视表现和完整闭环回归通过。
 - 2026-09-14 P14.1：完成逐轮试玩指标、成功/失败 JSON、重试/退出收尾和人工验证规范；19 项测试及两条渲染路线通过。
 - 2026-09-14 P14.2：将长方体马替换为带头颈、双耳、尾巴、四腿四蹄的组合式灰盒马，并接入对角腿部摆动；19 项测试及专用侧视渲染通过。
+- 2026-09-14 P14.3 准备：完成核心玩法审计、P14.3–P17 阶段门、真人试玩执行包、来源隔离汇总与 IDE 跟踪清理；等待 15 轮人工样本。

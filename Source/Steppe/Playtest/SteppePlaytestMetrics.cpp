@@ -54,6 +54,7 @@ void USteppePlaytestMetricsComponent::BeginRound(ASteppeRiderCharacter* InRider,
     const FDateTime Now=FDateTime::UtcNow();
     Round.StartedUtc=Now.ToIso8601();
     Round.SessionId=Now.ToString(TEXT("%Y%m%d-%H%M%S-%s"));
+    Round.bAutomatedSession=FParse::Param(FCommandLine::Get(),TEXT("SteppeSmoke"));
     Round.ElapsedSeconds=Trial.ElapsedSeconds;
     PreviousLassoState=InRider && InRider->Lasso?InRider->Lasso->State:ELassoState::Stored;
     PreviousBalanceState=InRider && InRider->Balance?InRider->Balance->State:ERiderBalanceState::Stable;
@@ -124,9 +125,10 @@ void USteppePlaytestMetricsComponent::Finish(const TCHAR* Result,const TCHAR* Re
 bool USteppePlaytestMetricsComponent::WriteJson()
 {
     const TSharedRef<FJsonObject> Root=MakeShared<FJsonObject>();
-    Root->SetStringField(TEXT("schemaVersion"),TEXT("1.0"));
+    Root->SetStringField(TEXT("schemaVersion"),TEXT("1.1"));
     Root->SetStringField(TEXT("sessionId"),Round.SessionId);
     Root->SetStringField(TEXT("startedUtc"),Round.StartedUtc);
+    Root->SetBoolField(TEXT("isAutomated"),Round.bAutomatedSession);
     Root->SetStringField(TEXT("result"),Round.Result);
     Root->SetStringField(TEXT("endReason"),Round.EndReason);
     Root->SetStringField(TEXT("targetHorse"),Round.TargetHorse);

@@ -11,6 +11,7 @@ P14 用真实玩家行为判断当前核心闭环是否值得继续扩展。工�
 | 分组 | 字段 | 含义 |
 | --- | --- | --- |
 | 结果 | `result` / `endReason` | Success、Failed 或 Abandoned，以及命名完成、时间耗尽、重试或世界结束 |
+| 来源 | `isAutomated` | `false` 为真人试玩；命令行 Smoke 路线为 `true`，默认汇总时排除 |
 | 身份 | `targetHorse` / `targetArchetype` / `hitZone` | 本轮首次选中的目标、类型及首次附着区域 |
 | 阶段 | `stageSeconds.*` | 选中、切出、捕获、接触、交付和命名相对本轮开始的秒数；未到达为 `-1` |
 | 操作 | `throws` / `attachments` / `misses` | 出手、附着及脱靶/遮挡/目标丢失次数 |
@@ -21,9 +22,11 @@ P14 用真实玩家行为判断当前核心闭环是否值得继续扩展。工�
 
 计数依据状态跃迁而不是帧数。同一段持续危险不会被每帧重复统计；投索从飞行直接进入附着时仍只计一次；断绳与普通脱靶分开统计。
 
-## 人工试玩计划
+## P14.3 人工试玩计划
 
 至少 5 名测试者，每人连续尝试 3 轮。首次试玩不给完整操作演示，只说明目标和基础按键；观察者不在操作中纠正，除非玩家完全无法继续。
+
+现场使用 `Playtests/P14.3-README.md`、`P14.3-Round-Log.csv` 和 `P14.3-Session-Notes.md`。运行 `Scripts/SummarizePlaytests.ps1` 可将真实 `Round-*.json` 汇总为统一 CSV。
 
 每轮结束后记录：
 
@@ -55,4 +58,3 @@ P14 用真实玩家行为判断当前核心闭环是否值得继续扩展。工�
 - 成功路线：12.0 秒完成，1 次投索、1 次 Neck 附着、0 次脱靶/断绳，积分 2080。
 - 失败路线：3.0 秒超时，0 次投索，积分 0。
 - 证据：`Validation/P14-Results.json`、`P14-Success-Metrics.json`、`P14-Failure-Metrics.json`、`P14-Success.png`、`P14-Failure.png` 和 `P14-Runs.txt`。
-

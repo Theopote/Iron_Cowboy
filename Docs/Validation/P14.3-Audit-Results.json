@@ -1,0 +1,401 @@
+﻿{
+	"devices": [
+		{
+			"deviceName": "THEOPOTE",
+			"instance": "BFFDACF249EF880CF4237B89575BC4DB",
+			"instanceName": "THEOPOTE-52120",
+			"platform": "WindowsEditor",
+			"oSVersion": "Windows 11 (25H2) [10.0.26200.9445] ",
+			"model": "Default",
+			"gPU": "NVIDIA GeForce RTX 4070 Ti",
+			"cPUModel": "13th Gen Intel(R) Core(TM) i7-13700KF",
+			"rAMInGB": 64,
+			"renderMode": "SM6",
+			"rHI": "",
+			"appInstanceLog": ""
+		}
+	],
+	"reportCreatedOn": "2026.09.14-07.50.33",
+	"succeeded": 16,
+	"succeededWithWarnings": 3,
+	"failed": 0,
+	"notRun": 0,
+	"inProcess": 0,
+	"totalDuration": 2.5736227035522461,
+	"comparisonExported": false,
+	"comparisonExportDirectory": "",
+	"tests": [
+		{
+			"testDisplayName": "MathAndStamina",
+			"fullTestPath": "Steppe.P1.MathAndStamina",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"BFFDACF249EF880CF4237B89575BC4DB"
+			],
+			"duration": 0.0019932016730308533,
+			"dateTime": "2026.09.14-07.50.30",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "WorldMovementAndRiding",
+			"fullTestPath": "Steppe.P1.WorldMovementAndRiding",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"BFFDACF249EF880CF4237B89575BC4DB"
+			],
+			"duration": 0.90221399068832397,
+			"dateTime": "2026.09.14-07.50.30",
+			"entries": [
+				{
+					"event":
+					{
+						"type": "Info",
+						"message": "1s speed=180.0 desired=1200.0 mode=1 location=X=91.500 Y=0.000 Z=97.150 begun=1",
+						"context": "",
+						"artifact": "00000000000000000000000000000000"
+					},
+					"filename": "",
+					"lineNumber": -1,
+					"timestamp": "2026.09.14-07.50.30"
+				},
+				{
+					"event":
+					{
+						"type": "Info",
+						"message": "8s speed=1200.0 desired=1200.0 location=X=6145.558 Y=0.000 Z=97.150",
+						"context": "",
+						"artifact": "00000000000000000000000000000000"
+					},
+					"filename": "",
+					"lineNumber": -1,
+					"timestamp": "2026.09.14-07.50.30"
+				},
+				{
+					"event":
+					{
+						"type": "Warning",
+						"message": "LogSteppeRiding: RiderSeat socket missing on SteppeHorseCharacter_0; using editable fallback seat.",
+						"context": "log",
+						"artifact": "00000000000000000000000000000000"
+					},
+					"filename": "",
+					"lineNumber": -1,
+					"timestamp": "2026.09.14-07.50.31"
+				},
+				{
+					"event":
+					{
+						"type": "Warning",
+						"message": "LogSteppeRiding: RiderSeat socket missing on SteppeHorseCharacter_0; using editable fallback seat.",
+						"context": "log",
+						"artifact": "00000000000000000000000000000000"
+					},
+					"filename": "",
+					"lineNumber": -1,
+					"timestamp": "2026.09.14-07.50.31"
+				}
+			],
+			"warnings": 2,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "LeadDeliveryAndNaming",
+			"fullTestPath": "Steppe.P10.LeadDeliveryAndNaming",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"BFFDACF249EF880CF4237B89575BC4DB"
+			],
+			"duration": 0.013071198016405106,
+			"dateTime": "2026.09.14-07.50.31",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "ArchetypeGameplayDifferences",
+			"fullTestPath": "Steppe.P11.ArchetypeGameplayDifferences",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"BFFDACF249EF880CF4237B89575BC4DB"
+			],
+			"duration": 0.013686299324035645,
+			"dateTime": "2026.09.14-07.50.31",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "BalanceFallAndDraggedRecovery",
+			"fullTestPath": "Steppe.P12.BalanceFallAndDraggedRecovery",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"BFFDACF249EF880CF4237B89575BC4DB"
+			],
+			"duration": 0.054482601583003998,
+			"dateTime": "2026.09.14-07.50.31",
+			"entries": [
+				{
+					"event":
+					{
+						"type": "Warning",
+						"message": "LogSteppeRiding: RiderSeat socket missing on SteppeHorseCharacter_0; using editable fallback seat.",
+						"context": "log",
+						"artifact": "00000000000000000000000000000000"
+					},
+					"filename": "",
+					"lineNumber": -1,
+					"timestamp": "2026.09.14-07.50.31"
+				},
+				{
+					"event":
+					{
+						"type": "Warning",
+						"message": "LogSteppeRiding: RiderSeat socket missing on SteppeHorseCharacter_0; using editable fallback seat.",
+						"context": "log",
+						"artifact": "00000000000000000000000000000000"
+					},
+					"filename": "",
+					"lineNumber": -1,
+					"timestamp": "2026.09.14-07.50.31"
+				}
+			],
+			"warnings": 2,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "SwingTimingAndHitZones",
+			"fullTestPath": "Steppe.P12.SwingTimingAndHitZones",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"BFFDACF249EF880CF4237B89575BC4DB"
+			],
+			"duration": 0.044196799397468567,
+			"dateTime": "2026.09.14-07.50.31",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "FeedbackSignalsAndEvents",
+			"fullTestPath": "Steppe.P13.FeedbackSignalsAndEvents",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"BFFDACF249EF880CF4237B89575BC4DB"
+			],
+			"duration": 0.035382300615310669,
+			"dateTime": "2026.09.14-07.50.31",
+			"entries": [
+				{
+					"event":
+					{
+						"type": "Warning",
+						"message": "LogSteppeRiding: RiderSeat socket missing on SteppeHorseCharacter_0; using editable fallback seat.",
+						"context": "log",
+						"artifact": "00000000000000000000000000000000"
+					},
+					"filename": "",
+					"lineNumber": -1,
+					"timestamp": "2026.09.14-07.50.31"
+				}
+			],
+			"warnings": 1,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "PlaytestMetricTransitions",
+			"fullTestPath": "Steppe.P14.PlaytestMetricTransitions",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"BFFDACF249EF880CF4237B89575BC4DB"
+			],
+			"duration": 0.011386297643184662,
+			"dateTime": "2026.09.14-07.50.31",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "MovementOwnershipAndObstacles",
+			"fullTestPath": "Steppe.P2.MovementOwnershipAndObstacles",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"BFFDACF249EF880CF4237B89575BC4DB"
+			],
+			"duration": 0.15110419690608978,
+			"dateTime": "2026.09.14-07.50.31",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "PerceptionAndState",
+			"fullTestPath": "Steppe.P2.PerceptionAndState",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"BFFDACF249EF880CF4237B89575BC4DB"
+			],
+			"duration": 0.33557650446891785,
+			"dateTime": "2026.09.14-07.50.31",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "SlowApproachAndRelease",
+			"fullTestPath": "Steppe.P2.SlowApproachAndRelease",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"BFFDACF249EF880CF4237B89575BC4DB"
+			],
+			"duration": 0.48271611332893372,
+			"dateTime": "2026.09.14-07.50.32",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "StoppingDistanceAndGaps",
+			"fullTestPath": "Steppe.P2.StoppingDistanceAndGaps",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"BFFDACF249EF880CF4237B89575BC4DB"
+			],
+			"duration": 0.02595210075378418,
+			"dateTime": "2026.09.14-07.50.32",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "SmallHerdFormationAndAlarm",
+			"fullTestPath": "Steppe.P3.SmallHerdFormationAndAlarm",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"BFFDACF249EF880CF4237B89575BC4DB"
+			],
+			"duration": 0.16589979827404022,
+			"dateTime": "2026.09.14-07.50.32",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "TargetSelectionAndIsolation",
+			"fullTestPath": "Steppe.P4.TargetSelectionAndIsolation",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"BFFDACF249EF880CF4237B89575BC4DB"
+			],
+			"duration": 0.047771301120519638,
+			"dateTime": "2026.09.14-07.50.32",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "LassoThrowAttachAndRecovery",
+			"fullTestPath": "Steppe.P5.LassoThrowAttachAndRecovery",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"BFFDACF249EF880CF4237B89575BC4DB"
+			],
+			"duration": 0.069454297423362732,
+			"dateTime": "2026.09.14-07.50.32",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "RopeFightTensionAndSubdue",
+			"fullTestPath": "Steppe.P6.RopeFightTensionAndSubdue",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"BFFDACF249EF880CF4237B89575BC4DB"
+			],
+			"duration": 0.12123209983110428,
+			"dateTime": "2026.09.14-07.50.32",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "CaptureSubduedHorse",
+			"fullTestPath": "Steppe.P7.CaptureSubduedHorse",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"BFFDACF249EF880CF4237B89575BC4DB"
+			],
+			"duration": 0.069849200546741486,
+			"dateTime": "2026.09.14-07.50.33",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "TimedMissionRules",
+			"fullTestPath": "Steppe.P8.TimedMissionRules",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"BFFDACF249EF880CF4237B89575BC4DB"
+			],
+			"duration": 0.017118398100137711,
+			"dateTime": "2026.09.14-07.50.33",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		},
+		{
+			"testDisplayName": "PostCaptureApproachAndContact",
+			"fullTestPath": "Steppe.P9.PostCaptureApproachAndContact",
+			"tags": [],
+			"state": "Success",
+			"deviceInstance": [
+				"BFFDACF249EF880CF4237B89575BC4DB"
+			],
+			"duration": 0.010536298155784607,
+			"dateTime": "2026.09.14-07.50.33",
+			"entries": [],
+			"warnings": 0,
+			"errors": 0,
+			"artifacts": []
+		}
+	]
+}

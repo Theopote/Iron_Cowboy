@@ -16,6 +16,7 @@ struct STEPPE_API FSteppePlaytestRound
     GENERATED_BODY()
 
     UPROPERTY(VisibleAnywhere,BlueprintReadOnly) FString SessionId;
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly) bool bAutomatedSession = false;
     UPROPERTY(VisibleAnywhere,BlueprintReadOnly) FString StartedUtc;
     UPROPERTY(VisibleAnywhere,BlueprintReadOnly) FString Result = TEXT("Running");
     UPROPERTY(VisibleAnywhere,BlueprintReadOnly) FString EndReason;

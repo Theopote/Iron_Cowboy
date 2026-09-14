@@ -1,0 +1,19 @@
+P14.3 core gameplay audit preparation — 2026-09-14 — Unreal Engine 5.8.2
+
+Repository audit
+  Confirmed lasso uses linear Sphere Sweep and only attaches Desired Target.
+  Confirmed horse velocity is forced to Heading.Vector() * Speed.
+  SteppeGameMode.cpp: 34,442 bytes at audit time.
+  HorseBrainComponent.cpp: 20,975 bytes at audit time.
+  Added .idea/ and .vscode/ ignores; removed six .idea files from Git tracking while retaining local files.
+
+Build and automation
+  .\Scripts\Build.ps1 -EngineRoot 'C:\Program Files\Epic Games\UE_5.8'
+  .\Scripts\RunEditor.ps1 -Tests -Commands 'Automation RunTests Steppe;Quit' -LogName 'P14.3-Audit-Automation' -ExpectedTests 19
+  Result: Build succeeded; 19 passed, 0 failed, 3 existing RiderSeat fallback warnings.
+
+Metrics source validation
+  .\Scripts\RunEditor.ps1 -Game -Smoke -Render -MetricsFailureSmoke -LogName 'P14.3-Metrics-Source'
+  Result: schemaVersion 1.1, isAutomated=true.
+  Summarizer accepted 15 records with -IncludeSmoke and excluded every automated/legacy record in default human-only mode.
+

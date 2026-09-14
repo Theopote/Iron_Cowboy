@@ -93,6 +93,8 @@
 - 先修复 Blocker、核心手感和信息理解问题，再根据数据调整到 6–10 分钟目标节奏。
 - 正式声音、Niagara、马匹与骑手骨架资源沿现有接口替换，不改变 Gameplay 判定。
 
+项目在取得 5 人 × 3 轮样本前暂停横向功能。验证后先执行 P14.4 Core Feel Repair，再进入 P15 Physical Lasso v2 与 P16 Horse Dynamics v2；具体阶段门见 `CORE_GAMEPLAY_AUDIT.md`。
+
 ## 6. 明确不在近期范围
 
 开放世界、World Partition 生产地图、MassEntity 远距离马群、育种、遗传、牧场经济、建造、季节、狼群、剧情任务、技能树、多人和复杂角色定制暂不开发。
