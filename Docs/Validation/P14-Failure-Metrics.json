@@ -1,0 +1,39 @@
+{
+	"schemaVersion": "1.0",
+	"sessionId": "20260914-033652-072",
+	"startedUtc": "2026-09-14T03:36:52.072Z",
+	"result": "Failed",
+	"endReason": "TimeExpired",
+	"targetHorse": "",
+	"targetArchetype": "",
+	"hitZone": "",
+	"elapsedSeconds": 3,
+	"score": 0,
+	"stageSeconds":
+	{
+		"targetSelected": -1,
+		"isolated": -1,
+		"captured": -1,
+		"firstContact": -1,
+		"delivered": -1,
+		"named": -1
+	},
+	"actions":
+	{
+		"throws": 0,
+		"attachments": 0,
+		"misses": 0,
+		"ropeBreaks": 0,
+		"releases": 0,
+		"retries": 0
+	},
+	"risk":
+	{
+		"dangerousTensionEntries": 0,
+		"balanceWarnings": 0,
+		"falls": 0,
+		"dragged": 0,
+		"peakTension": 0,
+		"peakBalanceRisk": 0
+	}
+}

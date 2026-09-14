@@ -22,6 +22,8 @@ param(
     [switch]$BalanceSmoke,
     [switch]$FeedbackSmoke,
     [switch]$PresentationSmoke,
+    [switch]$MetricsSmoke,
+    [switch]$MetricsFailureSmoke,
     [ValidateRange(1,10000)][int]$ExpectedTests = 2
 )
 $ErrorActionPreference = 'Stop'
@@ -80,10 +82,19 @@ if ($PresentationSmoke) {
     if (!$Smoke -or !$Game) { throw 'PresentationSmoke requires Game and Smoke.' }
     $editorArgs += '-SteppePresentationSmoke'
 }
+if ($MetricsSmoke) {
+    if (!$Smoke -or !$Game) { throw 'MetricsSmoke requires Game and Smoke.' }
+    if ($MetricsFailureSmoke) { throw 'Choose either MetricsSmoke or MetricsFailureSmoke.' }
+    $editorArgs += '-SteppeLassoSmoke'; $editorArgs += '-SteppeRopeFightSmoke'; $editorArgs += '-SteppeCaptureSmoke'; $editorArgs += '-SteppeFullLoopSmoke'; $editorArgs += '-SteppeMetricsSmoke'
+}
+if ($MetricsFailureSmoke) {
+    if (!$Smoke -or !$Game) { throw 'MetricsFailureSmoke requires Game and Smoke.' }
+    $editorArgs += '-SteppeVerticalFailureSmoke'; $editorArgs += '-SteppeMetricsSmoke'; $editorArgs += '-SteppeMetricsFailureSmoke'
+}
 if ($RetrySmoke) { if (!$Smoke -or !$Game) { throw 'RetrySmoke requires Game and Smoke.' }; $editorArgs += '-SteppeRetrySmoke' }
 if ($Tests) { $editorArgs += '-TestExit=Automation Test Queue Empty'; $editorArgs += "-ReportExportPath=$PSScriptRoot\..\Saved\Automation" }
 if ($PythonScript) { $editorArgs += "-ExecutePythonScript=$PythonScript" }
-else { $editorArgs += "-ExecCmds=$Commands" }
+elseif (!$Smoke -or $Commands -ne 'QUIT_EDITOR') { $editorArgs += "-ExecCmds=$Commands" }
 $runStarted = Get-Date
 & $editorPath @editorArgs
 if ($LASTEXITCODE -ne 0) { throw "Editor exited with $LASTEXITCODE; see $logPath" }
@@ -247,5 +258,25 @@ if ($PresentationSmoke) {
         throw "P13 presentation smoke did not produce a mounted moving pose; see $logPath"
     }
     Write-Output 'P13 presentation smoke: gait phase, stride, horse lean and rider pose rendered.'
+}
+if ($MetricsSmoke -or $MetricsFailureSmoke) {
+    $metricsLog = Get-Content $logPath -Raw
+    $isFailure = [bool]$MetricsFailureSmoke
+    $metricsName = if ($isFailure) { 'P14-Failure.json' } else { 'P14-Success.json' }
+    $shotName = if ($isFailure) { 'SteppeP14Failure.png' } else { 'SteppeP14Success.png' }
+    $metricsPath = Join-Path $PSScriptRoot "..\Saved\Playtests\$metricsName"
+    $shotPath = Join-Path $PSScriptRoot "..\Saved\Screenshots\$shotName"
+    if (!(Test-Path $metricsPath) -or (Get-Item $metricsPath).LastWriteTime -lt $runStarted) { throw "P14 metrics JSON is missing or stale; see $logPath" }
+    if (!(Test-Path $shotPath) -or (Get-Item $shotPath).LastWriteTime -lt $runStarted) { throw "P14 result screenshot is missing or stale; see $logPath" }
+    $metrics = Get-Content $metricsPath -Raw | ConvertFrom-Json
+    $expectedResult = if ($isFailure) { 'Failed' } else { 'Success' }
+    $expectedReason = if ($isFailure) { 'TimeExpired' } else { 'NamedRequiredHorses' }
+    if ($metrics.result -ne $expectedResult -or $metrics.endReason -ne $expectedReason) { throw "P14 metrics result mismatch in $metricsPath" }
+    if (!$isFailure -and ($metrics.actions.throws -lt 1 -or $metrics.actions.attachments -lt 1 -or $metrics.stageSeconds.named -lt 0 -or $metrics.score -lt 1)) {
+        throw "P14 success metrics did not retain the completed gameplay path; see $metricsPath"
+    }
+    if ($isFailure -and ($metrics.elapsedSeconds -lt 3 -or $metrics.score -ne 0)) { throw "P14 failure metrics did not retain timeout data; see $metricsPath" }
+    if ($metricsLog -notmatch "STEPPE_P14_METRICS: Result=$expectedResult Reason=$expectedReason") { throw "P14 metrics summary is missing; see $logPath" }
+    Write-Output "P14 metrics smoke: $expectedResult route wrote a fresh validated JSON record and result screenshot."
 }
 Write-Output "Editor exited successfully. Log: $logPath"

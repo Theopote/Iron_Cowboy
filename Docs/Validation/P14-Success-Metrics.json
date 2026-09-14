@@ -1,0 +1,39 @@
+{
+	"schemaVersion": "1.0",
+	"sessionId": "20260914-033633-755",
+	"startedUtc": "2026-09-14T03:36:33.755Z",
+	"result": "Success",
+	"endReason": "NamedRequiredHorses",
+	"targetHorse": "BP_SteppeWildHorse_C_0",
+	"targetArchetype": "Fast",
+	"hitZone": "Neck",
+	"elapsedSeconds": 12.016654968261719,
+	"score": 2080,
+	"stageSeconds":
+	{
+		"targetSelected": 0.71666663885116577,
+		"isolated": 0.81666654348373413,
+		"captured": 5.216679573059082,
+		"firstContact": 8.4167098999023438,
+		"delivered": 11.216667175292969,
+		"named": 12.016654968261719
+	},
+	"actions":
+	{
+		"throws": 1,
+		"attachments": 1,
+		"misses": 0,
+		"ropeBreaks": 0,
+		"releases": 0,
+		"retries": 0
+	},
+	"risk":
+	{
+		"dangerousTensionEntries": 0,
+		"balanceWarnings": 0,
+		"falls": 0,
+		"dragged": 0,
+		"peakTension": 0.33126634359359741,
+		"peakBalanceRisk": 0
+	}
+}

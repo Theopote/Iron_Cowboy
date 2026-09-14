@@ -14,6 +14,7 @@
 #include "Lasso/LassoComponent.h"
 #include "Core/SteppeGameplayTags.h"
 #include "Game/SteppeTrialState.h"
+#include "Playtest/SteppePlaytestMetrics.h"
 #include "Capture/HorseTrustComponent.h"
 #include "Camp/SteppeDeliveryZone.h"
 #include "Engine/Engine.h"
@@ -767,6 +768,30 @@ bool FHorseArchetypesTest::RunTest(const FString& Parameters)
     const float FastSpeed=Fast->Attributes->MaxSpeed;
     Fast->ApplyArchetype(Herd->ArchetypeProfiles[0]);
     TestEqual(TEXT("Profile application is idempotent"),Fast->Attributes->MaxSpeed,FastSpeed);
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPlaytestMetricsTest,"Steppe.P14.PlaytestMetricTransitions",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FPlaytestMetricsTest::RunTest(const FString& Parameters)
+{
+    FSteppePlaytestRound Round;
+    Round.RecordLassoTransition(ELassoState::Aiming,ELassoState::Thrown,TEXT("in flight"),0.f,ELassoHitZone::None);
+    Round.RecordLassoTransition(ELassoState::Thrown,ELassoState::Attached,TEXT("neck loop"),.62f,ELassoHitZone::Neck);
+    Round.RecordLassoTransition(ELassoState::Attached,ELassoState::Recovering,TEXT("Rope broke - recovering"),.97f,ELassoHitZone::Neck);
+    Round.RecordLassoTransition(ELassoState::Thrown,ELassoState::Recovering,TEXT("Missed - recovering"),.2f,ELassoHitZone::None);
+    Round.RecordBalanceTransition(ERiderBalanceState::Stable,ERiderBalanceState::Warning,.6f,1.f);
+    Round.RecordBalanceTransition(ERiderBalanceState::Warning,ERiderBalanceState::Falling,1.f,1.f);
+    Round.RecordBalanceTransition(ERiderBalanceState::Falling,ERiderBalanceState::Dragged,1.f,1.f);
+    TestEqual(TEXT("One throw is counted across flight and attachment"),Round.ThrowCount,1);
+    TestEqual(TEXT("Attachment and hit zone are retained"),Round.AttachCount,1);
+    TestEqual(TEXT("Attached hit zone is Neck"),Round.HitZone,FString(TEXT("Neck")));
+    TestEqual(TEXT("Rope break is separated from a miss"),Round.RopeBreakCount,1);
+    TestEqual(TEXT("A later miss is classified separately"),Round.MissCount,1);
+    TestEqual(TEXT("Balance warning entry is counted"),Round.BalanceWarningCount,1);
+    TestEqual(TEXT("Fall entry is counted"),Round.FallCount,1);
+    TestEqual(TEXT("Dragged entry is counted"),Round.DraggedCount,1);
+    TestTrue(TEXT("Peak rope tension is retained"),FMath::IsNearlyEqual(Round.PeakTension,.97f));
+    TestTrue(TEXT("Peak normalized balance risk is retained"),FMath::IsNearlyEqual(Round.PeakBalanceRisk,1.f));
     return true;
 }
 #endif

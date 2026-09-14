@@ -7,6 +7,7 @@ class ASteppeHorseCharacter;
 class ASteppeWildHorseCharacter;
 class ASteppeHerdManager;
 class ASteppeDeliveryZone;
+class USteppePlaytestMetricsComponent;
 UCLASS()
 class STEPPE_API ASteppeGameMode : public AGameModeBase
 {
@@ -35,4 +36,5 @@ public:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Trial", meta=(ClampMin="10")) float TrialDurationSeconds = 120.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Trial", meta=(ClampMin="1")) int32 RequiredCaptures = 1;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Trial") FSteppeTrialProgress Trial;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Playtest") TObjectPtr<USteppePlaytestMetricsComponent> PlaytestMetrics;
 };

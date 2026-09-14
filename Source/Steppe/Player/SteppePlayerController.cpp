@@ -5,6 +5,7 @@
 #include "Engine/World.h"
 #include "Capture/HorseTrustComponent.h"
 #include "UI/HorseNamingWidget.h"
+#include "Playtest/SteppePlaytestMetrics.h"
 void ASteppePlayerController::SteppeToggleDebug()
 {
     if (IConsoleVariable* Variable = IConsoleManager::Get().FindConsoleVariable(TEXT("steppe.Debug.Horse")))
@@ -23,6 +24,10 @@ void ASteppePlayerController::SteppeFocusTarget()
 void ASteppePlayerController::SteppeRestartTrial()
 {
     // Reload the current standalone world so rider, horse, AI and timers reset together.
+    if (auto* Mode=GetWorld()?GetWorld()->GetAuthGameMode<ASteppeGameMode>():nullptr)
+    {
+        if (Mode->PlaytestMetrics) { Mode->PlaytestMetrics->FinalizeForRestart(); }
+    }
     RestartLevel();
 }
 

@@ -1,0 +1,18 @@
+P14 validation — 2026-09-14 — Unreal Engine 5.8.2
+
+Build
+  .\Scripts\Build.ps1 -EngineRoot 'C:\Program Files\Epic Games\UE_5.8'
+  Result: Succeeded, SteppeEditor Win64 Development
+
+Automation
+  .\Scripts\RunEditor.ps1 -Tests -Commands 'Automation RunTests Steppe;Quit' -LogName 'P14-Automation' -ExpectedTests 19
+  Result: 19 passed, 0 failed, 3 passed with existing RiderSeat fallback warnings
+
+Success metrics route
+  .\Scripts\RunEditor.ps1 -Game -Smoke -Render -MetricsSmoke -LogName 'P14-Success'
+  Result: Success / NamedRequiredHorses / 12.0 s / 1 throw / 1 attach / 0 misses / score 2080
+
+Failure metrics route
+  .\Scripts\RunEditor.ps1 -Game -Smoke -Render -MetricsFailureSmoke -LogName 'P14-Failure'
+  Result: Failed / TimeExpired / 3.0 s / score 0
+

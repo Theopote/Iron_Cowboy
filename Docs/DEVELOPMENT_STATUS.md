@@ -1,6 +1,6 @@
 # Current Phase
 
-**P13.3 — 马匹/骑手动画表现数据、灰盒姿态与正式结算层级已经实现并验证。**
+**P14.1 — 自动试玩指标、成功/失败样本与人工验证规范已经实现并验证。**
 
 项目使用 UE 5.8.2。完整灰盒闭环继续可玩；Sound、Niagara 和 AnimBP 所需的数据边界已经建立，灰盒马匹与骑手会实际表现步态起伏、加速俯仰、转向侧倾和受力姿态。
 
@@ -25,6 +25,8 @@
 - HorsePresentationComponent 输出 GaitPhase、StrideBlend、BodyBob/Pitch/Roll 和 FootContactPulse，供灰盒与未来 AnimBP 共用。
 - RiderPresentationData 输出骑乘、稳绳、落马、拖行、Balance、侧向拉力和身体姿态，正式 Rider AnimBP 可直接读取。
 - 命名成功后 Horse Card 自动收起并恢复游戏输入；最终结算显示四阶段统计、积分和 Replay。
+- PlaytestMetrics 按轮记录目标类型、阶段耗时、投索/命中/脱靶/断绳、危险张力、Balance 事故、结果、积分与重试。
+- 成功、超时、F2 重试和世界结束都会把 UTF-8 JSON 写入 `Saved/Playtests/`；状态跃迁计数避免按帧重复。
 
 # Build Result
 
@@ -34,13 +36,13 @@ UHT、C++、UMG 编译与链接成功。没有修改引擎，也没有增加物�
 
 # Validation
 
-自动测试：**18 passed, 0 failed**。其中 3 项因覆盖正常骑乘和事故落马而记录既有 RiderSeat 灰盒回退警告。
+自动测试：**19 passed, 0 failed**。其中 3 项因覆盖正常骑乘和事故落马而记录既有 RiderSeat 灰盒回退警告。
 
-`Steppe.P13.FeedbackSignalsAndEvents` 覆盖步态节拍、疲劳呼吸、骑乘风感、扬尘脉冲、套索事件、风险事件和禁用音频时的确定性信号。P1–P12 回归继续通过。
+新增 `Steppe.P14.PlaytestMetricTransitions`，覆盖投索去重、附着区域、断绳分类和 Balance 事故跃迁。P1–P13 回归继续通过。
 
-P13.3 侧视冒烟记录 `Sprint / Phase=0.45 / Stride=0.92 / Bob=-1.5 / HorseRoll=-6.0 / RiderRoll=-4.7 / Mounted=1`。正向完整路线仍将 `Saran` 牵回 416.2 cm，通过新版 Horse Card 命名，自动收卡并以无遮挡 Trial Success 结算结束。
+P14 成功路线记录 12.0 秒、1 次投索、1 次 Neck 附着、0 次脱靶/断绳和 2080 分；六个阶段时间均已写入。失败路线在 3.0 秒超时并记录 0 分。两条路线都生成可解析 JSON 和结算截图。
 
-证据：`Validation/P13.3-Results.json`、`P13.3-Presentation.png`、`P13.3-HorseCard.png`、`P13.3-Settlement.png` 和 `P13.3-Runs.txt`。原始日志为 `Saved/Logs/P13.3-Tests.log`、`P13.3-Presentation-Smoke.log` 与 `P13.3-FullLoop-Smoke.log`。
+证据：`Validation/P14-Results.json`、`P14-Success-Metrics.json`、`P14-Failure-Metrics.json`、`P14-Success.png`、`P14-Failure.png` 和 `P14-Runs.txt`。原始日志为 `Saved/Logs/P14-Automation.log`、`P14-Success.log` 与 `P14-Failure.log`。
 
 # Manual Steps
 
@@ -53,12 +55,12 @@ P13.3 侧视冒烟记录 `Sprint / Phase=0.45 / Stride=0.92 / Bob=-1.5 / HorseRo
 - 命中区基于灰盒 Capsule 局部高度；换成骨骼马后应改用独立碰撞体或骨骼映射。
 - Balance 周期、阈值、拖行速度和 1.25 秒上限尚未经过多人试玩平衡。
 - 没有生命值或伤害；落马是可恢复的操作后果。
-- 当前 120 秒挑战尚未达到 6–10 分钟目标节奏，也未完成多人次人工试玩指标采集。
+- 当前 120 秒挑战尚未达到 6–10 分钟目标节奏；自动指标已接入，但 5 人 × 3 轮人工样本尚未采集。
 - 仅验证 Editor Development 和 Editor -game，没有验证 Shipping 打包或其他平台。
 
 # Next Recommended Work
 
-进入 P14 原型验证准备：记录每轮选择、失误、捕获耗时、Balance 风险、失败原因与重试；先用当前可复现灰盒完成内部多轮试玩。正式声音、Niagara 与骨架资源可在许可确定后沿现有接口并行替换。
+执行 P14 人工验证：按 `P14_PLAYTEST_VALIDATION.md` 完成至少 5 人 × 3 轮，结合自动 JSON 和简短访谈分类 Blocker、Core Feel、Clarity、Polish，再决定节奏调优或范围扩展。
 
 # Milestones
 
@@ -72,3 +74,4 @@ P13.3 侧视冒烟记录 `Sprint / Phase=0.45 / Stride=0.92 / Bob=-1.5 / HorseRo
 - 2026-09-14 P13.1：完成独立反馈层、程序化占位音、马蹄/风感/呼吸、灰盒扬尘和动态绳索风险表现；18 项测试、P13 渲染和完整闭环回归通过。
 - 2026-09-14 P13.2：完成 Grass/Hard 实际物理材质路由、Sound/Niagara 资源插槽、呼吸事件和 Horse Card 层级；18 项测试、双地表渲染和完整闭环回归通过。
 - 2026-09-14 P13.3：完成连续步态相位、马匹/骑手姿态数据、灰盒表现与无重叠结算；18 项测试、侧视表现和完整闭环回归通过。
+- 2026-09-14 P14.1：完成逐轮试玩指标、成功/失败 JSON、重试/退出收尾和人工验证规范；19 项测试及两条渲染路线通过。

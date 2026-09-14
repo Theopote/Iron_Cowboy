@@ -24,6 +24,7 @@
 #include "Camp/SteppeDeliveryZone.h"
 #include "UI/HorseNamingWidget.h"
 #include "Feedback/SteppeFeedbackComponent.h"
+#include "Playtest/SteppePlaytestMetrics.h"
 ASteppeGameMode::ASteppeGameMode()
 {
     PrimaryActorTick.bCanEverTick=true;
@@ -33,6 +34,7 @@ ASteppeGameMode::ASteppeGameMode()
     HorseClass=ASteppeHorseCharacter::StaticClass();
     WildHorseClass=ASteppeWildHorseCharacter::StaticClass();
     DeliveryZoneClass=ASteppeDeliveryZone::StaticClass();
+    PlaytestMetrics=CreateDefaultSubobject<USteppePlaytestMetricsComponent>(TEXT("PlaytestMetrics"));
 }
 void ASteppeGameMode::Tick(float DeltaSeconds)
 {
@@ -42,6 +44,7 @@ void ASteppeGameMode::Tick(float DeltaSeconds)
         Trial.Advance(DeltaSeconds,HerdManager?HerdManager->CapturedCount:0,HerdManager?HerdManager->FirstContactCount:0,
             HerdManager?HerdManager->DeliveredCount:0,HerdManager?HerdManager->NamedCount:0);
     }
+    if (PlaytestMetrics) { PlaytestMetrics->Observe(Trial); }
 }
 void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer)
 {
@@ -92,6 +95,7 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
     {
         Trial.Start(bVerticalFailureSmoke?3.f:TrialDurationSeconds,RequiredCaptures);
     }
+    if (PlaytestMetrics) { PlaytestMetrics->BeginRound(Rider,HerdManager,Trial); }
     if (FParse::Param(FCommandLine::Get(),TEXT("SteppeSmoke")))
     {
         // Explicit development smoke mode; normal play never injects input or exits.
@@ -111,6 +115,8 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
         const bool bBalanceSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeBalanceSmoke"));
         const bool bFeedbackSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeFeedbackSmoke"));
         const bool bPresentationSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppePresentationSmoke"));
+        const bool bMetricsSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeMetricsSmoke"));
+        const bool bMetricsFailureSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeMetricsFailureSmoke"));
         const bool bTimedLassoSmoke=bLassoSkillSmoke || bBalanceSmoke || bFeedbackSmoke;
         const bool bFullLoopSequence=bVerticalSliceSmoke || bFullLoopSmoke;
         const bool bPostCaptureSequence=bVerticalSliceSmoke || bPostCaptureSmoke || bFullLoopSmoke;
@@ -354,7 +360,7 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
             GetWorldTimerManager().SetTimer(PostCaptureShotHandle,FTimerDelegate::CreateWeakLambda(this,[]()
             { FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeP9Approach.png"),true,false); }),7.f,false);
         }
-        GetWorldTimerManager().SetTimer(ShotHandle,FTimerDelegate::CreateWeakLambda(this,[this,Rider,bVerticalSliceSmoke,bVerticalFailureSmoke,bPostCaptureSmoke,bFullLoopSequence,bArchetypeSmoke,bLassoSkillSmoke,bFeedbackSmoke,bPresentationSmoke]()
+        GetWorldTimerManager().SetTimer(ShotHandle,FTimerDelegate::CreateWeakLambda(this,[this,Rider,bVerticalSliceSmoke,bVerticalFailureSmoke,bPostCaptureSmoke,bFullLoopSequence,bArchetypeSmoke,bLassoSkillSmoke,bFeedbackSmoke,bPresentationSmoke,bMetricsSmoke,bMetricsFailureSmoke]()
         {
             UE_LOG(LogSteppe,Display,TEXT("STEPPE_SMOKE: Horse=%s Speed=%.1f Mounted=%d"),*GetNameSafe(PlaygroundHorse),PlaygroundHorse?PlaygroundHorse->GetVelocity().Size2D():0.f,PlaygroundHorse && PlaygroundHorse->MountedRider.IsValid());
             if (WildHorse)
@@ -450,7 +456,12 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
                     *UEnum::GetValueAsString(Pose.Gait),Pose.GaitPhase,Pose.StrideBlend,Pose.BodyBob,Pose.BodyRoll,
                     Rider->PresentationData.BodyRoll,Rider->PresentationData.bMounted);
             }
-            FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeSmoke.png"),true,false);
+            if (bMetricsSmoke && PlaytestMetrics)
+            {
+                UE_LOG(LogSteppe,Display,TEXT("STEPPE_P14_SUMMARY: %s"),*PlaytestMetrics->GetCompactSummary());
+                FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/(bMetricsFailureSmoke?TEXT("Screenshots/SteppeP14Failure.png"):TEXT("Screenshots/SteppeP14Success.png")),true,false);
+            }
+            if (!bMetricsSmoke) { FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeSmoke.png"),true,false); }
         }),bArchetypeSmoke?1.5f:(bHerdIdleSmoke?3.5f:(bVerticalFailureSmoke?4.f:(bFullLoopSequence?13.f:(bPostCaptureSequence?10.f:7.f)))),false);
         GetWorldTimerManager().SetTimer(ExitHandle,FTimerDelegate::CreateWeakLambda(NewPlayer,[NewPlayer]() { NewPlayer->ConsoleCommand(TEXT("quit")); }),bArchetypeSmoke?3.f:(bHerdIdleSmoke?5.5f:(bVerticalFailureSmoke?6.f:(bFullLoopSequence?15.f:(bPostCaptureSequence?12.f:9.f)))),false);
     }
