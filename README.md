@@ -1,6 +1,6 @@
 # 《套马的汉子》 / Project STEPPE
 
-UE **5.8.2** 的 C++ 骑乘游戏原型。当前已完成 P13.2：骑手可驱赶具有 Fast、Strong、Nervous 行为差异的马群，切出目标，在摆绳稳定窗口投掷并处理失衡风险；Grass/Hard 地表路由、可替换 Sound/Niagara 插槽、程序化回退、套索反馈和新版 Horse Card 已接入，完整安抚、牵回与命名流程保持可玩。
+UE **5.8.2** 的 C++ 骑乘游戏原型。当前已完成 P13.3：骑手可驱赶具有 Fast、Strong、Nervous 行为差异的马群，切出目标，在摆绳稳定窗口投掷并处理失衡风险；Grass/Hard 反馈、可替换 Sound/Niagara/AnimBP 接口、马匹与骑手灰盒姿态、Horse Card 和分层结算已接入，完整安抚、牵回与命名流程保持可玩。
 
 ## 打开与试玩
 
@@ -45,13 +45,13 @@ UE **5.8.2** 的 C++ 骑乘游戏原型。当前已完成 P13.2：骑手可驱�
 ## 验证
 
 ```powershell
-.\Scripts\RunEditor.ps1 -Tests -ExpectedTests 18 -Commands 'Automation RunTests Steppe;Quit' -LogName P13.2-Tests
-.\Scripts\RunEditor.ps1 -Game -Render -Smoke -FeedbackSmoke -Commands '' -LogName P13.2-Surface-Smoke
-.\Scripts\RunEditor.ps1 -Game -Render -Smoke -FullLoopSmoke -Commands '' -LogName P13.2-FullLoop-Smoke
+.\Scripts\RunEditor.ps1 -Tests -ExpectedTests 18 -Commands 'Automation RunTests Steppe;Quit' -LogName P13.3-Tests
+.\Scripts\RunEditor.ps1 -Game -Render -Smoke -PresentationSmoke -Commands '' -LogName P13.3-Presentation-Smoke
+.\Scripts\RunEditor.ps1 -Game -Render -Smoke -FullLoopSmoke -Commands '' -LogName P13.3-FullLoop-Smoke
 ```
 
 第一条运行全部数学和真实 UWorld 集成测试，报告位于 `Saved/Automation/index.json`。第二条验证摆绳稳定窗口、有效环口/射程和 Neck 命中反馈；第三条验证侧向失衡、落马、拖行和主动松绳；第四条自动走完捕获、接近、牵行、交付和命名。这些烟测不用于人工试玩。
 
 当前构建使用 V7 / Unreal5_8 IncludeOrder；因本机共享 PCH 编译停顿，模块禁用 PCH，构建脚本传入 `-NoUBA` 禁用 detouring。没有修改引擎安装。Editor 开启 Live Coding 时应先保存关闭再运行外部构建。
 
-后续开发先阅读 `Docs/GAME_DESIGN_VISION.md`、`Docs/DESIGN_BASELINE.md`、`Docs/PROTOTYPE_GDD.md` 和 `Docs/DEVELOPMENT_ROADMAP.md`。真实结果见 `Docs/DEVELOPMENT_STATUS.md`，工程分层见 `Docs/ARCHITECTURE.md`，P13 规格与验证依据见 `Docs/P13_AUDIO_VISUAL_SPEC.md`；下一步继续 P13.3 的正式资源和动画接入。
+后续开发先阅读 `Docs/GAME_DESIGN_VISION.md`、`Docs/DESIGN_BASELINE.md`、`Docs/PROTOTYPE_GDD.md` 和 `Docs/DEVELOPMENT_ROADMAP.md`。真实结果见 `Docs/DEVELOPMENT_STATUS.md`，工程分层见 `Docs/ARCHITECTURE.md`，P13 规格与验证依据见 `Docs/P13_AUDIO_VISUAL_SPEC.md`；下一步进入 P14 原型验证准备。

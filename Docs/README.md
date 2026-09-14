@@ -22,7 +22,7 @@
 - P10_LEAD_DELIVERY_NAMING_SPEC.md：已实现的牵回营地、Horse Card、命名和最终结算规则。
 - P11_HORSE_ARCHETYPES_SPEC.md：已实现的 Fast、Strong、Nervous 原型、参数接入和验证结果。
 - P12_LASSO_SKILL_SPEC.md：已实现的摆绳/命中区、Rider Balance、落马与短距离拖行规则。
-- P13_AUDIO_VISUAL_SPEC.md：已实现的 P13.1–P13.2 反馈层、双地表路由、资源插槽与后续正式资源边界。
+- P13_AUDIO_VISUAL_SPEC.md：已实现的 P13.1–P13.3 反馈、双地表、资源插槽、动画姿态和 UI 规格。
 - DESIGN_DECISIONS.md：跨系统技术与产品决策。
 - References/：两份早期讨论 PDF 原件及使用说明。
 
@@ -42,4 +42,4 @@
 - DEVELOPMENT_STATUS.md：当前状态与最新验证。
 - Validation/：实际运行截图与精简结果。
 
-当前使用本机 UE 5.8.2。P13.2 已完成；下一步为 P13.3 正式声音/Niagara 资源、AnimBP 与剩余 UI 层级。
+当前使用本机 UE 5.8.2。P13.3 已完成；下一步为 P14 原型验证数据与试玩流程。

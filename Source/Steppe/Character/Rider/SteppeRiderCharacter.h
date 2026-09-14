@@ -13,6 +13,22 @@ class ULassoComponent;
 class URiderBalanceComponent;
 class USteppeFeedbackComponent;
 struct FInputActionValue;
+
+USTRUCT(BlueprintType)
+struct STEPPE_API FRiderPresentationData
+{
+    GENERATED_BODY()
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly) bool bMounted = false;
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly) bool bBracing = false;
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly) bool bFalling = false;
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly) bool bDragged = false;
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly) float BalanceRisk = 0.f;
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly) float PullSide = 0.f;
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly) float BodyPitch = 0.f;
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly) float BodyRoll = 0.f;
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly) float SeatOffsetZ = 0.f;
+};
+
 UCLASS()
 class STEPPE_API ASteppeRiderCharacter : public ACharacter
 {
@@ -22,6 +38,7 @@ public:
     virtual void SetupPlayerInputComponent(UInputComponent* Input) override;
     virtual void PawnClientRestart() override;
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
+    virtual void Tick(float DeltaSeconds) override;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<URidingComponent> Riding;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<USpringArmComponent> CameraBoom;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<UCameraComponent> Camera;
@@ -29,6 +46,7 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<ULassoComponent> Lasso;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<URiderBalanceComponent> Balance;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<USteppeFeedbackComponent> Feedback;
+    UPROPERTY(VisibleInstanceOnly,BlueprintReadOnly,Category="Rider|Animation") FRiderPresentationData PresentationData;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Input") TObjectPtr<USteppeInputConfig> InputConfig;
     UPROPERTY(EditDefaultsOnly, Category="Input") float LookSensitivity = 1.f;
     void RefreshInputContext();
@@ -49,5 +67,6 @@ private:
     void CaptureHorse();
     void RestartTrial();
     void EnsureInputConfig();
+    UPROPERTY() TObjectPtr<class UStaticMeshComponent> PlaceholderRider;
     FRidingIntent Intent;
 };

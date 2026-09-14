@@ -7,11 +7,14 @@
 #include "Engine/StaticMesh.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Core/SteppeGameplayTags.h"
+#include "Presentation/HorsePresentationComponent.h"
 ASteppeHorseCharacter::ASteppeHorseCharacter(const FObjectInitializer& ObjectInitializer)
     : Super(ObjectInitializer.SetDefaultSubobjectClass<UHorseMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
     GetCapsuleComponent()->InitCapsuleSize(55,95);
     Attributes = CreateDefaultSubobject<UHorseAttributeComponent>(TEXT("HorseAttributes"));
+    Presentation = CreateDefaultSubobject<UHorsePresentationComponent>(TEXT("HorsePresentation"));
+    Presentation->AddTickPrerequisiteComponent(GetCharacterMovement());
     Placeholder = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PlaceholderBody"));
     Placeholder->SetupAttachment(GetRootComponent());
     Placeholder->SetCollisionEnabled(ECollisionEnabled::NoCollision);

@@ -1,0 +1,17 @@
+Project STEPPE P13.3 validation — 2026-09-14 — UE 5.8.2
+
+Build
+.\Scripts\Build.ps1 -EngineRoot 'C:\Program Files\Epic Games\UE_5.8'
+Result: SteppeEditor Win64 Development succeeded.
+
+Automation
+.\Scripts\RunEditor.ps1 -Tests -ExpectedTests 18 -Commands 'Automation RunTests Steppe;Quit' -LogName 'P13.3-Tests'
+Result: 18 passed, 0 failed, 3 passed with existing RiderSeat greybox warnings. P13 coverage verifies gait phase, stride blend, horse roll and rider mounted/lean presentation data.
+
+Presentation render
+.\Scripts\RunEditor.ps1 -Game -Smoke -Render -PresentationSmoke -Commands '' -LogName 'P13.3-Presentation-Smoke'
+Result: Gait=Sprint, Phase=0.45, Stride=0.92, Bob=-1.5, HorseRoll=-6.0, RiderRoll=-4.7, Mounted=1. Fresh side-view screenshot produced.
+
+Full-loop, card and settlement regression
+.\Scripts\RunEditor.ps1 -Game -Smoke -Render -FullLoopSmoke -Commands '' -LogName 'P13.3-FullLoop-Smoke'
+Result: Saran captured, contacted, led 416.2 cm, named and completed Trial successfully. The Horse Card closed after its success feedback and the four-stage settlement rendered unobstructed.

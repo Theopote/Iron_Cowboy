@@ -206,11 +206,17 @@ void ASteppeHUD::DrawHUD()
         else
         {
             const bool bSuccess=Mode->Trial.State==ESteppeTrialState::Success;
-            DrawRect(FLinearColor(0,0,0,.78f),Canvas->ClipX*.5f-245,Canvas->ClipY*.5f-52,490,104);
-            DrawText(bSuccess?TEXT("HORSE NAMED"):TEXT("TIME EXPIRED"),bSuccess?FLinearColor(.25f,1.f,.35f):FLinearColor(1.f,.25f,.15f),
-                Canvas->ClipX*.5f-150,Canvas->ClipY*.5f-30,nullptr,1.8f);
-            DrawText(FString::Printf(TEXT("Score %d  |  F2 replay"),Mode->Trial.Score),FLinearColor::White,
-                Canvas->ClipX*.5f-105,Canvas->ClipY*.5f+12,nullptr,1.1f);
+            const float PanelX=Canvas->ClipX*.5f-280.f;
+            const float PanelY=Canvas->ClipY*.5f-82.f;
+            const FLinearColor Accent=bSuccess?FLinearColor(.25f,1.f,.35f):FLinearColor(1.f,.25f,.15f);
+            DrawRect(FLinearColor(0,0,0,.84f),PanelX,PanelY,560,164);
+            DrawRect(Accent,PanelX,PanelY,560,5);
+            DrawText(bSuccess?TEXT("ROUND COMPLETE"):TEXT("ROUND FAILED"),Accent,PanelX+190,PanelY+18,nullptr,1.05f);
+            DrawText(bSuccess?TEXT("HORSE NAMED"):TEXT("TIME EXPIRED"),FLinearColor::White,PanelX+145,PanelY+48,nullptr,1.9f);
+            DrawText(FString::Printf(TEXT("SECURED %d   CONTACT %d   DELIVERED %d   NAMED %d"),Mode->Trial.Captured,
+                Mode->Trial.FirstContacts,Mode->Trial.Delivered,Mode->Trial.Named),FLinearColor(.7f,.9f,.82f),PanelX+82,PanelY+96,nullptr,1.f);
+            DrawText(FString::Printf(TEXT("SCORE %d   |   F2 REPLAY ROUND"),Mode->Trial.Score),FLinearColor(1.f,.82f,.25f),
+                PanelX+145,PanelY+128,nullptr,1.05f);
         }
         if (Mode->DeliveryZone && PlayerOwner)
         {

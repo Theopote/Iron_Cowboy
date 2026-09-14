@@ -13,5 +13,6 @@ public:
     UFUNCTION(Exec) void SteppeFocusTarget();
     UFUNCTION(Exec) void SteppeRestartTrial();
     void ShowHorseNaming(UHorseTrustComponent* Horse);
+    void CloseHorseNaming();
     UPROPERTY() TObjectPtr<UHorseNamingWidget> NamingWidget;
 };

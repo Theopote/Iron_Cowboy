@@ -1,8 +1,8 @@
 # Current Phase
 
-**P13.2 — 双地表反馈路由、可替换表现资源接口与新版 Horse Card 已经实现并验证。**
+**P13.3 — 马匹/骑手动画表现数据、灰盒姿态与正式结算层级已经实现并验证。**
 
-项目使用 UE 5.8.2。完整灰盒闭环继续可玩；反馈组件现在能识别 Grass/Hard 物理表面，并把现有信号路由到可配置的 Sound 与 Niagara 资源，缺失资源时安全回退。
+项目使用 UE 5.8.2。完整灰盒闭环继续可玩；Sound、Niagara 和 AnimBP 所需的数据边界已经建立，灰盒马匹与骑手会实际表现步态起伏、加速俯仰、转向侧倾和受力姿态。
 
 # Completed
 
@@ -22,6 +22,9 @@
 - FSteppeFeedbackAssets 提供 14 类 Sound 和两类 Niagara 插槽；Grass/Hard 具有不同步频、音色与扬尘强度。
 - 高呼吸强度会产生独立 HorseBreath 节奏事件，正式循环/单次素材可直接替换程序化回退。
 - Horse Card 形成 Identity、Temperament、Capability、Name 四层，并增加明确的 Confirm Name 与 Replay Round 操作。
+- HorsePresentationComponent 输出 GaitPhase、StrideBlend、BodyBob/Pitch/Roll 和 FootContactPulse，供灰盒与未来 AnimBP 共用。
+- RiderPresentationData 输出骑乘、稳绳、落马、拖行、Balance、侧向拉力和身体姿态，正式 Rider AnimBP 可直接读取。
+- 命名成功后 Horse Card 自动收起并恢复游戏输入；最终结算显示四阶段统计、积分和 Replay。
 
 # Build Result
 
@@ -35,9 +38,9 @@ UHT、C++、UMG 编译与链接成功。没有修改引擎，也没有增加物�
 
 `Steppe.P13.FeedbackSignalsAndEvents` 覆盖步态节拍、疲劳呼吸、骑乘风感、扬尘脉冲、套索事件、风险事件和禁用音频时的确定性信号。P1–P12 回归继续通过。
 
-双地表冒烟先在草地完成骑乘与 Neck 附着，随后进入 HardSurface_TestPad；最终日志记录 `Surface=Hard / Hoofbeats=5 / LassoEvents=3`。正向完整路线仍将 `Saran` 牵回，通过新版 Horse Card 命名并以 Trial Success 结束。
+P13.3 侧视冒烟记录 `Sprint / Phase=0.45 / Stride=0.92 / Bob=-1.5 / HorseRoll=-6.0 / RiderRoll=-4.7 / Mounted=1`。正向完整路线仍将 `Saran` 牵回 416.2 cm，通过新版 Horse Card 命名，自动收卡并以无遮挡 Trial Success 结算结束。
 
-证据：`Validation/P13.2-Results.json`、`P13.2-Grass.png`、`P13.2-Hard.png`、`P13.2-HorseCard.png`、`P13.2-FullLoop.png` 和 `P13.2-Runs.txt`。原始日志为 `Saved/Logs/P13.2-Tests.log`、`P13.2-CreateSurfaceAssets.log`、`P13.2-Surface-Smoke.log` 与 `P13.2-FullLoop-Smoke.log`。
+证据：`Validation/P13.3-Results.json`、`P13.3-Presentation.png`、`P13.3-HorseCard.png`、`P13.3-Settlement.png` 和 `P13.3-Runs.txt`。原始日志为 `Saved/Logs/P13.3-Tests.log`、`P13.3-Presentation-Smoke.log` 与 `P13.3-FullLoop-Smoke.log`。
 
 # Manual Steps
 
@@ -55,7 +58,7 @@ UHT、C++、UMG 编译与链接成功。没有修改引擎，也没有增加物�
 
 # Next Recommended Work
 
-继续 P13.3：为既有插槽选择许可明确的马蹄、呼吸、绳索和 Niagara 资源，接入与真实骨架匹配的马/骑手 AnimBP，并整理任务提示与结算 UI。
+进入 P14 原型验证准备：记录每轮选择、失误、捕获耗时、Balance 风险、失败原因与重试；先用当前可复现灰盒完成内部多轮试玩。正式声音、Niagara 与骨架资源可在许可确定后沿现有接口并行替换。
 
 # Milestones
 
@@ -68,3 +71,4 @@ UHT、C++、UMG 编译与链接成功。没有修改引擎，也没有增加物�
 - 2026-09-14 P12.2：完成 Rider Balance、侧向负荷、落马、限时拖行和主动松绳恢复；17 项测试、两条 P12 渲染路线和完整闭环回归通过。
 - 2026-09-14 P13.1：完成独立反馈层、程序化占位音、马蹄/风感/呼吸、灰盒扬尘和动态绳索风险表现；18 项测试、P13 渲染和完整闭环回归通过。
 - 2026-09-14 P13.2：完成 Grass/Hard 实际物理材质路由、Sound/Niagara 资源插槽、呼吸事件和 Horse Card 层级；18 项测试、双地表渲染和完整闭环回归通过。
+- 2026-09-14 P13.3：完成连续步态相位、马匹/骑手姿态数据、灰盒表现与无重叠结算；18 项测试、侧视表现和完整闭环回归通过。

@@ -21,6 +21,7 @@ param(
     [switch]$LassoSkillSmoke,
     [switch]$BalanceSmoke,
     [switch]$FeedbackSmoke,
+    [switch]$PresentationSmoke,
     [ValidateRange(1,10000)][int]$ExpectedTests = 2
 )
 $ErrorActionPreference = 'Stop'
@@ -74,6 +75,10 @@ if ($BalanceSmoke) {
 if ($FeedbackSmoke) {
     if (!$Smoke -or !$Game) { throw 'FeedbackSmoke requires Game and Smoke.' }
     $editorArgs += '-SteppeLassoSmoke'; $editorArgs += '-SteppeLassoSkillSmoke'; $editorArgs += '-SteppeFeedbackSmoke'
+}
+if ($PresentationSmoke) {
+    if (!$Smoke -or !$Game) { throw 'PresentationSmoke requires Game and Smoke.' }
+    $editorArgs += '-SteppePresentationSmoke'
 }
 if ($RetrySmoke) { if (!$Smoke -or !$Game) { throw 'RetrySmoke requires Game and Smoke.' }; $editorArgs += '-SteppeRetrySmoke' }
 if ($Tests) { $editorArgs += '-TestExit=Automation Test Queue Empty'; $editorArgs += "-ReportExportPath=$PSScriptRoot\..\Saved\Automation" }
@@ -233,5 +238,14 @@ if ($FeedbackSmoke) {
     }
     if ($feedbackLog -notmatch 'Surface=ESteppeGroundSurface::Hard') { throw "P13 feedback smoke did not route the hard test pad; see $logPath" }
     Write-Output 'P13 feedback smoke: hoof cadence, movement ambience, rope events and visual feedback rendered.'
+}
+if ($PresentationSmoke) {
+    $presentationLog = Get-Content $logPath -Raw
+    $presentationPath = Join-Path $PSScriptRoot '..\Saved\Screenshots\SteppeP13Presentation.png'
+    if (!(Test-Path $presentationPath) -or (Get-Item $presentationPath).LastWriteTime -lt $runStarted) { throw "P13 presentation screenshot is missing or stale; see $logPath" }
+    if ($presentationLog -notmatch 'STEPPE_P13_PRESENTATION: Gait=EHorseGait::(Gallop|Sprint) Phase=0\.[0-9]+ Stride=0\.[1-9][0-9]* Bob=-?[0-9]+\.[0-9]+ Roll=-?[0-9]+\.[0-9]+ RiderRoll=-?[0-9]+\.[0-9]+ Mounted=1') {
+        throw "P13 presentation smoke did not produce a mounted moving pose; see $logPath"
+    }
+    Write-Output 'P13 presentation smoke: gait phase, stride, horse lean and rider pose rendered.'
 }
 Write-Output "Editor exited successfully. Log: $logPath"

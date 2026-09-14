@@ -17,6 +17,7 @@
 #include "Player/SteppePlayerController.h"
 #include "Input/Reply.h"
 #include "InputCoreTypes.h"
+#include "TimerManager.h"
 
 void UHorseNamingWidget::Configure(UHorseTrustComponent* InHorse)
 {
@@ -133,6 +134,12 @@ void UHorseNamingWidget::TryConfirm()
         return;
     }
     RefreshCard();
+    if (auto* PC=GetOwningPlayer<ASteppePlayerController>())
+    {
+        FTimerHandle CloseHandle;
+        GetWorld()->GetTimerManager().SetTimer(CloseHandle,FTimerDelegate::CreateWeakLambda(PC,[PC]()
+        { PC->CloseHorseNaming(); }),.9f,false);
+    }
 }
 
 void UHorseNamingWidget::HandleReplayClicked()

@@ -32,6 +32,12 @@ struct STEPPE_API FHorseAnimationData
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) bool IsGrounded = true;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) bool IsStumbling = false;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) float StaminaNormalized = 1.f;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) float GaitPhase = 0.f;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) float StrideBlend = 0.f;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) float BodyBob = 0.f;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) float BodyPitch = 0.f;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) float BodyRoll = 0.f;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) float FootContactPulse = 0.f;
 };
 
 namespace SteppeUnits

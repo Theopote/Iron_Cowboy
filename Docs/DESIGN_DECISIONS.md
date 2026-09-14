@@ -74,6 +74,11 @@ Rider 上的 SteppeFeedbackComponent 在既有 Gameplay 组件之后派生步频
 
 P13.2 将地表也作为只读表现输入：Physical Material 只选择 Grass/Hard 声音与粒子，不修改马匹运动。正式 SoundBase/NiagaraSystem 通过可编辑资源插槽覆盖程序化回退，资源缺失不会改变状态机或阻塞测试。
 
+## D-015 — 动画消费姿态数据，不拥有移动
+
+**状态：已确认**
+HorsePresentationComponent 在 HorseMovement 之后生成连续相位和身体姿态，RiderPresentationData 在骑乘、Lasso 与 Balance 之后生成骑手姿态。灰盒 StaticMesh 和未来 AnimBP 都只消费这些数据；Root Motion、Montage 或骨骼动画不得写回马匹的最终位置、速度、套索张力或事故结果。
+
 ## 待决策事项
 
 以下事项在对应里程碑开始前决定，不提前实现：

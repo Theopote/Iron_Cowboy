@@ -10,6 +10,7 @@
 #include "Character/Rider/RidingComponent.h"
 #include "Character/Rider/RiderBalanceComponent.h"
 #include "Feedback/SteppeFeedbackComponent.h"
+#include "Presentation/HorsePresentationComponent.h"
 #include "Lasso/LassoComponent.h"
 #include "Core/SteppeGameplayTags.h"
 #include "Game/SteppeTrialState.h"
@@ -503,6 +504,10 @@ bool FFeedbackSignalsTest::RunTest(const FString& Parameters)
     Wild->GetCharacterMovement()->SetComponentTickEnabled(false);
     Move->CurrentSpeed=1200.f;
     Move->Gait=EHorseGait::Gallop;
+    Mount->AnimationData.Gait=EHorseGait::Gallop;
+    Mount->AnimationData.NormalizedSpeed=.8f;
+    Mount->AnimationData.NormalizedAcceleration=.3f;
+    Mount->AnimationData.LeanAmount=.5f;
     Mount->Attributes->CurrentStamina=30.f;
     Fixture.Step(.65f);
     TestTrue(TEXT("Mounted gallop emits multiple hoofbeats"),Rider->Feedback->HoofbeatCount>=2);
@@ -510,6 +515,11 @@ bool FFeedbackSignalsTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Fatigue and speed drive breath feedback"),Rider->Feedback->BreathIntensity>.2f);
     TestEqual(TEXT("Prototype floor resolves to grass"),Rider->Feedback->GroundSurface,ESteppeGroundSurface::Grass);
     TestTrue(TEXT("Hoofbeats drive a dust pulse"),Rider->Feedback->DustPulse>0.f);
+    TestTrue(TEXT("Presentation advances a continuous gait phase"),Mount->AnimationData.GaitPhase>0.f);
+    TestTrue(TEXT("Presentation blends into the moving stride"),Mount->AnimationData.StrideBlend>.5f);
+    TestTrue(TEXT("Horse lean becomes a readable body roll"),Mount->AnimationData.BodyRoll<0.f);
+    TestTrue(TEXT("Rider exposes mounted presentation state"),Rider->PresentationData.bMounted);
+    TestTrue(TEXT("Rider follows the horse lean"),Rider->PresentationData.BodyRoll<0.f);
 
     TestTrue(TEXT("Isolated target can enter feedback swing"),Rider->Lasso->BeginAimForTarget(Wild,true));
     Fixture.Step(.55f);

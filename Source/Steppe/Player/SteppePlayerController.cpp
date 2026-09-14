@@ -40,3 +40,10 @@ void ASteppePlayerController::ShowHorseNaming(UHorseTrustComponent* Horse)
     SetInputMode(InputMode);
     NamingWidget->FocusNameInput();
 }
+
+void ASteppePlayerController::CloseHorseNaming()
+{
+    if (NamingWidget) { NamingWidget->RemoveFromParent(); NamingWidget=nullptr; }
+    bShowMouseCursor=false;
+    SetInputMode(FInputModeGameOnly());
+}

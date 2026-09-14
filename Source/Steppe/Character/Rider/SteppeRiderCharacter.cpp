@@ -24,7 +24,8 @@
 #include "AI/SteppeHerdManager.h"
 ASteppeRiderCharacter::ASteppeRiderCharacter()
 {
-    PrimaryActorTick.bCanEverTick=false;
+    PrimaryActorTick.bCanEverTick=true;
+    PrimaryActorTick.TickGroup=TG_PostUpdateWork;
     Riding=CreateDefaultSubobject<URidingComponent>(TEXT("Riding"));
     Lasso=CreateDefaultSubobject<ULassoComponent>(TEXT("Lasso"));
     Balance=CreateDefaultSubobject<URiderBalanceComponent>(TEXT("RiderBalance"));
@@ -41,10 +42,34 @@ ASteppeRiderCharacter::ASteppeRiderCharacter()
     RidingCamera=CreateDefaultSubobject<URidingCameraComponent>(TEXT("RidingCamera"));
     bUseControllerRotationYaw=false;
     GetCharacterMovement()->bOrientRotationToMovement=true; GetCharacterMovement()->MaxWalkSpeed=450;
-    auto* Body=CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PlaceholderRider")); Body->SetupAttachment(GetRootComponent());
-    Body->SetCollisionEnabled(ECollisionEnabled::NoCollision); Body->SetRelativeScale3D(FVector(.4f,.4f,1.2f));
+    PlaceholderRider=CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PlaceholderRider")); PlaceholderRider->SetupAttachment(GetRootComponent());
+    PlaceholderRider->SetCollisionEnabled(ECollisionEnabled::NoCollision); PlaceholderRider->SetRelativeScale3D(FVector(.4f,.4f,1.2f));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Shape(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
-    if (Shape.Succeeded()) { Body->SetStaticMesh(Shape.Object); }
+    if (Shape.Succeeded()) { PlaceholderRider->SetStaticMesh(Shape.Object); }
+}
+void ASteppeRiderCharacter::Tick(float Dt)
+{
+    Super::Tick(Dt);
+    const auto* Horse=Riding?Riding->GetHorse():nullptr;
+    PresentationData.bMounted=Horse!=nullptr;
+    PresentationData.bBracing=Lasso && Lasso->bBracing;
+    PresentationData.bFalling=Balance && Balance->State==ERiderBalanceState::Falling;
+    PresentationData.bDragged=Balance && Balance->State==ERiderBalanceState::Dragged;
+    PresentationData.BalanceRisk=Balance?FMath::Clamp(Balance->Balance/FMath::Max(.01f,Balance->FallThreshold),0.f,1.f):0.f;
+    PresentationData.PullSide=Balance?Balance->LateralPull:0.f;
+    float TargetPitch=Horse?-Horse->AnimationData.NormalizedAcceleration*4.f:0.f;
+    float TargetRoll=Horse?-Horse->AnimationData.LeanAmount*7.f:0.f;
+    if (PresentationData.bBracing) { TargetPitch-=7.f; TargetRoll-=PresentationData.PullSide*5.f; }
+    if (PresentationData.bFalling || PresentationData.bDragged) { TargetRoll=65.f; TargetPitch=-18.f; }
+    const float Response=PresentationData.bFalling?14.f:8.f;
+    PresentationData.BodyPitch=FMath::FInterpTo(PresentationData.BodyPitch,TargetPitch,Dt,Response);
+    PresentationData.BodyRoll=FMath::FInterpTo(PresentationData.BodyRoll,TargetRoll,Dt,Response);
+    PresentationData.SeatOffsetZ=Horse?Horse->AnimationData.BodyBob*.45f:0.f;
+    if (PlaceholderRider)
+    {
+        PlaceholderRider->SetRelativeLocation(FVector(0,0,PresentationData.SeatOffsetZ));
+        PlaceholderRider->SetRelativeRotation(FRotator(PresentationData.BodyPitch,0,PresentationData.BodyRoll));
+    }
 }
 void ASteppeRiderCharacter::EndPlay(const EEndPlayReason::Type Reason)
 {

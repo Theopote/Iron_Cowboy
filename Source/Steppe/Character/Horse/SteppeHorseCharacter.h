@@ -7,6 +7,7 @@
 class UHorseAttributeComponent;
 class UHorseLocomotionConfig;
 class UStaticMeshComponent;
+class UHorsePresentationComponent;
 UCLASS()
 class STEPPE_API ASteppeHorseCharacter : public ACharacter
 {
@@ -16,6 +17,7 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Horse") TObjectPtr<UHorseAttributeComponent> Attributes;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Horse") TObjectPtr<UHorseLocomotionConfig> LocomotionConfig;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Horse|Animation") FHorseAnimationData AnimationData;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Horse|Animation") TObjectPtr<UHorsePresentationComponent> Presentation;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Riding") FName RiderSocket = TEXT("RiderSeat");
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Riding") FTransform FallbackSeat = FTransform(FVector(0,0,110));
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Riding") TWeakObjectPtr<ACharacter> MountedRider;

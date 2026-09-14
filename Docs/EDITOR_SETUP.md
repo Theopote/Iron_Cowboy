@@ -52,7 +52,7 @@ BP_SteppeHorse 的 Attributes：速度上限、敏捷、BaseTurnRate、体力、
 
 将 Skeletal Mesh 指定给 BP_SteppeHorse 的 Mesh；在骨架中创建 `RiderSeat` Socket。没有 Socket 时使用 FallbackSeat，日志 Warning 为预期行为。移除或隐藏占位 StaticMesh 表现，保留胶囊体用于 P1 碰撞。
 
-在 `/Game/Steppe/Animation/Horses/ABP_Horse` 创建与模型骨架一致的 AnimBP，读取 Horse 的 AnimationData。使用速度、步态、加速、转向和 Lean 驱动表现，不能用动画直接替代运动计算。当前不提供最终马素材。
+在 `/Game/Steppe/Animation/Horses/ABP_Horse` 创建与模型骨架一致的 AnimBP，读取 Horse 的 AnimationData。使用 Speed、Gait、GaitPhase、StrideBlend、BodyBob/Pitch/Roll、FootContactPulse、Acceleration、Turn、Lean 和 Stamina 驱动表现，不能用动画直接替代运动计算。接入 Skeletal Mesh 后关闭 HorsePresentationComponent 的 `bAnimatePlaceholder`。骑手 AnimBP 读取 Rider.PresentationData 中的 Mounted、Bracing、Falling、Dragged、BalanceRisk、PullSide、BodyPitch/Roll 与 SeatOffsetZ。当前不提供最终骨架素材。
 
 ## P13 表面与表现资源
 

@@ -1,8 +1,8 @@
 # P13 垂直切片音画规格
 
-**状态：前两次增量已完成并验证**
+**状态：前三次增量已完成并验证**
 **依赖：P12**
-**当前范围：反馈信号层、双地表路由、可替换 Sound/Niagara 插槽、程序化回退、马蹄/尘土、绳索风险与 Horse Card 层级**
+**当前范围：反馈信号层、双地表路由、可替换 Sound/Niagara/AnimBP 接口、程序化回退、灰盒身体姿态、绳索风险、Horse Card 与结算层级**
 
 ## 目标
 
@@ -59,6 +59,18 @@ P13.2 已完成表现资源接入基础：
 
 P13.2 验证保持 **18 passed、0 failed**。实际冒烟先记录并显示 `Surface=Grass`，随后进入绑定 `PM_Hard` 的测试垫并记录 `Surface=Hard`；完整牵回、Horse Card、命名和 Trial Success 再次通过。证据位于 `Validation/P13.2-Results.json`、`P13.2-Grass.png`、`P13.2-Hard.png`、`P13.2-HorseCard.png`、`P13.2-FullLoop.png` 和 `P13.2-Runs.txt`。
 
-## P13.3 后续范围
+## P13.3 动画表现与结算层级
 
-选择许可明确的正式声音和 Niagara 资源填入现有插槽；接入与真实骨架匹配的马匹/骑手 AnimBP，并整理任务提示和结算 UI。所有表现仍只读取现有 Gameplay 状态。
+P13.3 已完成：
+
+- HorsePresentationComponent 在 Movement 之后派生连续 GaitPhase、StrideBlend、BodyBob、BodyPitch、BodyRoll 与 FootContactPulse。
+- 灰盒马身实际应用身体起伏、加减速俯仰与转向侧倾；关闭 `bAnimatePlaceholder` 后不会影响未来 Skeletal Mesh。
+- Rider 暴露 Mounted、Bracing、Falling、Dragged、BalanceRisk、PullSide、BodyPitch、BodyRoll 与 SeatOffsetZ，灰盒骑手同步坐骑起伏和受力姿态。
+- Horse Card 命名成功后保留短暂欢迎反馈，随后自动收起并恢复 GameOnly 输入。
+- 结算 HUD 分为 Round Result、核心结果、四阶段统计与 Score/Replay 四层。
+
+自动化保持 **18 passed、0 failed**。侧视冒烟记录 `Gait=Sprint / Phase=0.45 / Stride=0.92 / Bob=-1.5 / HorseRoll=-6.0 / RiderRoll=-4.7 / Mounted=1`；完整路线再次完成 `Saran / Travel=416.2 / Trial=Success`，Horse Card 正常收起并显示无遮挡结算。证据位于 `Validation/P13.3-Results.json`、`P13.3-Presentation.png`、`P13.3-HorseCard.png`、`P13.3-Settlement.png` 和 `P13.3-Runs.txt`。
+
+## 正式资产替换范围
+
+工程已经具备 Sound、Niagara 和 AnimBP 数据边界。后续选择许可明确的正式声音、粒子、马匹/骑手骨架与动画后填入现有接口；替换资源不得改写 Gameplay 运动或判定。
