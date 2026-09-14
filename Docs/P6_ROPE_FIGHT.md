@@ -22,7 +22,7 @@ P14.4 后，HUD 中央显示当前绳索动作、张力白色指针、绿色有�
 
 ## 验证
 
-`Steppe.P6.RopeFightTensionAndSubdue` 覆盖附着起点、空格稳绳、有效张力完成控制、Subdued Gameplay Tag、目标保持受控、释放后再次使用，以及绳距过长断绳并释放目标。
+`Steppe.P6.RopeFightTensionAndSubdue` 覆盖附着起点、空格稳绳、有效张力完成控制、Subdued Gameplay Tag、目标保持受控和释放后再次使用。P14.4 已将原有高张力计时断绳替换为持续牵引，并补充“高速分离 + 玩家端急减速”的冲击判断与徒步 Pulled 验证，详见 `P14.4_ROPE_PERSISTENCE.md`。
 
 ```powershell
 .\Scripts\RunEditor.ps1 -Tests -ExpectedTests 10 -Commands 'Automation RunTests Steppe' -LogName P6-Automation

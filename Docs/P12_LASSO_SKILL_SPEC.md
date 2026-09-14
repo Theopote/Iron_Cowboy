@@ -51,8 +51,8 @@
 ### Fall 与 Dragged
 
 - Fall 使用 RidingComponent 的事故脱离入口，一次性解除挂接、恢复 Rider 碰撞并施加确定性侧向/向上速度。
-- 若套索仍附着且目标在最大拖行距离内，Rider 进入最长 1.25 秒的 Dragged；CharacterMovement 按目标方向设置受限速度。
-- LMB 主动松绳立即结束 Dragged 并进入短暂 Recovering；达到最大时长也会自动松绳。
+- 若套索仍附着且目标在最大拖行距离内，Rider 进入限时 Dragged；CharacterMovement 按目标方向设置受限速度。
+- LMB 主动松绳立即结束 Dragged 并进入短暂 Recovering。P14.4 已将超时自动松绳改为站起后继续进入 Pulled 徒步控绳。
 - Recovering 结束后回到 Stable，可以继续步行和后续玩法；不销毁 Rider、坐骑或目标。
 
 ## 第二增量验收
@@ -78,7 +78,7 @@ P12 不实现物理套索绳、骨骼级精确缠绕、随机风偏、自动锁�
 
 - 新增 RiderBalanceComponent，在 PostPhysics 读取已计算的套索张力，并结合侧向比例、坐骑速度、目标 Strength 和命中区计算负荷。
 - Balance 达到 WarningThreshold 时给出红色预警；达到 FallThreshold 后通过 RidingComponent 事故入口解除挂接、恢复碰撞并进入 Falling/Dragged。
-- Dragged 最长 1.25 秒，移动由 CharacterMovement 处理；LMB 主动松绳或超时都会进入 Recovering，恢复后仍可步行和重新上马。
+- 此处记录的是 P12 初始行为；P14.4 将 Dragged 调整为 2 秒，并在结束后保留绳索进入 Pulled，详见 `P14.4_ROPE_PERSISTENCE.md`。
 - 新增 `Steppe.P12.BalanceFallAndDraggedRecovery`；最终 P1–P12 共 **17 passed、0 failed**，2 项因测试触发 RiderSeat 灰盒回退而带既有警告。
 - 实际渲染记录 `Dragged / Mounted=0 / Lasso=Attached / Balance=1.00 / Side=1.00`，随后主动 Release 进入双 Recovering；完整命名闭环继续成功。
 

@@ -17,6 +17,19 @@ Implementation
 Build and automation
   .\Scripts\Build.ps1 -EngineRoot 'C:\Program Files\Epic Games\UE_5.8'
   Result: succeeded.
-  .\Scripts\RunEditor.ps1 -Tests -ExpectedTests 19 -Commands 'Automation RunTests Steppe;Quit' -LogName 'P14.4-Rope-Persistence-Automation'
+  .\Scripts\RunEditor.ps1 -Tests -ExpectedTests 19 -Commands 'Automation RunTests Steppe;Quit' -LogName 'P14.4-Rope-Persistence-Automation-Final'
   Result: 19 passed, 0 failed, 3 existing RiderSeat fallback warnings.
   Updated coverage proves sustained high tension remains attached, shock needs both speed and deceleration, dragged recovery preserves the rope, and Pulled exposes its gameplay tag.
+
+Rendered balance smoke
+  .\Scripts\RunEditor.ps1 -Game -Render -Smoke -BalanceSmoke -Commands '' -LogName 'P14.4-Rope-Persistence-Balance'
+  Result: mounted side load forced a fall into Dragged; rope stayed attached; HUD showed Space control, LMB release and stand-up timer.
+  Screenshot: Docs/Validation/P14.4-Rope-Persistence-Dragged.png
+
+Windows Shipping
+  .\Scripts\PackageWindows.ps1 -EngineRoot 'C:\Program Files\Epic Games\UE_5.8' -Clean -Zip
+  Result: build/cook/stage/pak/archive succeeded; 506 packages cooked, 0 errors, 0 warnings.
+  ZIP: Packages/ProjectSTEPPE-Windows-20260914-2034.zip
+  Size: 314,325,561 bytes; 66 entries.
+  SHA256: 88654D010CE490FCF3CB8B04E56328E32888A27D2E8744FA93EBF295E6043396
+  Packaged short failure-route launch exited with code 0.
