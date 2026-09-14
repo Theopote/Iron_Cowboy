@@ -436,6 +436,36 @@ bool FLassoSkillTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Head amplifies tension more than torso"),HeadTension>Rider->Lasso->GetHitZoneTensionMultiplier());
     return true;
 }
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPhysicalLassoGeometryTest,"Steppe.P15.PhysicalLoopGeometryAndActualHit",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FPhysicalLassoGeometryTest::RunTest(const FString& Parameters)
+{
+    FWildTestWorld Fixture;
+    auto* Rider=Fixture.World->SpawnActor<ASteppeRiderCharacter>(FVector(0,0,100),FRotator::ZeroRotator);
+    auto* Desired=Fixture.World->SpawnActor<ASteppeWildHorseCharacter>(FVector(1400,500,100),FRotator::ZeroRotator);
+    auto* Actual=Fixture.World->SpawnActor<ASteppeWildHorseCharacter>(FVector(900,0,100),FRotator::ZeroRotator);
+    Fixture.Begin();
+    Rider->GetCharacterMovement()->SetComponentTickEnabled(false);
+    Desired->GetCharacterMovement()->SetComponentTickEnabled(false);
+    Actual->GetCharacterMovement()->SetComponentTickEnabled(false);
+
+    TestTrue(TEXT("Desired target starts the swing"),Rider->Lasso->BeginAimForTarget(Desired,true));
+    TestTrue(TEXT("Physical loop can be thrown"),Rider->Lasso->ThrowFrom(FVector(0,0,170),FVector::ForwardVector));
+    const FVector InitialNormal=Rider->Lasso->SwingPlaneNormal;
+    Fixture.Step(.1f);
+    TestEqual(TEXT("Loop remains in flight before reaching the nearer horse"),Rider->Lasso->State,ELassoState::Thrown);
+    TestTrue(TEXT("Gravity changes loop velocity and plane orientation"),Rider->Lasso->LoopVelocity.Z<Rider->Lasso->ThrowLift
+        && !Rider->Lasso->SwingPlaneNormal.Equals(InitialNormal,.001f));
+    TestTrue(TEXT("Loop radius opens during flight"),Rider->Lasso->LoopRadius>Rider->Lasso->MinimumLoopRadius);
+    TestTrue(TEXT("Loop axes remain perpendicular to its physical plane"),
+        FMath::Abs(FVector::DotProduct(Rider->Lasso->LoopAxisX,Rider->Lasso->SwingPlaneNormal))<.01f
+        && FMath::Abs(FVector::DotProduct(Rider->Lasso->LoopAxisY,Rider->Lasso->SwingPlaneNormal))<.01f);
+    Fixture.Step(.3f);
+    TestEqual(TEXT("Physical loop attaches to the horse actually inside it"),Rider->Lasso->State,ELassoState::Attached);
+    TestTrue(TEXT("Actual geometric hit replaces the Q desired target"),Rider->Lasso->Target.Get()==Actual);
+    TestTrue(TEXT("Actual horse enters lassoed behavior"),Actual->Brain->bLassoed);
+    TestFalse(TEXT("Q desired horse is not attached when the loop misses it"),Desired->Brain->bLassoed);
+    return true;
+}
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FRiderBalanceTest,"Steppe.P12.BalanceFallAndDraggedRecovery",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FRiderBalanceTest::RunTest(const FString& Parameters)
 {

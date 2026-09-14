@@ -1,6 +1,6 @@
 # 《套马的汉子》 / Project STEPPE
 
-UE **5.8.2** 的 C++ 骑乘游戏原型。当前处于 P14.4 真人试玩修复：默认 12 匹野马会保持共同逃跑方向和群体凝聚，并保留少量个体脱群；被套目标的挣扎速度会随每次有效紧绳持续下降，障碍可形成一个临时绳索弯折阻力点。徒步贴近持续稳绳可使其归顺并直接牵行，坐骑具有轻量近距离避障辅助。
+UE **5.8.2** 的 C++ 骑乘游戏原型。P14.3 真人阶段门已经通过，当前进入 P15 Physical Lasso v2：绳圈具有抛物线中心轨迹、空间平面、展开半径和角相位，实际马匹由环几何命中；视觉绳会随松紧呈现下垂或拉直。默认 12 匹野马保持共同逃跑方向和群体凝聚。
 
 ## 打开与试玩
 
@@ -47,7 +47,7 @@ UE **5.8.2** 的 C++ 骑乘游戏原型。当前处于 P14.4 真人试玩修复�
 ## 验证
 
 ```powershell
-.\Scripts\RunEditor.ps1 -Tests -ExpectedTests 21 -Commands 'Automation RunTests Steppe;Quit' -LogName P14.4-Tests
+.\Scripts\RunEditor.ps1 -Tests -ExpectedTests 22 -Commands 'Automation RunTests Steppe;Quit' -LogName P15-Tests
 .\Scripts\RunEditor.ps1 -Game -Render -Smoke -PresentationSmoke -Commands '' -LogName P14.4-Presentation-Smoke
 .\Scripts\RunEditor.ps1 -Game -Render -Smoke -FullLoopSmoke -Commands '' -LogName P14.4-FullLoop-Smoke
 ```
@@ -56,4 +56,4 @@ UE **5.8.2** 的 C++ 骑乘游戏原型。当前处于 P14.4 真人试玩修复�
 
 当前构建使用 V7 / Unreal5_8 IncludeOrder；因本机共享 PCH 编译停顿，模块禁用 PCH，构建脚本传入 `-NoUBA` 禁用 detouring。没有修改引擎安装。Editor 开启 Live Coding 时应先保存关闭再运行外部构建。
 
-后续开发先阅读 `Docs/GAME_DESIGN_VISION.md`、`Docs/DESIGN_BASELINE.md`、`Docs/PROTOTYPE_GDD.md` 和 `Docs/DEVELOPMENT_ROADMAP.md`。真实结果见 `Docs/DEVELOPMENT_STATUS.md`，工程分层见 `Docs/ARCHITECTURE.md`，本轮规则见 `Docs/P14.4_SURRENDER_AND_RIDER_AVOIDANCE.md`；下一步继续收集 P14.3 真人样本，用数据决定后续 Core Feel 修复。
+后续开发先阅读 `Docs/GAME_DESIGN_VISION.md`、`Docs/DESIGN_BASELINE.md`、`Docs/PROTOTYPE_GDD.md` 和 `Docs/DEVELOPMENT_ROADMAP.md`。真实结果见 `Docs/DEVELOPMENT_STATUS.md`，P14.3 结论见 `Docs/P14.3_GAMEPLAY_RESEARCH_REVIEW.md`，当前规则见 `Docs/P15_PHYSICAL_LASSO_V2.md`。

@@ -1,0 +1,26 @@
+Project STEPPE P15 Physical Lasso v2 validation
+Date: 2026-09-15
+Engine: Unreal Engine 5.8.2
+
+Build
+  .\Scripts\Build.ps1 -EngineRoot 'C:\Program Files\Epic Games\UE_5.8'
+  Result: SteppeEditor Win64 Development succeeded
+
+Automation
+  .\Scripts\RunEditor.ps1 -Tests -ExpectedTests 22 -Commands 'Automation RunTests Steppe;Quit' -LogName P15-Physical-Loop-Tests-Final
+  Result: 22 passed, 0 failed, 3 passed with existing RiderSeat fallback warnings
+
+Rendered gameplay
+  P15-Physical-Loop-Rendered-Smoke-Final: stable-window throw attached at Neck; spatial loop and segmented rope rendered
+  P15-Physical-Loop-Full-Loop-Smoke-1: capture, lead, delivery and naming completed
+
+Screenshots
+  Saved\Screenshots\SteppeP12Swing.png
+  Saved\Screenshots\SteppeP12LassoSkill.png
+
+Windows Shipping
+  Cook: 506 packages, 0 errors, 0 warnings
+  Launch smoke exit code: 0
+  ZIP: Packages\ProjectSTEPPE-Windows-20260915-0146.zip
+  Bytes: 314635391
+  SHA256: 743F4E42FF7F9E131A4C81BA9CAC75710379BDF5401C58834D2E7A9E6F809DA7

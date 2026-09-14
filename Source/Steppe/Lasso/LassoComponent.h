@@ -48,6 +48,12 @@ public:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lasso|Swing", meta=(ClampMin="0.1", ClampMax="1")) float UnstableRadiusMultiplier = .45f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lasso|Swing", meta=(ClampMin="0.1", ClampMax="1")) float UnstableSpeedMultiplier = .75f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lasso|Swing", meta=(ClampMin="0.1", ClampMax="1")) float UnstableRangeMultiplier = .8f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lasso|Physical Loop", meta=(ClampMin="10")) float MinimumLoopRadius = 24.f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lasso|Physical Loop", meta=(ClampMin="1")) float LoopPlaneThickness = 55.f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lasso|Physical Loop", meta=(ClampMin="0")) float LoopOpeningDistance = 500.f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lasso|Physical Loop") float ThrowLift = 180.f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lasso|Physical Loop") float LoopGravity = 980.f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lasso|Physical Loop", meta=(ClampMin="0")) float FlightSpinDegreesPerSecond = 240.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight", meta=(ClampMin="0.1")) float SubdueSeconds = 3.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight|On Foot", meta=(ClampMin="50")) float OnFootSurrenderDistance = 300.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight|On Foot", meta=(ClampMin="0.1")) float OnFootSurrenderSeconds = 2.5f;
@@ -74,6 +80,12 @@ public:
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso|Swing") float EffectiveCaptureRadius = 80.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso|Swing") float EffectiveThrowSpeed = 3200.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso|Swing") float EffectiveMaximumRange = 2600.f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso|Physical Loop") FVector SwingPlaneNormal = FVector::ForwardVector;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso|Physical Loop") FVector LoopAxisX = FVector::RightVector;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso|Physical Loop") FVector LoopAxisY = FVector::UpVector;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso|Physical Loop") FVector LoopVelocity = FVector::ZeroVector;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso|Physical Loop") float LoopRadius = 24.f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso|Physical Loop") float LoopAngularPhase = 0.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso|Hit Zone") ELassoHitZone HitZone = ELassoHitZone::None;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso") FString Feedback = TEXT("Select and isolate a target");
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso") TWeakObjectPtr<ASteppeWildHorseCharacter> Target;
@@ -99,4 +111,7 @@ private:
     void StartRecovery(const TCHAR* Message);
     void UpdateSwing(float DeltaSeconds);
     void UpdateRopeObstacle(float DeltaSeconds);
+    bool FindPhysicalLoopHit(const FVector& PreviousCenter, const FVector& NextCenter, ASteppeWildHorseCharacter*& OutHorse, FVector& OutHitLocation) const;
+    void AttachHorse(ASteppeWildHorseCharacter* Horse, const FVector& HitLocation);
+    void UpdateLoopAxes();
 };

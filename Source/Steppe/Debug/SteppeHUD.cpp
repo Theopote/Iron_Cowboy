@@ -115,19 +115,43 @@ void ASteppeHUD::DrawHUD()
             const float Stress=FMath::Clamp(Lasso->Tension/1.2f,0.f,1.f);
             const bool bUseful=Lasso->Tension>=Lasso->UsefulTensionMin && Lasso->Tension<=Lasso->UsefulTensionMax;
             const FColor RopeColor=Lasso->Tension>1.f?FColor::Red:(Lasso->Tension>.85f?FColor(255,96,20):(bUseful?FColor::Green:FColor::Yellow));
+            const float RopeSag=Lasso->State==ELassoState::Thrown?55.f:FMath::Lerp(95.f,5.f,Stress);
+            const float RopeThickness=4.f+Stress*8.f;
+            const auto DrawRopeSpan=[this,&RopeColor,RopeThickness](const FVector& Start, const FVector& End, float Sag)
+            {
+                constexpr int32 RopeSegments=18;
+                FVector Previous=Start;
+                for (int32 Segment=1; Segment<=RopeSegments; ++Segment)
+                {
+                    const float Alpha=static_cast<float>(Segment)/RopeSegments;
+                    const FVector Current=FMath::Lerp(Start,End,Alpha)-FVector::UpVector*(4.f*Alpha*(1.f-Alpha)*Sag);
+                    DrawDebugLine(GetWorld(),Previous,Current,RopeColor,false,0,0,RopeThickness);
+                    Previous=Current;
+                }
+            };
             if (Lasso->bRopeWrapped)
             {
-                DrawDebugLine(GetWorld(),Lasso->RopeStart,Lasso->RopeBendPoint,RopeColor,false,0,0,4.f+Stress*8.f);
-                DrawDebugLine(GetWorld(),Lasso->RopeBendPoint,Lasso->LoopLocation,RopeColor,false,0,0,4.f+Stress*8.f);
+                DrawRopeSpan(Lasso->RopeStart,Lasso->RopeBendPoint,RopeSag*.5f);
+                DrawRopeSpan(Lasso->RopeBendPoint,Lasso->LoopLocation,RopeSag*.5f);
                 DrawDebugSphere(GetWorld(),Lasso->RopeBendPoint,18.f,10,FColor(255,128,20),false,0,0,4.f);
             }
             else
             {
-                DrawDebugLine(GetWorld(),Lasso->RopeStart,Lasso->LoopLocation,RopeColor,false,0,0,4.f+Stress*8.f);
+                DrawRopeSpan(Lasso->RopeStart,Lasso->LoopLocation,RopeSag);
             }
             if (Lasso->State!=ELassoState::Captured)
             {
-                DrawDebugSphere(GetWorld(),Lasso->LoopLocation,Lasso->EffectiveCaptureRadius,16,RopeColor,false,0,0,4);
+                constexpr int32 PhysicalLoopSegments=32;
+                for (int32 Segment=0; Segment<PhysicalLoopSegments; ++Segment)
+                {
+                    const float A0=2.f*PI*Segment/PhysicalLoopSegments;
+                    const float A1=2.f*PI*(Segment+1)/PhysicalLoopSegments;
+                    const FVector P0=Lasso->LoopLocation+Lasso->LoopAxisX*(FMath::Cos(A0)*Lasso->LoopRadius)
+                        +Lasso->LoopAxisY*(FMath::Sin(A0)*Lasso->LoopRadius);
+                    const FVector P1=Lasso->LoopLocation+Lasso->LoopAxisX*(FMath::Cos(A1)*Lasso->LoopRadius)
+                        +Lasso->LoopAxisY*(FMath::Sin(A1)*Lasso->LoopRadius);
+                    DrawDebugLine(GetWorld(),P0,P1,RopeColor,false,0,0,6.f);
+                }
             }
         }
     }

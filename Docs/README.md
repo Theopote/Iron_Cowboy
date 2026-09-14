@@ -29,6 +29,8 @@
 - CORE_GAMEPLAY_AUDIT.md：已核实的核心体验技术债和 P14.3–P17 顺序。
 - Playtests/：匿名测试者说明、15 轮记录表和访谈模板。
 - P14.3_PACKAGING_AND_DISTRIBUTION.md：Win64 Shipping 一键打包、ZIP 分发和结果回收方法。
+- P14.3_GAMEPLAY_RESEARCH_REVIEW.md：累计真人反馈、阶段门结论与数据限制。
+- P15_PHYSICAL_LASSO_V2.md：三维绳圈、实际几何命中、动态绳线和当前限制。
 - DESIGN_DECISIONS.md：跨系统技术与产品决策。
 - References/：两份早期讨论 PDF 原件及使用说明。
 
@@ -48,4 +50,4 @@
 - DEVELOPMENT_STATUS.md：当前状态与最新验证。
 - Validation/：实际运行截图与精简结果。
 
-当前使用本机 UE 5.8.2。P14.2 组合式灰盒马和验证准备已完成；项目暂停横向功能，下一步为 P14.3 的 5 名测试者 × 3 轮人工试玩与数据分析。
+当前使用本机 UE 5.8.2。P14.3 真人阶段门已由项目负责人依据累计反馈确认通过，P14.4 高频 Core Feel 修复已完成；当前进入 P15 Physical Lasso v2。

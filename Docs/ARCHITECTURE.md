@@ -69,7 +69,7 @@ Q 输入经 Rider 转发到 PlayerController，再由 GameMode 的 HerdManager �
 
 ## P5：套索
 
-`ULassoComponent` 属于 Rider，接收 RMB/LMB 输入并维护 Stored、Aiming、Thrown、Attached、Subdued、Captured、Recovering。投掷每帧从上一位置到下一位置作连续球形扫掠，命中只接受 P4 当前隔离目标；HUD 绳线与命中圈不决定结果。Attached 通过 HorseBrain 的 Lassoed 状态让野马继续挣扎，并根据控绳进度逐渐降低逃跑速度。主动释放、脱靶、障碍、急停冲击、极端距离或目标销毁汇入恢复流程。状态同时通过 Native Gameplay Tags 暴露，便于后续动画、声音和网络表现读取。详细范围见 P5_LASSO.md。
+`ULassoComponent` 属于 Rider，接收 RMB/LMB 输入并维护 Stored、Aiming、Thrown、Attached、Subdued、Captured、Recovering。P15 后，投掷阶段推进带重力的 Loop Center，并维护 Swing Plane、Loop Radius、Angular Phase 与两条环轴；马体采样点进入环平面和半径范围时附着实际对象。Q 目标只负责关注、HUD 和隔离前置。Attached 通过 HorseBrain 的 Lassoed 状态让野马继续挣扎，并根据控绳进度逐渐降低逃跑速度。主动释放、脱靶、障碍、急停冲击、极端距离或目标销毁汇入恢复流程。状态同时通过 Native Gameplay Tags 暴露。详细范围见 P5_LASSO.md 与 P15_PHYSICAL_LASSO_V2.md。
 
 ## P6：绳索对抗
 
@@ -97,7 +97,7 @@ GameMode 持有轻量的 `FSteppeTrialProgress`，在玩家与马群完成生成
 
 ## P12 第一增量：摆绳与命中区域
 
-LassoComponent 在 Aiming 内累计时间，并用可编辑周期计算 SwingPhase 与 SwingStability。Throw 锁定 Stability，再得到本次 EffectiveCaptureRadius、EffectiveThrowSpeed 和 EffectiveMaximumRange；连续 Sweep 仍是唯一命中判定，稳定性不修改瞄准方向。命中目标后按 Actor 局部高度记录 Head、Neck 或 Torso，区域倍率进入张力和实际 SubdueSeconds。HUD 只读取稳定性、命中区与既有状态。未来替换为骨骼碰撞体时可改写区域分类，不需要修改绳索对抗接口。详见 P12_LASSO_SKILL_SPEC.md。
+LassoComponent 在 Aiming 内累计时间，并用可编辑周期计算 SwingPhase 与 SwingStability。Throw 锁定 Stability，再得到本次 EffectiveCaptureRadius、EffectiveThrowSpeed 和 EffectiveMaximumRange。P12 的连续 Sphere Sweep 已在 P15 被空间绳圈几何替代；稳定性仍决定本次环口、速度和射程。命中后记录 Head、Neck 或 Torso，区域倍率进入张力和实际 SubdueSeconds。未来替换为骨骼碰撞体时可改写采样来源，不需要修改绳索对抗接口。详见 P12_LASSO_SKILL_SPEC.md。
 
 ## P12 第二增量：骑手平衡、落马与拖行
 

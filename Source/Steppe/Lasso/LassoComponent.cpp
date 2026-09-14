@@ -7,6 +7,7 @@
 #include "Game/SteppeGameMode.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/World.h"
+#include "EngineUtils.h"
 #include "Core/SteppeGameplayTags.h"
 
 ULassoComponent::ULassoComponent()
@@ -78,6 +79,11 @@ bool ULassoComponent::ThrowFrom(FVector Origin, FVector Direction)
     EffectiveCaptureRadius=CaptureRadius*FMath::Lerp(UnstableRadiusMultiplier,1.f,LastThrowStability);
     EffectiveThrowSpeed=ThrowSpeed*FMath::Lerp(UnstableSpeedMultiplier,1.f,LastThrowStability);
     EffectiveMaximumRange=MaximumRange*FMath::Lerp(UnstableRangeMultiplier,1.f,LastThrowStability);
+    SwingPlaneNormal=ThrowDirection;
+    LoopVelocity=ThrowDirection*EffectiveThrowSpeed+FVector::UpVector*ThrowLift;
+    LoopRadius=MinimumLoopRadius;
+    LoopAngularPhase=SwingPhase*2.f*PI;
+    UpdateLoopAxes();
     TravelDistance=0.f;
     ControlProgress=0.f;
     OnFootSurrenderProgress=0.f;
@@ -223,6 +229,78 @@ void ULassoComponent::UpdateSwing(float Dt)
         (SwingStability>=.8f?TEXT("Stable window - throw now"):TEXT("Swinging - wait for the loop to open"));
 }
 
+void ULassoComponent::UpdateLoopAxes()
+{
+    const FVector Normal=SwingPlaneNormal.GetSafeNormal(KINDA_SMALL_NUMBER,FVector::ForwardVector);
+    FVector BaseX=FVector::CrossProduct(FVector::UpVector,Normal).GetSafeNormal();
+    if (BaseX.IsNearlyZero()) { BaseX=FVector::RightVector; }
+    const FVector BaseY=FVector::CrossProduct(Normal,BaseX).GetSafeNormal();
+    LoopAxisX=BaseX.RotateAngleAxis(FMath::RadiansToDegrees(LoopAngularPhase),Normal);
+    LoopAxisY=BaseY.RotateAngleAxis(FMath::RadiansToDegrees(LoopAngularPhase),Normal);
+}
+
+bool ULassoComponent::FindPhysicalLoopHit(const FVector& PreviousCenter, const FVector& NextCenter,
+    ASteppeWildHorseCharacter*& OutHorse, FVector& OutHitLocation) const
+{
+    OutHorse=nullptr;
+    OutHitLocation=FVector::ZeroVector;
+    UWorld* World=GetWorld();
+    if (!World) { return false; }
+    const FVector Segment=NextCenter-PreviousCenter;
+    const float SegmentLengthSquared=Segment.SizeSquared();
+    float BestAlong=BIG_NUMBER;
+    for (TActorIterator<ASteppeWildHorseCharacter> It(World); It; ++It)
+    {
+        ASteppeWildHorseCharacter* Horse=*It;
+        if (!IsValid(Horse) || !Horse->Brain || Horse->Brain->bCaptured) { continue; }
+        const FVector Forward=Horse->GetActorForwardVector();
+        const FVector Samples[] =
+        {
+            Horse->GetActorLocation()+FVector(0,0,38.f),
+            Horse->GetActorLocation()+Forward*105.f+FVector(0,0,72.f),
+            Horse->GetActorLocation()+Forward*175.f+FVector(0,0,105.f)
+        };
+        for (const FVector& Sample : Samples)
+        {
+            const float Along=SegmentLengthSquared>SMALL_NUMBER
+                ?FMath::Clamp(FVector::DotProduct(Sample-PreviousCenter,Segment)/SegmentLengthSquared,0.f,1.f):0.f;
+            const FVector Center=FMath::Lerp(PreviousCenter,NextCenter,Along);
+            const FVector Relative=Sample-Center;
+            const float PlaneDistance=FMath::Abs(FVector::DotProduct(Relative,SwingPlaneNormal));
+            const FVector InPlane=Relative-SwingPlaneNormal*FVector::DotProduct(Relative,SwingPlaneNormal);
+            if (PlaneDistance<=LoopPlaneThickness && InPlane.Size()<=LoopRadius && Along<BestAlong)
+            {
+                BestAlong=Along;
+                OutHorse=Horse;
+                OutHitLocation=Sample;
+            }
+        }
+    }
+    return OutHorse!=nullptr;
+}
+
+void ULassoComponent::AttachHorse(ASteppeWildHorseCharacter* Horse, const FVector& HitLocation)
+{
+    if (!Horse) { return; }
+    Target=Horse;
+    bTargetIsolated=true;
+    State=ELassoState::Attached;
+    HitZone=ClassifyHitZone(Horse,HitLocation);
+    LoopLocation=Horse->GetActorLocation()+FVector(0,0,90);
+    RopeLength=FMath::Max(200.f,FVector::Dist(RopeStart,LoopLocation)-120.f);
+    Tension=120.f/FMath::Max(10.f,TensionRange)*GetHitZoneTensionMultiplier();
+    ShockLoad=0.f;
+    ShockRiskSeconds=0.f;
+    bShockRisk=false;
+    bHadAnchorSample=false;
+    OnFootSurrenderProgress=0.f;
+    bRopeWrapped=false;
+    RopeBendPoint=FVector::ZeroVector;
+    RopeWrapClearTime=0.f;
+    Horse->Brain->SetLassoed(true);
+    Feedback=FString::Printf(TEXT("%s PHYSICAL LOOP - Left Mouse to release"),*UEnum::GetDisplayValueAsText(HitZone).ToString().ToUpper());
+}
+
 void ULassoComponent::UpdateRopeObstacle(float Dt)
 {
     auto* Horse=Target.Get();
@@ -351,44 +429,43 @@ void ULassoComponent::TickComponent(float Dt, ELevelTick TickType, FActorCompone
     if (State!=ELassoState::Thrown) { return; }
     if (!Target.IsValid()) { StartRecovery(TEXT("Target lost")); return; }
 
-    const float Step=FMath::Min(EffectiveThrowSpeed*Dt,EffectiveMaximumRange-TravelDistance);
     const FVector Previous=LoopLocation;
-    const FVector Next=Previous+ThrowDirection*FMath::Max(0.f,Step);
+    const float RemainingRange=FMath::Max(0.f,EffectiveMaximumRange-TravelDistance);
+    const float RequestedStep=LoopVelocity.Size()*Dt;
+    const float StepScale=RequestedStep>SMALL_NUMBER?FMath::Min(1.f,RemainingRange/RequestedStep):0.f;
+    const float StepTime=Dt*StepScale;
+    const FVector Gravity(0,0,-LoopGravity);
+    const FVector Next=Previous+LoopVelocity*StepTime+Gravity*(.5f*StepTime*StepTime);
+    LoopVelocity+=Gravity*StepTime;
+    SwingPlaneNormal=LoopVelocity.GetSafeNormal(KINDA_SMALL_NUMBER,SwingPlaneNormal);
+    LoopAngularPhase=FMath::Fmod(LoopAngularPhase+FMath::DegreesToRadians(FlightSpinDegreesPerSecond)*StepTime,2.f*PI);
+    LoopRadius=FMath::Lerp(MinimumLoopRadius,EffectiveCaptureRadius,
+        FMath::Clamp((TravelDistance+FVector::Dist(Previous,Next))/FMath::Max(1.f,LoopOpeningDistance),0.f,1.f));
+    UpdateLoopAxes();
     FCollisionQueryParams Params(SCENE_QUERY_STAT(SteppeLasso),false,GetOwner());
     if (const auto* Rider=Cast<ASteppeRiderCharacter>(GetOwner()))
     {
         if (Rider->Riding && Rider->Riding->GetHorse()) { Params.AddIgnoredActor(Rider->Riding->GetHorse()); }
     }
-    FCollisionObjectQueryParams Pawns;
-    Pawns.AddObjectTypesToQuery(ECC_Pawn);
-    Pawns.AddObjectTypesToQuery(ECC_WorldStatic);
-    Pawns.AddObjectTypesToQuery(ECC_WorldDynamic);
+    FCollisionObjectQueryParams Obstacles;
+    Obstacles.AddObjectTypesToQuery(ECC_WorldStatic);
+    Obstacles.AddObjectTypesToQuery(ECC_WorldDynamic);
     FHitResult Hit;
-    if (GetWorld()->SweepSingleByObjectType(Hit,Previous,Next,FQuat::Identity,Pawns,FCollisionShape::MakeSphere(EffectiveCaptureRadius),Params))
+    if (GetWorld()->LineTraceSingleByObjectType(Hit,Previous,Next,Obstacles,Params))
     {
         LoopLocation=Hit.ImpactPoint;
-        if (Hit.GetActor()==Target.Get())
-        {
-            State=ELassoState::Attached;
-            HitZone=ClassifyHitZone(Target.Get(),Hit.ImpactPoint);
-            RopeLength=FMath::Max(200.f,FVector::Dist(RopeStart,LoopLocation)-120.f);
-            Tension=120.f/FMath::Max(10.f,TensionRange)*GetHitZoneTensionMultiplier();
-            ShockLoad=0.f;
-            ShockRiskSeconds=0.f;
-            bShockRisk=false;
-            bHadAnchorSample=false;
-            OnFootSurrenderProgress=0.f;
-            bRopeWrapped=false;
-            RopeBendPoint=FVector::ZeroVector;
-            RopeWrapClearTime=0.f;
-            Target->Brain->SetLassoed(true);
-            Feedback=FString::Printf(TEXT("%s LOOP - Left Mouse to release"),*UEnum::GetDisplayValueAsText(HitZone).ToString().ToUpper());
-        }
-        else { StartRecovery(TEXT("Lasso blocked - recovering")); }
+        StartRecovery(TEXT("Lasso blocked - recovering"));
+        return;
+    }
+    ASteppeWildHorseCharacter* CaughtHorse=nullptr;
+    FVector PhysicalHitLocation=FVector::ZeroVector;
+    if (FindPhysicalLoopHit(Previous,Next,CaughtHorse,PhysicalHitLocation))
+    {
+        AttachHorse(CaughtHorse,PhysicalHitLocation);
         return;
     }
     LoopLocation=Next;
-    TravelDistance+=Step;
+    TravelDistance+=FVector::Dist(Previous,Next);
     if (TravelDistance>=EffectiveMaximumRange-KINDA_SMALL_NUMBER) { StartRecovery(TEXT("Missed - recovering")); }
 }
 
