@@ -25,6 +25,7 @@ public:
     UFUNCTION(BlueprintCallable, Category="Herd") void SetFocusedHorse(ASteppeWildHorseCharacter* Horse);
     UFUNCTION(BlueprintCallable, Category="Herd") void ClearFocusedHorse();
     UFUNCTION(BlueprintCallable, Category="Capture") bool RegisterCapturedHorse(ASteppeWildHorseCharacter* Horse);
+    bool AcceptRopeSurrender(ASteppeWildHorseCharacter* Horse, ASteppeRiderCharacter* Rider);
     UFUNCTION(BlueprintCallable, Category="Capture") bool HandleFirstContactInteraction(ASteppeRiderCharacter* Rider);
     UFUNCTION(BlueprintCallable, Category="Capture") bool ConfirmDeliveredHorseName(AActor* HorseActor, const FString& NewName);
     void SetDeliveryZone(ASteppeDeliveryZone* Zone);

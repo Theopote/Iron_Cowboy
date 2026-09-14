@@ -53,10 +53,12 @@ void ASteppeHUD::DrawHUD()
             const bool bGreen=bCaptureComplete || (Lasso->Tension>=Lasso->UsefulTensionMin && Lasso->Tension<=Lasso->UsefulTensionMax);
             const FLinearColor TensionColor=Lasso->bShockRisk?FLinearColor(1.f,.05f,.03f):(bGreen?FLinearColor(.3f,1.f,.3f):FLinearColor(1.f,.3f,.15f));
             DrawRect(FLinearColor(0,0,0,.6f),LassoX-6,73,558,43);
-            const FString FightText=bCaptureComplete?TEXT("CAPTURE COMPLETE | LMB stow lasso"):
-                FString::Printf(TEXT("%s | TENSION %.0f%% %s | CONTROL %.0f%%"),
+            const float CalmDisplay=FMath::Max(Lasso->ControlProgress,Lasso->OnFootSurrenderProgress);
+            const FString FightText=bCaptureComplete?TEXT("HORSE SURRENDERED | LEAD TO CAMP"):
+                FString::Printf(TEXT("%s | TENSION %.0f%% %s | %s %.0f%%"),
                     *UEnum::GetDisplayValueAsText(Lasso->HitZone).ToString().ToUpper(),Lasso->Tension*100.f,
-                    Lasso->bShockRisk?TEXT("SUDDEN JOLT"):(bGreen?TEXT("STEADY"):TEXT("ADJUST")),Lasso->ControlProgress*100.f);
+                    Lasso->bShockRisk?TEXT("SUDDEN JOLT"):(bGreen?TEXT("STEADY"):TEXT("ADJUST")),
+                    Lasso->OnFootSurrenderProgress>0.f?TEXT("SURRENDER"):TEXT("CONTROL"),CalmDisplay*100.f);
             DrawText(FightText,TensionColor,LassoX,78,nullptr,1.f);
             DrawRect(FLinearColor(.12f,.12f,.12f,1),LassoX,99,520,8);
             DrawRect(FLinearColor(.3f,.8f,1.f,1),LassoX,99,520*Lasso->ControlProgress,8);
@@ -290,9 +292,25 @@ void ASteppeHUD::DrawHUD()
                 }
                 else if (Rider && Rider->Balance && Rider->Balance->State==ERiderBalanceState::Pulled)
                 {
-                    ActionTitle=TEXT("HORSE IS PULLING YOU  |  RUN WITH IT");
-                    ActionDetail=TEXT("Keep Space held and guide the tension into green  |  LMB releases");
-                    ActionColor=FLinearColor(1.f,.32f,.06f);
+                    const float Distance=Lasso->Target.IsValid()?FVector::Dist2D(Rider->GetActorLocation(),Lasso->Target->GetActorLocation()):BIG_NUMBER;
+                    if (Distance<=Lasso->OnFootSurrenderDistance && Lasso->bBracing)
+                    {
+                        ActionTitle=FString::Printf(TEXT("STAY CLOSE  |  HORSE SURRENDERING %.0f%%"),Lasso->OnFootSurrenderProgress*100.f);
+                        ActionDetail=TEXT("Keep Space held until the horse accepts the lead rope");
+                        ActionColor=FLinearColor(.25f,1.f,.3f);
+                    }
+                    else if (Distance<=Lasso->OnFootSurrenderDistance)
+                    {
+                        ActionTitle=TEXT("CLOSE ENOUGH  |  HOLD [ SPACE ]");
+                        ActionDetail=TEXT("Match the horse's movement and hold the rope steady to make it surrender");
+                        ActionColor=FLinearColor(1.f,.72f,.12f);
+                    }
+                    else
+                    {
+                        ActionTitle=TEXT("HORSE IS PULLING YOU  |  GET WITHIN 3 M");
+                        ActionDetail=TEXT("Run with it, move close, then hold Space to make it surrender");
+                        ActionColor=FLinearColor(1.f,.32f,.06f);
+                    }
                 }
                 else if (Lasso->bShockRisk)
                 {
@@ -344,6 +362,13 @@ void ASteppeHUD::DrawHUD()
                 ActionDetail=TEXT("Follow the marked horse and prepare another throw");
                 ActionColor=bBroke?FLinearColor(1.f,.1f,.04f):FLinearColor(1.f,.62f,.12f);
             }
+            else if (Lasso && Lasso->State==ELassoState::Captured && Lasso->Target.IsValid()
+                && Lasso->Target->Trust && Lasso->Target->Trust->State==EPostCaptureState::Leading)
+            {
+                ActionTitle=TEXT("HORSE SURRENDERED  |  LEAD IT TO CAMP");
+                ActionDetail=TEXT("Walk toward CAMP / PEN; the horse will now follow you");
+                ActionColor=FLinearColor(.25f,1.f,.3f);
+            }
             if (!ActionTitle.IsEmpty())
             {
                 const float CardW=FMath::Min(760.f,Canvas->ClipX-36.f);
@@ -367,9 +392,9 @@ void ASteppeHUD::DrawHUD()
                         BarW*((Lasso->UsefulTensionMax-Lasso->UsefulTensionMin)/1.2f),12.f);
                     const float MarkerX=BarX+BarW*FMath::Clamp(Lasso->Tension/1.2f,0.f,1.f);
                     DrawRect(FLinearColor::White,MarkerX-3.f,TensionY-4.f,6.f,20.f);
-                    DrawText(TEXT("CALMING"),FLinearColor::White,CardX+22.f,ControlY-4.f,nullptr,.85f);
+                    DrawText(Lasso->OnFootSurrenderProgress>0.f?TEXT("SURRENDER"):TEXT("CALMING"),FLinearColor::White,CardX+22.f,ControlY-4.f,nullptr,.85f);
                     DrawRect(FLinearColor(.13f,.13f,.13f,1.f),BarX,ControlY,BarW,12.f);
-                    DrawRect(FLinearColor(.2f,.65f,1.f,1.f),BarX,ControlY,BarW*Lasso->ControlProgress,12.f);
+                    DrawRect(FLinearColor(.2f,.65f,1.f,1.f),BarX,ControlY,BarW*FMath::Max(Lasso->ControlProgress,Lasso->OnFootSurrenderProgress),12.f);
                 }
             }
 

@@ -30,10 +30,21 @@ public:
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Horse") EHorseGait Gait = EHorseGait::Idle;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Horse") EHorseMovementState HorseState = EHorseMovementState::Grounded;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Horse", meta=(ClampMin="0",ClampMax="2")) float SurfaceMovementMultiplier = 1.f;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Riding|Avoidance", meta=(ClampMin="100")) float RiderObstacleProbeDistance = 550.f;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Riding|Avoidance", meta=(ClampMin="10")) float RiderObstacleProbeRadius = 55.f;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Riding|Avoidance", meta=(ClampMin="5",ClampMax="80")) float RiderAvoidanceAngle = 32.f;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Riding|Avoidance", meta=(ClampMin="0",ClampMax="1")) float RiderAvoidanceStrength = .65f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Riding|Avoidance") bool bRiderAvoidingObstacle = false;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Riding|Avoidance") float RiderAvoidanceTurn = 0.f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Riding|Avoidance") float RiderObstacleDistance = 0.f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Riding|Avoidance") float RiderAvoidanceSpeedScale = 1.f;
 private:
     void UpdateResponse(float DeltaTime, ASteppeHorseCharacter& Horse);
+    void ApplyRiderObstacleAvoidance(ASteppeHorseCharacter& Horse);
+    bool ProbeRiderPath(ASteppeHorseCharacter& Horse, FVector Direction, float Distance, FHitResult* Hit=nullptr) const;
     bool bRiderSource = true;
     bool bExhausted = false;
     float ResponseForward = 0.f;
     float ResponseTurn = 0.f;
+    float PreviousAvoidanceTurn = 1.f;
 };

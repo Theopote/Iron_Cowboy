@@ -3,6 +3,8 @@
 #include "Character/Horse/HorseAttributeComponent.h"
 #include "Character/Horse/HorseLocomotionConfig.h"
 #include "Character/Horse/HorseLocomotionMath.h"
+#include "Components/CapsuleComponent.h"
+#include "Engine/World.h"
 
 UHorseMovementComponent::UHorseMovementComponent()
 {
@@ -27,6 +29,7 @@ void UHorseMovementComponent::SetHorseIntent(const FHorseMovementIntent& Intent)
 void UHorseMovementComponent::ClearIntent()
 {
     RiderIntent.Reset(); HorseIntent=FHorseMovementIntent(); ResponseForward=ResponseTurn=0.f; bRiderSource=true;
+    bRiderAvoidingObstacle=false; RiderAvoidanceTurn=0.f; RiderObstacleDistance=0.f; RiderAvoidanceSpeedScale=1.f;
 }
 void UHorseMovementComponent::UpdateResponse(float Dt, ASteppeHorseCharacter& Horse)
 {
@@ -44,12 +47,70 @@ void UHorseMovementComponent::UpdateResponse(float Dt, ASteppeHorseCharacter& Ho
         const EHorseGait Request=(RiderIntent.bSprint && !bExhausted)?EHorseGait::Sprint:EHorseGait::Gallop;
         HorseIntent.DesiredSpeed=ResponseForward*FMath::Max(0.f,C.GetGait(Request).TargetSpeed);
         HorseIntent.RequestedGait=SteppeHorseMath::SelectGait(HorseIntent.DesiredSpeed,HorseIntent.RequestedGait,C);
+        ApplyRiderObstacleAvoidance(Horse);
+    }
+    else
+    {
+        bRiderAvoidingObstacle=false;
+        RiderAvoidanceTurn=0.f;
+        RiderObstacleDistance=0.f;
+        RiderAvoidanceSpeedScale=1.f;
     }
     // The response boundary also accepts future non-rider intents. No AI is implemented here.
     float Limit=FMath::Max(0.f,A.MaxSpeed);
     if (bExhausted) { Limit=FMath::Min(Limit,FMath::Max(0.f,C.GetGait(EHorseGait::Gallop).TargetSpeed)); }
     DesiredSpeed=HorseIntent.BrakeStrength>0.f?0.f:FMath::Clamp(HorseIntent.DesiredSpeed*FMath::Clamp(SurfaceMovementMultiplier,0.f,2.f),0.f,Limit);
     MaxWalkSpeed=FMath::Max(1.f,A.MaxSpeed);
+}
+
+bool UHorseMovementComponent::ProbeRiderPath(ASteppeHorseCharacter& Horse, FVector Direction, float Distance, FHitResult* OutHit) const
+{
+    UWorld* World=Horse.GetWorld();
+    if (!World || Direction.IsNearlyZero()) { return false; }
+    const float HalfHeight=Horse.GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+    const FVector Start=Horse.GetActorLocation()+FVector(0,0,FMath::Min(80.f,HalfHeight*.65f));
+    const FVector End=Start+Direction.GetSafeNormal2D()*Distance;
+    FCollisionQueryParams Params(SCENE_QUERY_STAT(SteppeRiderAvoidance),false,&Horse);
+    if (Horse.MountedRider.IsValid()) { Params.AddIgnoredActor(Horse.MountedRider.Get()); }
+    FHitResult LocalHit;
+    const bool bHit=World->SweepSingleByChannel(LocalHit,Start,End,FQuat::Identity,ECC_Visibility,
+        FCollisionShape::MakeSphere(RiderObstacleProbeRadius),Params);
+    if (OutHit) { *OutHit=LocalHit; }
+    return bHit;
+}
+
+void UHorseMovementComponent::ApplyRiderObstacleAvoidance(ASteppeHorseCharacter& Horse)
+{
+    bRiderAvoidingObstacle=false;
+    RiderAvoidanceTurn=0.f;
+    RiderObstacleDistance=0.f;
+    RiderAvoidanceSpeedScale=1.f;
+    if (HorseIntent.DesiredSpeed<10.f || RiderIntent.Forward<=0.f) { return; }
+
+    const float SpeedProbe=FMath::Clamp(Velocity.Size2D()*.25f,0.f,RiderObstacleProbeDistance*.6f);
+    const float ProbeDistance=RiderObstacleProbeDistance+SpeedProbe;
+    const FVector Intended=Horse.GetActorForwardVector().RotateAngleAxis(RiderIntent.Turn*15.f,FVector::UpVector).GetSafeNormal2D();
+    FHitResult CenterHit;
+    if (!ProbeRiderPath(Horse,Intended,ProbeDistance,&CenterHit)) { return; }
+
+    const FVector Left=Intended.RotateAngleAxis(-RiderAvoidanceAngle,FVector::UpVector);
+    const FVector Right=Intended.RotateAngleAxis(RiderAvoidanceAngle,FVector::UpVector);
+    const bool bLeftClear=!ProbeRiderPath(Horse,Left,ProbeDistance*.85f);
+    const bool bRightClear=!ProbeRiderPath(Horse,Right,ProbeDistance*.85f);
+    float Assist=PreviousAvoidanceTurn;
+    if (RiderIntent.Turn<-.15f && bLeftClear) { Assist=-1.f; }
+    else if (RiderIntent.Turn>.15f && bRightClear) { Assist=1.f; }
+    else if (bLeftClear!=bRightClear) { Assist=bRightClear?1.f:-1.f; }
+    else if (!bLeftClear && !bRightClear) { Assist=CenterHit.ImpactNormal.Dot(Horse.GetActorRightVector())>0.f?-1.f:1.f; }
+    PreviousAvoidanceTurn=Assist;
+    RiderAvoidanceTurn=Assist;
+    RiderObstacleDistance=ProbeDistance*CenterHit.Time;
+    bRiderAvoidingObstacle=true;
+    const float AvoidanceBlend=RiderAvoidanceStrength*FMath::Lerp(.35f,1.f,1.f-FMath::Abs(HorseIntent.DesiredTurn));
+    HorseIntent.DesiredTurn=FMath::Clamp(FMath::Lerp(HorseIntent.DesiredTurn,Assist,AvoidanceBlend),-1.f,1.f);
+    RiderAvoidanceSpeedScale=FMath::Lerp(.35f,.8f,FMath::Clamp(CenterHit.Time,0.f,1.f));
+    HorseIntent.DesiredSpeed*=RiderAvoidanceSpeedScale;
+    if (!bLeftClear && !bRightClear) { HorseIntent.BrakeStrength=FMath::Max(HorseIntent.BrakeStrength,.65f); }
 }
 void UHorseMovementComponent::TickComponent(float Dt, ELevelTick TickType, FActorComponentTickFunction* TickFunction)
 {

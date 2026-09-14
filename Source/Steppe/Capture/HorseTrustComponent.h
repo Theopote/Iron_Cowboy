@@ -21,6 +21,7 @@ public:
     void AdvanceApproach(float DeltaSeconds, float Distance, float ApproachSpeed, bool bRiderMounted);
     bool TryFirstContact(ASteppeRiderCharacter* Rider);
     bool BeginLeading(ASteppeRiderCharacter* Rider);
+    bool AcceptRopeSurrender(ASteppeRiderCharacter* Rider);
     bool MarkDelivered(ASteppeRiderCharacter* Rider);
     bool ConfirmName(const FString& NewName);
     void InitializeIdentity(int32 MemberIndex);

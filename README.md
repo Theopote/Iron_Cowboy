@@ -1,6 +1,6 @@
 # 《套马的汉子》 / Project STEPPE
 
-UE **5.8.2** 的 C++ 骑乘游戏原型。当前已完成 P13.3：骑手可驱赶具有 Fast、Strong、Nervous 行为差异的马群，切出目标，在摆绳稳定窗口投掷并处理失衡风险；Grass/Hard 反馈、可替换 Sound/Niagara/AnimBP 接口、马匹与骑手灰盒姿态、Horse Card 和分层结算已接入，完整安抚、牵回与命名流程保持可玩。
+UE **5.8.2** 的 C++ 骑乘游戏原型。当前处于 P14.4 真人试玩修复：骑手可驱赶具有 Fast、Strong、Nervous 行为差异的马群，切出目标，在摆绳稳定窗口投掷并处理张力、失衡和拖行；徒步贴近被套野马持续稳绳可使其归顺并直接牵行，坐骑具有轻量近距离避障辅助。Grass/Hard 反馈、可替换 Sound/Niagara/AnimBP 接口、Horse Card 和分层结算已接入，完整安抚、牵回与命名流程保持可玩。
 
 ## 打开与试玩
 
@@ -25,16 +25,18 @@ UE **5.8.2** 的 C++ 骑乘游戏原型。当前已完成 P13.3：骑手可驱�
 | 鼠标 | 独立自由观察，不改变马朝向 |
 | 左 Shift + W | 请求 Sprint；受体力限制 |
 | 左 Ctrl | 强制动 |
-| E | 上马 / 下马；捕获后完成第一次接触，再按一次 E 建立牵行 |
+| E | 上马 / 下马；常规捕获后完成第一次接触，再按一次 E 建立牵行 |
 | Q | 选择视线前方的野马；再次选择同一匹可取消 |
 | 鼠标右键 | 隔离目标后按住摆绳；观察 OPEN 稳定窗口 |
 | 鼠标左键 | 摆绳时投掷；附着、落马或拖行时主动释放 |
-| 空格 | 套中后按住稳绳，在有效张力区间累计控制进度 |
+| 空格 | 套中后按住稳绳；徒步靠近 3 米内保持约 2.5 秒可使野马归顺并直接牵行 |
 | C | 目标达到 Subdued 后确认捕获 |
 | F1 | 显示 / 隐藏马遥测 |
 | F2 | 重试当前场景 |
 
 松开 W 自然减速。Walk/Trot/Canter/Gallop/Sprint 根据实际速度和滞回计算，不是瞬间换挡。上下马切换 Enhanced Input Context。
+
+骑乘时马匹会探测正前方及左右前方的近距离障碍，轻微辅助转向并降速。它只用于减少直撞，不代替玩家选路和转向。
 
 ## 调试与调参
 
@@ -45,13 +47,13 @@ UE **5.8.2** 的 C++ 骑乘游戏原型。当前已完成 P13.3：骑手可驱�
 ## 验证
 
 ```powershell
-.\Scripts\RunEditor.ps1 -Tests -ExpectedTests 18 -Commands 'Automation RunTests Steppe;Quit' -LogName P13.3-Tests
-.\Scripts\RunEditor.ps1 -Game -Render -Smoke -PresentationSmoke -Commands '' -LogName P13.3-Presentation-Smoke
-.\Scripts\RunEditor.ps1 -Game -Render -Smoke -FullLoopSmoke -Commands '' -LogName P13.3-FullLoop-Smoke
+.\Scripts\RunEditor.ps1 -Tests -ExpectedTests 20 -Commands 'Automation RunTests Steppe;Quit' -LogName P14.4-Tests
+.\Scripts\RunEditor.ps1 -Game -Render -Smoke -PresentationSmoke -Commands '' -LogName P14.4-Presentation-Smoke
+.\Scripts\RunEditor.ps1 -Game -Render -Smoke -FullLoopSmoke -Commands '' -LogName P14.4-FullLoop-Smoke
 ```
 
 第一条运行全部数学和真实 UWorld 集成测试，报告位于 `Saved/Automation/index.json`。第二条验证摆绳稳定窗口、有效环口/射程和 Neck 命中反馈；第三条验证侧向失衡、落马、拖行和主动松绳；第四条自动走完捕获、接近、牵行、交付和命名。这些烟测不用于人工试玩。
 
 当前构建使用 V7 / Unreal5_8 IncludeOrder；因本机共享 PCH 编译停顿，模块禁用 PCH，构建脚本传入 `-NoUBA` 禁用 detouring。没有修改引擎安装。Editor 开启 Live Coding 时应先保存关闭再运行外部构建。
 
-后续开发先阅读 `Docs/GAME_DESIGN_VISION.md`、`Docs/DESIGN_BASELINE.md`、`Docs/PROTOTYPE_GDD.md` 和 `Docs/DEVELOPMENT_ROADMAP.md`。真实结果见 `Docs/DEVELOPMENT_STATUS.md`，工程分层见 `Docs/ARCHITECTURE.md`，P13 规格与验证依据见 `Docs/P13_AUDIO_VISUAL_SPEC.md`；下一步进入 P14 原型验证准备。
+后续开发先阅读 `Docs/GAME_DESIGN_VISION.md`、`Docs/DESIGN_BASELINE.md`、`Docs/PROTOTYPE_GDD.md` 和 `Docs/DEVELOPMENT_ROADMAP.md`。真实结果见 `Docs/DEVELOPMENT_STATUS.md`，工程分层见 `Docs/ARCHITECTURE.md`，本轮规则见 `Docs/P14.4_SURRENDER_AND_RIDER_AVOIDANCE.md`；下一步继续收集 P14.3 真人样本，用数据决定后续 Core Feel 修复。

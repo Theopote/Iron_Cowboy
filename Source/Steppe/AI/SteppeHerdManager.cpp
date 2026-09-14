@@ -137,6 +137,18 @@ bool ASteppeHerdManager::RegisterCapturedHorse(ASteppeWildHorseCharacter* Horse)
     return true;
 }
 
+bool ASteppeHerdManager::AcceptRopeSurrender(ASteppeWildHorseCharacter* Horse, ASteppeRiderCharacter* Rider)
+{
+    if (!Horse || !Rider) { return false; }
+    if (!CapturedHorses.Contains(Horse) && !RegisterCapturedHorse(Horse)) { return false; }
+    Horse->Brain->SetCaptured(true);
+    if (!Horse->Trust || !Horse->Trust->AcceptRopeSurrender(Rider)) { return false; }
+    FirstContactHorses.AddUnique(Horse);
+    FirstContactCount=FirstContactHorses.Num();
+    LeadingHorse=Horse;
+    return true;
+}
+
 bool ASteppeHerdManager::HandleFirstContactInteraction(ASteppeRiderCharacter* Rider)
 {
     if (!Rider) { return false; }

@@ -80,6 +80,7 @@ bool ULassoComponent::ThrowFrom(FVector Origin, FVector Direction)
     EffectiveMaximumRange=MaximumRange*FMath::Lerp(UnstableRangeMultiplier,1.f,LastThrowStability);
     TravelDistance=0.f;
     ControlProgress=0.f;
+    OnFootSurrenderProgress=0.f;
     Tension=0.f;
     ShockRiskSeconds=0.f;
     ShockLoad=0.f;
@@ -107,6 +108,7 @@ void ULassoComponent::StartRecovery(const TCHAR* Message)
     ShockRiskSeconds=0.f;
     bHadAnchorSample=false;
     ControlProgress=0.f;
+    OnFootSurrenderProgress=0.f;
     HitZone=ELassoHitZone::None;
     State=ELassoState::Recovering;
     RecoveryRemaining=FMath::Max(.1f,RecoverySeconds);
@@ -138,6 +140,23 @@ bool ULassoComponent::CaptureWithHerd(ASteppeHerdManager* Herd)
     Tension=0.f;
     ControlProgress=1.f;
     Feedback=FString::Printf(TEXT("CAPTURED | herd secured %d | LMB stow"),Herd->CapturedCount);
+    return true;
+}
+
+bool ULassoComponent::CompleteOnFootSurrender(ASteppeHerdManager* Herd)
+{
+    auto* Horse=Target.Get();
+    auto* Rider=Cast<ASteppeRiderCharacter>(GetOwner());
+    if (State!=ELassoState::Attached || OnFootSurrenderProgress<1.f || !Horse || !Rider || !Herd
+        || (Rider->Riding && Rider->Riding->IsMounted()) || !Herd->AcceptRopeSurrender(Horse,Rider))
+    {
+        return false;
+    }
+    State=ELassoState::Captured;
+    bBracing=false;
+    Tension=0.f;
+    ControlProgress=1.f;
+    Feedback=TEXT("HORSE SURRENDERED | lead it to CAMP / PEN");
     return true;
 }
 
@@ -248,7 +267,7 @@ void ULassoComponent::TickComponent(float Dt, ELevelTick TickType, FActorCompone
             Tension=FMath::Clamp(((Distance-RopeLength)/FMath::Max(10.f,TensionRange)+FMath::Max(0.f,SeparatingSpeed)/1200.f)*GetHitZoneTensionMultiplier(),0.f,1.5f);
             const float NewShock=CalculateShockLoad(SeparatingSpeed,AnchorDeceleration,Tension);
             ShockLoad=FMath::Max(NewShock,FMath::Max(0.f,ShockLoad-ShockDecayPerSecond*Dt));
-            const auto* Rider=Cast<ASteppeRiderCharacter>(GetOwner());
+            auto* Rider=Cast<ASteppeRiderCharacter>(GetOwner());
             const bool bMounted=Rider && Rider->Riding && Rider->Riding->IsMounted();
             bShockRisk=bMounted && ShockLoad>=ShockBreakThreshold;
             ShockRiskSeconds=bShockRisk?ShockRiskSeconds+Dt:FMath::Max(0.f,ShockRiskSeconds-Dt*3.f);
@@ -256,8 +275,16 @@ void ULassoComponent::TickComponent(float Dt, ELevelTick TickType, FActorCompone
             Horse->Brain->SetLassoConstraint(RopeStart,Tension,bBracing,ControlProgress);
             const bool bUseful=bBracing && Tension>=UsefulTensionMin && Tension<=UsefulTensionMax;
             ControlProgress=FMath::Clamp(ControlProgress+(bUseful?Dt:-Dt*.6f)/GetEffectiveSubdueSeconds(Horse),0.f,1.f);
+            const bool bCloseOnFoot=!bMounted && Rider && bBracing && Distance<=OnFootSurrenderDistance
+                && FMath::Abs(SeparatingSpeed)<=OnFootSurrenderMaxRelativeSpeed;
+            OnFootSurrenderProgress=FMath::Clamp(OnFootSurrenderProgress+(bCloseOnFoot?Dt:-Dt*.75f)/FMath::Max(.1f,OnFootSurrenderSeconds),0.f,1.f);
             if (Distance>MaximumRange*EmergencyBreakRangeMultiplier) { StartRecovery(TEXT("Rope severed at extreme distance - recovering")); }
             else if (ShockRiskSeconds>=BreakHoldSeconds) { StartRecovery(TEXT("Sudden stop snapped the rope - recovering")); }
+            else if (OnFootSurrenderProgress>=1.f)
+            {
+                auto* Mode=GetWorld()?GetWorld()->GetAuthGameMode<ASteppeGameMode>():nullptr;
+                CompleteOnFootSurrender(Mode?Mode->HerdManager.Get():nullptr);
+            }
             else if (ControlProgress>=1.f)
             {
                 State=ELassoState::Subdued;
@@ -301,6 +328,7 @@ void ULassoComponent::TickComponent(float Dt, ELevelTick TickType, FActorCompone
             ShockRiskSeconds=0.f;
             bShockRisk=false;
             bHadAnchorSample=false;
+            OnFootSurrenderProgress=0.f;
             Target->Brain->SetLassoed(true);
             Feedback=FString::Printf(TEXT("%s LOOP - Left Mouse to release"),*UEnum::GetDisplayValueAsText(HitZone).ToString().ToUpper());
         }

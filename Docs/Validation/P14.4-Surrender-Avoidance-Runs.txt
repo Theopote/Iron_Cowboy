@@ -1,0 +1,21 @@
+Project STEPPE P14.4 surrender and rider avoidance validation
+Date: 2026-09-14
+Engine: Unreal Engine 5.8.2
+
+Editor build
+  .\Scripts\Build.ps1 -EngineRoot 'C:\Program Files\Epic Games\UE_5.8'
+  Result: Succeeded
+
+Automation
+  .\Scripts\RunEditor.ps1 -Tests -ExpectedTests 20 -Commands 'Automation RunTests Steppe;Quit' -LogName P14.4-Surrender-Avoidance-Automation-Final3
+  Result: 20 passed, 0 failed, 3 passed with existing RiderSeat fallback warnings
+  Log: Saved\Logs\P14.4-Surrender-Avoidance-Automation-Final3.log
+
+Windows Shipping
+  .\Scripts\PackageWindows.ps1 -EngineRoot 'C:\Program Files\Epic Games\UE_5.8' -Clean -Zip
+  Build/Cook/Stage/Pak/Archive: Succeeded
+  Cook: 506 packages, 0 errors, 0 warnings
+  Startup smoke: ExitCode=0
+  ZIP: Packages\ProjectSTEPPE-Windows-20260914-2110.zip
+  Bytes: 314722428
+  SHA256: 8E46CDB85F9D5D7E6C3F886C46876BFD5B08F4965062568D296F4929F5910217

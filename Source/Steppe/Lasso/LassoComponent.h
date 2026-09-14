@@ -32,6 +32,7 @@ public:
     UFUNCTION(BlueprintCallable, Category="Lasso") void SetBracing(bool bNewBracing) { bBracing=bNewBracing; }
     UFUNCTION(BlueprintCallable, Category="Capture") bool Capture();
     bool CaptureWithHerd(ASteppeHerdManager* Herd);
+    bool CompleteOnFootSurrender(ASteppeHerdManager* Herd);
     UFUNCTION(BlueprintPure, Category="Lasso") FGameplayTag GetStateTag() const;
     float GetEffectiveSubdueSeconds(const ASteppeWildHorseCharacter* Horse) const;
     ELassoHitZone ClassifyHitZone(const ASteppeWildHorseCharacter* Horse, FVector HitLocation) const;
@@ -48,6 +49,9 @@ public:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lasso|Swing", meta=(ClampMin="0.1", ClampMax="1")) float UnstableSpeedMultiplier = .75f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lasso|Swing", meta=(ClampMin="0.1", ClampMax="1")) float UnstableRangeMultiplier = .8f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight", meta=(ClampMin="0.1")) float SubdueSeconds = 3.f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight|On Foot", meta=(ClampMin="50")) float OnFootSurrenderDistance = 300.f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight|On Foot", meta=(ClampMin="0.1")) float OnFootSurrenderSeconds = 2.5f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight|On Foot", meta=(ClampMin="0")) float OnFootSurrenderMaxRelativeSpeed = 260.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight", meta=(ClampMin="10")) float TensionRange = 500.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight", meta=(ClampMin="0", ClampMax="1")) float UsefulTensionMin = .2f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight", meta=(ClampMin="0", ClampMax="1.5")) float UsefulTensionMax = .85f;
@@ -75,6 +79,7 @@ public:
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Rope Fight") float RopeLength = 0.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Rope Fight") float Tension = 0.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Rope Fight") float ControlProgress = 0.f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Rope Fight|On Foot") float OnFootSurrenderProgress = 0.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Rope Fight") bool bBracing = false;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Rope Fight|Shock") float SeparatingSpeed = 0.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Rope Fight|Shock") float AnchorDeceleration = 0.f;

@@ -271,20 +271,25 @@ void UHorseBrainComponent::TickComponent(float Dt, ELevelTick TickType, FActorCo
     }
     if (bLassoed)
     {
+        const auto& C=GetConfig();
         FHorseMovementIntent StruggleIntent;
-        if (bLassoBraced)
+        FVector Away=(Horse->GetActorLocation()-LassoAnchor).GetSafeNormal2D();
+        if (Away.IsNearlyZero()) { Away=Horse->GetActorForwardVector(); }
+        const FVector SafeDirection=FindSafeDirection(*Horse,Away);
+        if (!SafeDirection.IsNearlyZero())
         {
-            StruggleIntent.DesiredSpeed=LassoTension>.85f?0.f:40.f;
-            StruggleIntent.BrakeStrength=LassoTension>.85f?1.f:.6f;
+            const float HeadingError=FMath::FindDeltaAngleDegrees(Horse->GetActorRotation().Yaw,SafeDirection.Rotation().Yaw);
+            const float CalmScale=FMath::Lerp(1.f,.12f,LassoControlProgress);
+            const float RestraintScale=FMath::Lerp(1.f,.55f,FMath::Clamp(LassoTension/1.5f,0.f,1.f));
+            StruggleIntent.DesiredSpeed=C.FlightSpeed*StruggleSpeedScale*.8f*CalmScale*RestraintScale;
+            StruggleIntent.DesiredTurn=FMath::Clamp(HeadingError/FMath::Max(1.f,C.FullTurnAngle),-1.f,1.f);
+            StruggleIntent.RequestedGait=StruggleIntent.DesiredSpeed>C.YieldSpeed*1.5f?EHorseGait::Gallop:EHorseGait::Walk;
+            SteeringDirection=SafeDirection;
         }
         else
         {
-            const FVector Away=(Horse->GetActorLocation()-LassoAnchor).GetSafeNormal2D();
-            const float HeadingError=FMath::FindDeltaAngleDegrees(Horse->GetActorRotation().Yaw,Away.Rotation().Yaw);
-            StruggleIntent.DesiredSpeed=600.f*StruggleSpeedScale;
-            StruggleIntent.DesiredTurn=FMath::Clamp(HeadingError/45.f,-1.f,1.f);
-            StruggleIntent.RequestedGait=EHorseGait::Canter;
-            SteeringDirection=Away;
+            StruggleIntent.BrakeStrength=1.f;
+            SteeringDirection=FVector::ZeroVector;
         }
         Movement->SetHorseIntent(StruggleIntent);
         return;
@@ -345,16 +350,6 @@ void UHorseBrainComponent::TickComponent(float Dt, ELevelTick TickType, FActorCo
         PauseRemaining = FMath::Max(0.f, PauseRemaining - Dt);
         Intent.DesiredSpeed = PauseRemaining > 0.f ? 0.f : C.RoamSpeed;
         Intent.RequestedGait = EHorseGait::Walk;
-    }
-    else if (State == EWildHorseState::Lassoed)
-    {
-        FVector Away=(Horse->GetActorLocation()-LassoAnchor).GetSafeNormal2D();
-        if (Away.IsNearlyZero()) { Away=Horse->GetActorForwardVector(); }
-        Goal=Horse->GetActorLocation()+Away*FMath::Max(1.f,C.EscapeLookAhead);
-        const float CalmScale=FMath::Lerp(1.f,.12f,LassoControlProgress);
-        const float RestraintScale=FMath::Lerp(1.f,.55f,FMath::Clamp(LassoTension/1.5f,0.f,1.f));
-        Intent.DesiredSpeed=C.FlightSpeed*StruggleSpeedScale*.8f*CalmScale*RestraintScale;
-        Intent.RequestedGait=Intent.DesiredSpeed>C.YieldSpeed*1.5f?EHorseGait::Gallop:EHorseGait::Walk;
     }
     if (Intent.DesiredSpeed > 0.f)
     {

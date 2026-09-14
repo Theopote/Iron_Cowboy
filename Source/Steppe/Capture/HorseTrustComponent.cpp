@@ -131,6 +131,25 @@ bool UHorseTrustComponent::BeginLeading(ASteppeRiderCharacter* Rider)
     return true;
 }
 
+bool UHorseTrustComponent::AcceptRopeSurrender(ASteppeRiderCharacter* Rider)
+{
+    if (!Rider || Rider!=Interactor.Get() || Rider->Riding->IsMounted()
+        || (State!=EPostCaptureState::Secured && State!=EPostCaptureState::CalmApproach && State!=EPostCaptureState::ReadyForContact))
+    {
+        return false;
+    }
+    State=EPostCaptureState::Leading;
+    bFirstContact=true;
+    bLeading=true;
+    CalmProgress=1.f;
+    Pressure=0.f;
+    Trust=FMath::Clamp(FirstContactTrust,0.f,100.f);
+    LeadStartLocation=GetOwner()->GetActorLocation();
+    Feedback=TEXT("HORSE SURRENDERED | lead it back to CAMP / PEN");
+    if (auto* Horse=Cast<ASteppeWildHorseCharacter>(GetOwner())) { Horse->Brain->SetLeadTarget(Rider); }
+    return true;
+}
+
 bool UHorseTrustComponent::MarkDelivered(ASteppeRiderCharacter* Rider)
 {
     if (!Rider || Rider!=Interactor.Get() || State!=EPostCaptureState::Leading) { return false; }

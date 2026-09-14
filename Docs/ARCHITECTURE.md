@@ -8,7 +8,7 @@
 
 PlayerController 不直接控制马。Rider 始终是玩家持有的 Pawn，上马后停止自己的移动、关闭胶囊碰撞，附着到 Horse 的 RiderSeat Socket；无 Socket 时使用可编辑 FallbackSeat 并记录警告。下马检测速度、地面坡度和胶囊落脚空间，两侧都被阻挡时拒绝下马。销毁马或骑手时清理引用和 Tick 依赖。
 
-FRidingIntent 是骑手请求，含前进、转向、冲刺、制动、观察；FHorseMovementIntent 是独立类型，含期望速度、转向、制动强度、请求步态。HorseMovement 对骑手输入作有时间单位的渐进响应，再应用体力、表面乘数与个体上限。SetHorseIntent 是未来非骑手来源的入口，没有创建 AI 类。
+FRidingIntent 是骑手请求，含前进、转向、冲刺、制动、观察；FHorseMovementIntent 是独立类型，含期望速度、转向、制动强度、请求步态。HorseMovement 对骑手输入作有时间单位的渐进响应，再应用体力、表面乘数与个体上限。骑乘前进时会以中心和左右探针查询近距离障碍，在骑手输入内混入有上限的转向辅助并降低目标速度；它不修改位置，也不提供全局寻路。SetHorseIntent 是未来非骑手来源的入口，没有创建 AI 类。
 
 ## CharacterMovement 的定制边界
 
@@ -69,11 +69,11 @@ Q 输入经 Rider 转发到 PlayerController，再由 GameMode 的 HerdManager �
 
 ## P5：套索
 
-`ULassoComponent` 属于 Rider，接收 RMB/LMB 输入并维护 Stored、Aiming、Thrown、Attached、Recovering。投掷每帧从上一位置到下一位置作连续球形扫掠，命中只接受 P4 当前隔离目标；HUD 绳线与命中圈不决定结果。Attached 通过 HorseBrain 的 Lassoed 状态向共用 HorseMovement 提交紧急制动意图。主动释放、脱靶、障碍、超长或目标销毁都汇入恢复流程。状态同时通过 Native Gameplay Tags 暴露，便于后续动画、声音和网络表现读取。详细范围见 P5_LASSO.md。
+`ULassoComponent` 属于 Rider，接收 RMB/LMB 输入并维护 Stored、Aiming、Thrown、Attached、Subdued、Captured、Recovering。投掷每帧从上一位置到下一位置作连续球形扫掠，命中只接受 P4 当前隔离目标；HUD 绳线与命中圈不决定结果。Attached 通过 HorseBrain 的 Lassoed 状态让野马继续挣扎，并根据控绳进度逐渐降低逃跑速度。主动释放、脱靶、障碍、急停冲击、极端距离或目标销毁汇入恢复流程。状态同时通过 Native Gameplay Tags 暴露，便于后续动画、声音和网络表现读取。详细范围见 P5_LASSO.md。
 
 ## P6：绳索对抗
 
-Attached 后，LassoComponent 根据绳距和两端沿绳方向的相对速度计算张力。Rider 的空格输入设置 Bracing；Brain 接收锚点、张力与稳绳状态，并继续通过 HorseMovement 产生向外挣扎或受控制动。LassoComponent 在有效张力区间累计 ControlProgress，过载则断绳，完成后进入 Subdued。该分层让未来的绳索网格、动画或物理表现读取同一状态，而不接管判定。P6 不生成捕获奖励或移除野马，详细范围见 P6_ROPE_FIGHT.md。
+Attached 后，LassoComponent 根据绳距和两端沿绳方向的相对速度计算张力。Rider 的空格输入设置 Bracing；Brain 接收锚点、张力与稳绳状态，并继续通过 HorseMovement 产生向外挣扎或受控制动。LassoComponent 在有效张力区间累计 ControlProgress，高速分离时玩家端突然急减速才累计断绳冲击，完成后进入 Subdued。若骑手已经徒步、与目标保持 3 米内且相对速度稳定，持续稳绳约 2.5 秒会调用 HerdManager 的原子降伏入口，同时完成 Captured、FirstContact 和 Leading 三个权威状态，使野马立刻跟随骑手。该分层让未来的绳索网格、动画或物理表现读取同一状态，而不接管判定。详细范围见 P6_ROPE_FIGHT.md。
 
 ## P7：捕获结果
 

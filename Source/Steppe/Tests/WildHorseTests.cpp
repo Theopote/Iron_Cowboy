@@ -591,6 +591,42 @@ bool FRopeFightTest::RunTest(const FString& Parameters)
     Rider->Lasso->Release();
     return true;
 }
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FOnFootSurrenderTest,"Steppe.P14.OnFootSurrenderStartsLeading",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FOnFootSurrenderTest::RunTest(const FString& Parameters)
+{
+    FWildTestWorld Fixture;
+    auto* Rider=Fixture.World->SpawnActor<ASteppeRiderCharacter>(FVector(0,0,100),FRotator::ZeroRotator);
+    const FTransform HerdTransform(FRotator::ZeroRotator,FVector(700,0,100));
+    auto* Herd=Fixture.World->SpawnActorDeferred<ASteppeHerdManager>(ASteppeHerdManager::StaticClass(),HerdTransform,
+        nullptr,nullptr,ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+    Herd->HerdSize=1;
+    Herd->HorseClass=ASteppeWildHorseCharacter::StaticClass();
+    Herd->SetThreatTarget(Rider);
+    Herd->FinishSpawning(HerdTransform);
+    Fixture.Begin();
+    if (!TestEqual(TEXT("Surrender fixture has one horse"),Herd->Members.Num(),1)) { return false; }
+    auto* Wild=Herd->Members[0].Get();
+    Wild->SetActorLocation(FVector(700,0,100),false,nullptr,ETeleportType::TeleportPhysics);
+    Wild->GetCharacterMovement()->SetComponentTickEnabled(false);
+    Rider->GetCharacterMovement()->SetComponentTickEnabled(false);
+    TestTrue(TEXT("On-foot surrender target can be aimed"),Rider->Lasso->BeginAimForTarget(Wild,true));
+    TestTrue(TEXT("On-foot surrender throw starts"),Rider->Lasso->ThrowFrom(FVector(0,0,170),FVector::ForwardVector));
+    Fixture.Step(.4f);
+    if (!TestEqual(TEXT("On-foot surrender starts attached"),Rider->Lasso->State,ELassoState::Attached)) { return false; }
+    Rider->SetActorLocation(FVector(500,0,100),false,nullptr,ETeleportType::TeleportPhysics);
+    Rider->Lasso->OnFootSurrenderSeconds=.3f;
+    Rider->Lasso->SetBracing(true);
+    Fixture.Step(.4f);
+    TestTrue(TEXT("Close steady on-foot hold fills surrender progress"),Rider->Lasso->OnFootSurrenderProgress>=1.f);
+    TestTrue(TEXT("Completed surrender registers capture and lead"),Rider->Lasso->CompleteOnFootSurrender(Herd));
+    TestEqual(TEXT("Surrender leaves the lasso secured"),Rider->Lasso->State,ELassoState::Captured);
+    TestEqual(TEXT("Surrender removes the horse from the active herd"),Herd->Members.Num(),0);
+    TestEqual(TEXT("Surrender counts first contact"),Herd->FirstContactCount,1);
+    TestEqual(TEXT("Surrender immediately begins leading"),Wild->Trust->State,EPostCaptureState::Leading);
+    TestTrue(TEXT("Surrendered horse follows the rope holder"),Wild->Brain->bCaptured && Wild->Brain->bLeading);
+    return true;
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCaptureTest,"Steppe.P7.CaptureSubduedHorse",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FCaptureTest::RunTest(const FString& Parameters)
 {

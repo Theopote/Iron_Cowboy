@@ -99,6 +99,18 @@ bool FSteppeWorldTest::RunTest(const FString& Parameters)
     Intent.Forward=0; Intent.bBrake=true; Rider->Riding->SetIntent(Intent); Step(4);
     Rider->Riding->Dismount(); TestFalse(TEXT("Safe dismount succeeds"),Rider->Riding->IsMounted());
     TestTrue(TEXT("Remount succeeds"),Rider->Riding->TryMount(Horse));
+    auto* Obstacle=World->SpawnActor<AStaticMeshActor>();
+    Obstacle->GetStaticMeshComponent()->SetMobility(EComponentMobility::Movable);
+    Obstacle->GetStaticMeshComponent()->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cube.Cube")));
+    Obstacle->SetActorScale3D(FVector(.25f,1.5f,2.f));
+    Obstacle->SetActorLocation(Horse->GetActorLocation()+Horse->GetActorForwardVector()*380.f);
+    Obstacle->GetStaticMeshComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    Intent.Forward=1.f; Intent.Turn=0.f; Intent.bBrake=false; Intent.bSprint=false;
+    Rider->Riding->SetIntent(Intent); Step(.12f);
+    TestTrue(TEXT("Mounted horse detects an obstacle before collision"),Move->bRiderAvoidingObstacle);
+    TestTrue(TEXT("Mounted horse adds a limited avoidance turn"),FMath::Abs(Move->RiderAvoidanceTurn)>.5f && FMath::Abs(Move->HorseIntent.DesiredTurn)<.8f);
+    TestTrue(TEXT("Mounted horse reduces speed while steering around the obstacle"),Move->RiderAvoidanceSpeedScale<.81f);
+    Obstacle->Destroy();
     Horse->Destroy(); TestFalse(TEXT("Destroyed mount releases rider"),Rider->Riding->IsMounted());
     World->EndPlay(EEndPlayReason::Quit);
     World->DestroyWorld(false); GEngine->DestroyWorldContext(World);
