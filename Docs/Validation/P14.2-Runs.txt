@@ -1,0 +1,14 @@
+P14.2 simple horse model — 2026-09-14 — Unreal Engine 5.8.2
+
+Build
+  .\Scripts\Build.ps1 -EngineRoot 'C:\Program Files\Epic Games\UE_5.8'
+  Result: Succeeded, SteppeEditor Win64 Development
+
+Automation
+  .\Scripts\RunEditor.ps1 -Tests -Commands 'Automation RunTests Steppe;Quit' -LogName 'P14.2-Automation' -ExpectedTests 19
+  Result: 19 passed, 0 failed, 3 passed with existing RiderSeat fallback warnings
+
+Rendered horse assembly
+  .\Scripts\RunEditor.ps1 -Game -Smoke -Render -HorseModelSmoke -LogName 'P14.2-HorseModel'
+  Result: 16 visible parts, 4 animated leg pivots, Fast/Strong/Nervous side silhouettes rendered
+

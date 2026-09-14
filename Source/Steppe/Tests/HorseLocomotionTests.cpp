@@ -56,6 +56,8 @@ bool FSteppeWorldTest::RunTest(const FString& Parameters)
     World->InitializeActorsForPlay(FURL()); World->BeginPlay();
     World->GetWorldSettings()->NotifyBeginPlay();
     World->GetWorldSettings()->NotifyMatchStarted();
+    TestEqual(TEXT("Placeholder horse has a complete low-poly silhouette"),Horse->GetPlaceholderPartCount(),16);
+    TestEqual(TEXT("Placeholder horse exposes four animated legs"),Horse->GetPlaceholderLegCount(),4);
     auto Step=[World](float Seconds)
     {
         // Engine tick tasks deduplicate on GFrameCounter, even across explicit World::Tick calls.

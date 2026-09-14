@@ -1,6 +1,6 @@
 # Current Phase
 
-**P14.1 — 自动试玩指标、成功/失败样本与人工验证规范已经实现并验证。**
+**P14.2 — 可辨识的组合式灰盒马模型已经实现并验证。**
 
 项目使用 UE 5.8.2。完整灰盒闭环继续可玩；Sound、Niagara 和 AnimBP 所需的数据边界已经建立，灰盒马匹与骑手会实际表现步态起伏、加速俯仰、转向侧倾和受力姿态。
 
@@ -27,6 +27,9 @@
 - 命名成功后 Horse Card 自动收起并恢复游戏输入；最终结算显示四阶段统计、积分和 Replay。
 - PlaytestMetrics 按轮记录目标类型、阶段耗时、投索/命中/脱靶/断绳、危险张力、Balance 事故、结果、积分与重试。
 - 成功、超时、F2 重试和世界结束都会把 UTF-8 JSON 写入 `Saved/Playtests/`；状态跃迁计数避免按帧重复。
+- 原长方体马已改为 16 个低成本基础几何部件：躯干、胸部、斜颈、头、口鼻、双耳、尾巴、四腿与四蹄。
+- 全马共用不缩放的表现根节点，继续响应已有 BodyBob/Pitch/Roll；四腿使用肩/胯枢轴按对角步态交替摆动，蹄部随腿运动。
+- 野马全部部件继承原 Blueprint 躯干材质；视觉组件无碰撞，原 Capsule、移动、AI、套索命中和骑乘规则保持不变。
 
 # Build Result
 
@@ -40,9 +43,13 @@ UHT、C++、UMG 编译与链接成功。没有修改引擎，也没有增加物�
 
 新增 `Steppe.P14.PlaytestMetricTransitions`，覆盖投索去重、附着区域、断绳分类和 Balance 事故跃迁。P1–P13 回归继续通过。
 
+P14.2 在 P1 世界测试中增加 16 部件/4 腿结构断言；完整 19 项回归继续通过。专用侧视路线并排渲染 Fast、Strong、Nervous，确认头尾方向、四足落地和完整轮廓。
+
 P14 成功路线记录 12.0 秒、1 次投索、1 次 Neck 附着、0 次脱靶/断绳和 2080 分；六个阶段时间均已写入。失败路线在 3.0 秒超时并记录 0 分。两条路线都生成可解析 JSON 和结算截图。
 
 证据：`Validation/P14-Results.json`、`P14-Success-Metrics.json`、`P14-Failure-Metrics.json`、`P14-Success.png`、`P14-Failure.png` 和 `P14-Runs.txt`。原始日志为 `Saved/Logs/P14-Automation.log`、`P14-Success.log` 与 `P14-Failure.log`。
+
+P14.2 模型证据：`Validation/P14.2-HorseModel.png`、`P14.2-Results.json` 和 `P14.2-Runs.txt`；原始日志为 `Saved/Logs/P14.2-Automation.log` 与 `P14.2-HorseModel.log`。
 
 # Manual Steps
 
@@ -75,3 +82,4 @@ P14 成功路线记录 12.0 秒、1 次投索、1 次 Neck 附着、0 次脱靶/
 - 2026-09-14 P13.2：完成 Grass/Hard 实际物理材质路由、Sound/Niagara 资源插槽、呼吸事件和 Horse Card 层级；18 项测试、双地表渲染和完整闭环回归通过。
 - 2026-09-14 P13.3：完成连续步态相位、马匹/骑手姿态数据、灰盒表现与无重叠结算；18 项测试、侧视表现和完整闭环回归通过。
 - 2026-09-14 P14.1：完成逐轮试玩指标、成功/失败 JSON、重试/退出收尾和人工验证规范；19 项测试及两条渲染路线通过。
+- 2026-09-14 P14.2：将长方体马替换为带头颈、双耳、尾巴、四腿四蹄的组合式灰盒马，并接入对角腿部摆动；19 项测试及专用侧视渲染通过。

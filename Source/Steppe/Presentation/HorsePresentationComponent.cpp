@@ -13,7 +13,7 @@ void UHorsePresentationComponent::BeginPlay()
     Super::BeginPlay();
     if (const auto* Horse=Cast<ASteppeHorseCharacter>(GetOwner()))
     {
-        if (const auto* Mesh=Horse->GetPlaceholderMesh())
+        if (const auto* Mesh=Horse->GetPlaceholderRoot())
         {
             BaseLocation=Mesh->GetRelativeLocation();
             BaseRotation=Mesh->GetRelativeRotation();
@@ -55,7 +55,7 @@ void UHorsePresentationComponent::TickComponent(float Dt,ELevelTick TickType,FAc
     Data.BodyPitch=FMath::FInterpTo(Data.BodyPitch,TargetPitch,Dt,PoseResponse);
     Data.BodyRoll=FMath::FInterpTo(Data.BodyRoll,TargetRoll,Dt,PoseResponse);
 
-    if (auto* Mesh=Horse->GetPlaceholderMesh())
+    if (auto* Mesh=Horse->GetPlaceholderRoot())
     {
         if (bAnimatePlaceholder)
         {
@@ -66,5 +66,6 @@ void UHorsePresentationComponent::TickComponent(float Dt,ELevelTick TickType,FAc
         {
             Mesh->SetRelativeLocationAndRotation(BaseLocation,BaseRotation);
         }
+        Horse->AnimatePlaceholderLegs(Data.GaitPhase,bAnimatePlaceholder?Data.StrideBlend:0.f);
     }
 }

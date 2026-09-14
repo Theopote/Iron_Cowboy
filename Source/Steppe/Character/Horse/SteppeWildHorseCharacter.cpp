@@ -2,8 +2,6 @@
 #include "AI/HorseBrainComponent.h"
 #include "Capture/HorseTrustComponent.h"
 #include "Character/Horse/HorseAttributeComponent.h"
-#include "Components/StaticMeshComponent.h"
-#include "Materials/MaterialInstanceDynamic.h"
 ASteppeWildHorseCharacter::ASteppeWildHorseCharacter()
 {
     bCanBeMounted = false;
@@ -33,11 +31,5 @@ void ASteppeWildHorseCharacter::ApplyArchetype(const FWildHorseArchetypeProfile&
     Trust->CalmHoldSeconds*=FMath::Max(.1f,Profile.CalmHoldMultiplier);
     Trust->Temperament=Profile.Temperament;
     Trust->Coat=Profile.Coat;
-    if (auto* PlaceholderMesh=GetPlaceholderMesh())
-    {
-        if (auto* Material=PlaceholderMesh->CreateAndSetMaterialInstanceDynamic(0))
-        {
-            Material->SetVectorParameterValue(TEXT("Color"),Profile.DebugColor);
-        }
-    }
+    ApplyPlaceholderColor(Profile.DebugColor);
 }

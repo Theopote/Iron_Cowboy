@@ -24,6 +24,7 @@ param(
     [switch]$PresentationSmoke,
     [switch]$MetricsSmoke,
     [switch]$MetricsFailureSmoke,
+    [switch]$HorseModelSmoke,
     [ValidateRange(1,10000)][int]$ExpectedTests = 2
 )
 $ErrorActionPreference = 'Stop'
@@ -90,6 +91,10 @@ if ($MetricsSmoke) {
 if ($MetricsFailureSmoke) {
     if (!$Smoke -or !$Game) { throw 'MetricsFailureSmoke requires Game and Smoke.' }
     $editorArgs += '-SteppeVerticalFailureSmoke'; $editorArgs += '-SteppeMetricsSmoke'; $editorArgs += '-SteppeMetricsFailureSmoke'
+}
+if ($HorseModelSmoke) {
+    if (!$Smoke -or !$Game) { throw 'HorseModelSmoke requires Game and Smoke.' }
+    $editorArgs += '-SteppeHorseModelSmoke'
 }
 if ($RetrySmoke) { if (!$Smoke -or !$Game) { throw 'RetrySmoke requires Game and Smoke.' }; $editorArgs += '-SteppeRetrySmoke' }
 if ($Tests) { $editorArgs += '-TestExit=Automation Test Queue Empty'; $editorArgs += "-ReportExportPath=$PSScriptRoot\..\Saved\Automation" }
@@ -278,5 +283,12 @@ if ($MetricsSmoke -or $MetricsFailureSmoke) {
     if ($isFailure -and ($metrics.elapsedSeconds -lt 3 -or $metrics.score -ne 0)) { throw "P14 failure metrics did not retain timeout data; see $metricsPath" }
     if ($metricsLog -notmatch "STEPPE_P14_METRICS: Result=$expectedResult Reason=$expectedReason") { throw "P14 metrics summary is missing; see $logPath" }
     Write-Output "P14 metrics smoke: $expectedResult route wrote a fresh validated JSON record and result screenshot."
+}
+if ($HorseModelSmoke) {
+    $modelLog = Get-Content $logPath -Raw
+    $modelPath = Join-Path $PSScriptRoot '..\Saved\Screenshots\SteppeP14HorseModel.png'
+    if (!(Test-Path $modelPath) -or (Get-Item $modelPath).LastWriteTime -lt $runStarted) { throw "Horse model screenshot is missing or stale; see $logPath" }
+    if ($modelLog -notmatch 'STEPPE_P14_HORSE_MODEL: Parts=16 Legs=4 H1=Fast H2=Strong H3=Nervous') { throw "Horse model smoke did not confirm the complete three-horse assembly; see $logPath" }
+    Write-Output 'Horse model smoke: three colored horse silhouettes rendered with body, head, neck, ears, tail and four legs.'
 }
 Write-Output "Editor exited successfully. Log: $logPath"
