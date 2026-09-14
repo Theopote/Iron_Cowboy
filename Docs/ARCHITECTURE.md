@@ -106,3 +106,7 @@ RiderBalanceComponent 在 PostPhysics 且晚于 LassoComponent 更新，读取�
 ## P13 第一增量：派生反馈层
 
 `USteppeFeedbackComponent` 属于 Rider，在 HorseMovement、LassoComponent 与 RiderBalanceComponent 更新后读取本帧状态。它把坐骑实际速度、Gait 和 Stamina 转换为 Hoofbeat、Wind 与 Breath，把 Lasso/Balance 状态转换为离散事件与 RopeStress，但不写回任何 Gameplay 组件。HUD、调试扬尘和 `USteppeProceduralTone` 都是信号消费者；程序化音频被禁用或未来替换成 SoundCue、MetaSound、Niagara、动画时，运动、命中、张力、落马和任务结果保持不变。详见 P13_AUDIO_VISUAL_SPEC.md。
+
+## P13 第二增量：表面路由与表现资源边界
+
+FeedbackComponent 每 0.2 秒从坐骑向下查询带 Physical Material 的 Visibility Hit，将 SurfaceType1/2 映射为 Grass/Hard。表面只缩放马蹄节拍、程序化音色与尘土表现，不参与 HorseMovement 摩擦或速度计算。`FSteppeFeedbackAssets` 在 Rider Blueprint 默认值中暴露事件 SoundBase 与两类 NiagaraSystem；已配置资源优先，空插槽回退到程序化音或 HUD 灰盒尘土。原型材质绑定 `PM_Grass`、`PM_Hard`，HardSurface_TestPad 为可重复验证入口。Horse Card 仍由 UMG 读取 HorseTrust 与 HorseAttributes，只修改信息和操作层级。

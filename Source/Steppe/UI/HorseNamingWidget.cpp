@@ -10,6 +10,8 @@
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
+#include "Components/HorizontalBox.h"
+#include "Components/HorizontalBoxSlot.h"
 #include "Blueprint/WidgetTree.h"
 #include "Game/SteppeGameMode.h"
 #include "Player/SteppePlayerController.h"
@@ -39,30 +41,47 @@ void UHorseNamingWidget::NativeOnInitialized()
 
         auto* Stack=WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(),TEXT("CardStack"));
         Border->SetContent(Stack);
-        auto AddText=[this,Stack](FName Name, const FString& Value, FLinearColor Color)
+        auto AddText=[this,Stack](FName Name,const FString& Value,FLinearColor Color,int32 Size)
         {
             auto* Label=WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),Name);
             Label->SetText(FText::FromString(Value));
             Label->SetColorAndOpacity(FSlateColor(Color));
             Label->SetAutoWrapText(true);
+            FSlateFontInfo Font=Label->GetFont(); Font.Size=Size; Label->SetFont(Font);
             Stack->AddChildToVerticalBox(Label)->SetPadding(FMargin(0,5));
             return Label;
         };
-        AddText(TEXT("Title"),TEXT("HORSE CARD"),FLinearColor(1.f,.82f,.25f));
-        CardText=AddText(TEXT("CardText"),TEXT("Preparing horse record..."),FLinearColor(.88f,.95f,.9f));
-        AddText(TEXT("NameLabel"),TEXT("Give this horse a name (1-16 characters)"),FLinearColor(.55f,1.f,1.f));
+        auto* Title=AddText(TEXT("Title"),TEXT("HORSE CARD"),FLinearColor(1.f,.82f,.25f),28);
+        Title->SetJustification(ETextJustify::Center);
+        auto* Accent=WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(),TEXT("CardAccent"));
+        Accent->SetBrushColor(FLinearColor(1.f,.65f,.12f,.85f));
+        Accent->SetPadding(FMargin(0,2));
+        Stack->AddChildToVerticalBox(Accent)->SetPadding(FMargin(0,2,0,10));
+        CardText=AddText(TEXT("CardText"),TEXT("Preparing horse record..."),FLinearColor(.88f,.95f,.9f),17);
+        AddText(TEXT("NameLabel"),TEXT("NAME THIS HORSE  |  1-16 CHARACTERS"),FLinearColor(.55f,1.f,1.f),16);
         NameInput=WidgetTree->ConstructWidget<UEditableTextBox>(UEditableTextBox::StaticClass(),TEXT("NameInput"));
         NameInput->SetHintText(FText::FromString(TEXT("Enter name")));
         NameInput->OnTextCommitted.AddDynamic(this,&UHorseNamingWidget::HandleNameCommitted);
         Stack->AddChildToVerticalBox(NameInput)->SetPadding(FMargin(0,8));
+        auto* Actions=WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(),TEXT("CardActions"));
+        Stack->AddChildToVerticalBox(Actions)->SetPadding(FMargin(0,4));
         ConfirmButton=WidgetTree->ConstructWidget<UButton>(UButton::StaticClass(),TEXT("ConfirmButton"));
+        ConfirmButton->SetBackgroundColor(FLinearColor(1.f,.72f,.2f));
         auto* ConfirmLabel=WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),TEXT("ConfirmLabel"));
         ConfirmLabel->SetText(FText::FromString(TEXT("CONFIRM NAME")));
         ConfirmLabel->SetColorAndOpacity(FSlateColor(FLinearColor::Black));
         ConfirmButton->AddChild(ConfirmLabel);
         ConfirmButton->OnClicked.AddDynamic(this,&UHorseNamingWidget::HandleConfirmClicked);
-        Stack->AddChildToVerticalBox(ConfirmButton)->SetPadding(FMargin(0,8));
-        StatusText=AddText(TEXT("Status"),TEXT("Press Enter to confirm | F2 replay"),FLinearColor(.75f,.8f,.75f));
+        Actions->AddChildToHorizontalBox(ConfirmButton)->SetPadding(FMargin(0,0,8,0));
+        auto* ReplayButton=WidgetTree->ConstructWidget<UButton>(UButton::StaticClass(),TEXT("ReplayButton"));
+        ReplayButton->SetBackgroundColor(FLinearColor(.25f,.3f,.27f));
+        auto* ReplayLabel=WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),TEXT("ReplayLabel"));
+        ReplayLabel->SetText(FText::FromString(TEXT("REPLAY ROUND")));
+        ReplayLabel->SetColorAndOpacity(FSlateColor(FLinearColor::White));
+        ReplayButton->AddChild(ReplayLabel);
+        ReplayButton->OnClicked.AddDynamic(this,&UHorseNamingWidget::HandleReplayClicked);
+        Actions->AddChildToHorizontalBox(ReplayButton)->SetPadding(FMargin(8,0,0,0));
+        StatusText=AddText(TEXT("Status"),TEXT("Enter confirms  |  F2 replays"),FLinearColor(.75f,.8f,.75f),14);
     }
     RefreshCard();
 }
@@ -79,7 +98,7 @@ void UHorseNamingWidget::RefreshCard()
     const auto* Wild=Cast<ASteppeWildHorseCharacter>(Horse->GetOwner());
     const auto* A=Wild?Wild->Attributes.Get():nullptr;
     CardText->SetText(FText::FromString(FString::Printf(
-        TEXT("%s | %s\n%s | %d years | %s\nTemperament: %s\n\nSpeed      %.0f cm/s\nEndurance  %.0f\nStrength   %.2f\nAgility    %.2f"),
+        TEXT("IDENTITY\n%s  /  %s\n%s  |  %d years  |  %s\n\nTEMPERAMENT\n%s\n\nCAPABILITY\nSpeed %.0f cm/s  |  Endurance %.0f\nStrength %.2f  |  Agility %.2f"),
         *Horse->HorseId,Wild?*Wild->ArchetypeLabel:TEXT("Unknown"),*Horse->Sex,Horse->AgeYears,*Horse->Coat,*Horse->Temperament,
         A?A->MaxSpeed:0.f,A?A->MaxStamina:0.f,A?A->Strength:0.f,A?A->Agility:0.f)));
     if (Horse->bNamed && NameInput && StatusText && ConfirmButton)

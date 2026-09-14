@@ -1,0 +1,21 @@
+Project STEPPE P13.2 validation — 2026-09-14 — UE 5.8.2
+
+Build
+.\Scripts\Build.ps1 -EngineRoot 'C:\Program Files\Epic Games\UE_5.8'
+Result: SteppeEditor Win64 Development succeeded with AudioExtensions and Niagara dependencies.
+
+Surface assets
+.\Scripts\RunEditor.ps1 -PythonScript 'D:\development\Project STEPPE\Scripts\CreateFeedbackAssets.py' -LogName 'P13.2-CreateSurfaceAssets'
+Result: PM_Grass=SurfaceType1, PM_Hard=SurfaceType2 and HardSurface_TestPad created; prototype materials and level assignment saved.
+
+Automation
+.\Scripts\RunEditor.ps1 -Tests -ExpectedTests 18 -Commands 'Automation RunTests Steppe;Quit' -LogName 'P13.2-Tests'
+Result: 18 passed, 0 failed, 3 passed with existing RiderSeat greybox warnings. P13 test now covers both surface mappings and distinct cadence.
+
+Dual-surface rendered smoke
+.\Scripts\RunEditor.ps1 -Game -Smoke -Render -FeedbackSmoke -Commands '' -LogName 'P13.2-Surface-Smoke'
+Result: Grass route rendered while moving and lassoed; HardSurface_TestPad then resolved from its physical material. Final log: Hoofbeats=5, LassoEvents=3, Surface=Hard.
+
+Full-loop and Horse Card regression
+.\Scripts\RunEditor.ps1 -Game -Smoke -Render -FullLoopSmoke -Commands '' -LogName 'P13.2-FullLoop-Smoke'
+Result: capture, first contact, lead, redesigned Horse Card, naming Saran and Trial Success passed.

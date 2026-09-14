@@ -7,6 +7,9 @@
 #include "Character/Horse/HorseAttributeComponent.h"
 #include "Lasso/LassoComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraSystem.h"
+#include "PhysicalMaterials/PhysicalMaterial.h"
 #include "Engine/World.h"
 
 void USteppeProceduralTone::InitializeTone(float Frequency,float ToneSeconds,float Amplitude,float NoiseMix)
@@ -59,6 +62,16 @@ float USteppeFeedbackComponent::CalculateBreathIntensity(float SpeedValue,float 
     return FMath::Clamp(FMath::Clamp(SpeedValue,0.f,1.f)*.25f+(1.f-FMath::Clamp(StaminaValue,0.f,1.f))*.9f+SprintBoost,0.f,1.f);
 }
 
+ESteppeGroundSurface USteppeFeedbackComponent::ResolveGroundSurface(TEnumAsByte<EPhysicalSurface> Surface) const
+{
+    return Surface==SurfaceType2?ESteppeGroundSurface::Hard:ESteppeGroundSurface::Grass;
+}
+
+float USteppeFeedbackComponent::GetSurfaceCadenceScale(ESteppeGroundSurface Surface) const
+{
+    return Surface==ESteppeGroundSurface::Hard?.92f:1.f;
+}
+
 void USteppeFeedbackComponent::TickComponent(float Dt,ELevelTick TickType,FActorComponentTickFunction* TickFunction)
 {
     Super::TickComponent(Dt,TickType,TickFunction);
@@ -67,6 +80,9 @@ void USteppeFeedbackComponent::TickComponent(float Dt,ELevelTick TickType,FActor
     DustPulse=FMath::Max(0.f,DustPulse-Dt*3.f);
     LastEventAge+=Dt;
     DangerCueRemaining=FMath::Max(0.f,DangerCueRemaining-Dt);
+    SurfaceProbeRemaining-=Dt;
+    BreathCueRemaining-=Dt;
+    if (SurfaceProbeRemaining<=0.f) { SurfaceProbeRemaining=.2f; DetectGroundSurface(); }
     UpdateMovementSignals(Dt);
     UpdateGameplayEvents(Dt);
 }
@@ -82,7 +98,7 @@ void USteppeFeedbackComponent::UpdateMovementSignals(float Dt)
     const float Stamina=Horse && Horse->Attributes?Horse->Attributes->GetStaminaNormalized():1.f;
     const EHorseGait Gait=Movement?Movement->Gait:EHorseGait::Idle;
     BreathIntensity=FMath::FInterpTo(BreathIntensity,CalculateBreathIntensity(TargetSpeed,Stamina,Gait),Dt,3.f);
-    const float Interval=GetHoofbeatInterval(Gait);
+    const float Interval=GetHoofbeatInterval(Gait)*GetSurfaceCadenceScale(GroundSurface);
     if (Horse && Interval>0.f && Movement->CurrentSpeed>80.f)
     {
         HoofbeatRemaining-=Dt;
@@ -90,11 +106,36 @@ void USteppeFeedbackComponent::UpdateMovementSignals(float Dt)
         {
             HoofbeatRemaining=Interval;
             HoofbeatPulse=1.f;
-            DustPulse=FMath::Clamp((TargetSpeed-.15f)/.85f,0.f,1.f);
+            DustPulse=FMath::Clamp((TargetSpeed-.15f)/.85f,0.f,1.f)*(GroundSurface==ESteppeGroundSurface::Grass?1.f:.3f);
             EmitEvent(ESteppeFeedbackEvent::Hoofbeat);
+            SpawnConfiguredDust();
         }
     }
     else { HoofbeatRemaining=0.f; }
+    if (BreathIntensity>.32f && BreathCueRemaining<=0.f)
+    {
+        BreathCueRemaining=FMath::Lerp(2.8f,1.1f,BreathIntensity);
+        EmitEvent(ESteppeFeedbackEvent::HorseBreath);
+    }
+    else if (BreathIntensity<.18f) { BreathCueRemaining=FMath::Min(BreathCueRemaining,.5f); }
+}
+
+void USteppeFeedbackComponent::DetectGroundSurface()
+{
+    const auto* Rider=Cast<ASteppeRiderCharacter>(GetOwner());
+    const auto* Horse=Rider && Rider->Riding?Rider->Riding->GetHorse():nullptr;
+    UWorld* World=GetWorld();
+    if (!Horse || !World) { GroundSurface=ESteppeGroundSurface::Grass; return; }
+    FHitResult Hit;
+    FCollisionQueryParams Params(SCENE_QUERY_STAT(SteppeFeedbackSurface),false,Horse);
+    Params.bReturnPhysicalMaterial=true;
+    Params.AddIgnoredActor(Rider);
+    const FVector Start=Horse->GetActorLocation()+FVector(0,0,30.f);
+    if (World->LineTraceSingleByChannel(Hit,Start,Start-FVector(0,0,220.f),ECC_Visibility,Params) && Hit.PhysMaterial.IsValid())
+    {
+        GroundSurface=ResolveGroundSurface(Hit.PhysMaterial->SurfaceType);
+    }
+    else { GroundSurface=ESteppeGroundSurface::Grass; }
 }
 
 void USteppeFeedbackComponent::UpdateGameplayEvents(float Dt)
@@ -148,17 +189,60 @@ void USteppeFeedbackComponent::EmitEvent(ESteppeFeedbackEvent Event)
     if (Event==ESteppeFeedbackEvent::Hoofbeat) { ++HoofbeatCount; }
     if (Event>=ESteppeFeedbackEvent::LassoSwing && Event<=ESteppeFeedbackEvent::HorseCaptured) { ++LassoEventCount; }
     if (Event==ESteppeFeedbackEvent::RopeDanger || Event>=ESteppeFeedbackEvent::BalanceWarning) { ++RiskEventCount; }
-    PlayPlaceholderTone(Event);
+    PlayEventAudio(Event);
 }
 
-void USteppeFeedbackComponent::PlayPlaceholderTone(ESteppeFeedbackEvent Event)
+USoundBase* USteppeFeedbackComponent::ResolveConfiguredSound(ESteppeFeedbackEvent Event) const
+{
+    switch (Event)
+    {
+    case ESteppeFeedbackEvent::Hoofbeat: return GroundSurface==ESteppeGroundSurface::Hard?Assets.HardHoof:Assets.GrassHoof;
+    case ESteppeFeedbackEvent::HorseBreath: return Assets.Breath;
+    case ESteppeFeedbackEvent::LassoSwing: return Assets.LassoSwing;
+    case ESteppeFeedbackEvent::LassoThrow: return Assets.LassoThrow;
+    case ESteppeFeedbackEvent::LassoAttach: return Assets.LassoAttach;
+    case ESteppeFeedbackEvent::LassoRelease: return Assets.LassoRelease;
+    case ESteppeFeedbackEvent::LassoBreak: return Assets.LassoBreak;
+    case ESteppeFeedbackEvent::RopeDanger: return Assets.RopeDanger;
+    case ESteppeFeedbackEvent::HorseControlled: return Assets.HorseControlled;
+    case ESteppeFeedbackEvent::HorseCaptured: return Assets.HorseCaptured;
+    case ESteppeFeedbackEvent::BalanceWarning: return Assets.BalanceWarning;
+    case ESteppeFeedbackEvent::RiderFall: return Assets.RiderFall;
+    case ESteppeFeedbackEvent::RiderDragged: return Assets.RiderDragged;
+    default: return nullptr;
+    }
+}
+
+void USteppeFeedbackComponent::SpawnConfiguredDust()
+{
+    const auto* Rider=Cast<ASteppeRiderCharacter>(GetOwner());
+    const auto* Horse=Rider && Rider->Riding?Rider->Riding->GetHorse():nullptr;
+    UNiagaraSystem* System=GroundSurface==ESteppeGroundSurface::Hard?Assets.HardHoofDust.Get():Assets.GrassHoofDust.Get();
+    if (!Horse || !System) { return; }
+    const FVector Location=Horse->GetActorLocation()-Horse->GetActorForwardVector()*140.f+FVector(0,0,-75.f);
+    UNiagaraFunctionLibrary::SpawnSystemAtLocation(this,System,Location,Horse->GetActorRotation());
+}
+
+void USteppeFeedbackComponent::PlayEventAudio(ESteppeFeedbackEvent Event)
 {
     UWorld* World=GetWorld();
-    if (!bEnablePlaceholderAudio || !World || !World->AllowAudioPlayback()) { return; }
+    if (!World || !World->AllowAudioPlayback()) { return; }
+    if (USoundBase* Sound=ResolveConfiguredSound(Event))
+    {
+        UGameplayStatics::SpawnSound2D(this,Sound,1.f,1.f,0.f,nullptr,false,true);
+        return;
+    }
+    if (!bEnableProceduralFallback) { return; }
     float Frequency=180.f,Seconds=.08f,Noise=.1f,Volume=PlaceholderVolume;
     switch (Event)
     {
-    case ESteppeFeedbackEvent::Hoofbeat: Frequency=85.f; Seconds=.055f; Noise=.45f; Volume*=.7f; break;
+    case ESteppeFeedbackEvent::Hoofbeat:
+        Frequency=GroundSurface==ESteppeGroundSurface::Hard?135.f:85.f;
+        Seconds=GroundSurface==ESteppeGroundSurface::Hard?.045f:.065f;
+        Noise=GroundSurface==ESteppeGroundSurface::Hard?.18f:.5f;
+        Volume*=.7f;
+        break;
+    case ESteppeFeedbackEvent::HorseBreath: Frequency=115.f; Seconds=.2f; Noise=.55f; Volume*=BreathIntensity; break;
     case ESteppeFeedbackEvent::LassoSwing: Frequency=330.f; Seconds=.08f; break;
     case ESteppeFeedbackEvent::LassoThrow: Frequency=470.f; Seconds=.11f; break;
     case ESteppeFeedbackEvent::LassoAttach: Frequency=190.f; Seconds=.14f; Noise=.25f; break;

@@ -82,6 +82,10 @@ else { $editorArgs += "-ExecCmds=$Commands" }
 $runStarted = Get-Date
 & $editorPath @editorArgs
 if ($LASTEXITCODE -ne 0) { throw "Editor exited with $LASTEXITCODE; see $logPath" }
+if ($PythonScript) {
+    $pythonLog = Get-Content $logPath -Raw
+    if ($pythonLog -match 'LogPython: Error:|LogEditorPythonExecuter: Error:') { throw "Python asset script reported an error; see $logPath" }
+}
 if ($Tests) {
     $reportPath = Join-Path $PSScriptRoot '..\Saved\Automation\index.json'
     if ((Get-Item $reportPath).LastWriteTime -lt $runStarted) { throw 'Automation report is stale.' }
@@ -221,10 +225,13 @@ if ($BalanceSmoke) {
 if ($FeedbackSmoke) {
     $feedbackLog = Get-Content $logPath -Raw
     $feedbackPath = Join-Path $PSScriptRoot '..\Saved\Screenshots\SteppeP13Feedback.png'
+    $hardPath = Join-Path $PSScriptRoot '..\Saved\Screenshots\SteppeP13HardSurface.png'
     if (!(Test-Path $feedbackPath) -or (Get-Item $feedbackPath).LastWriteTime -lt $runStarted) { throw "P13 feedback screenshot is missing or stale; see $logPath" }
+    if (!(Test-Path $hardPath) -or (Get-Item $hardPath).LastWriteTime -lt $runStarted) { throw "P13 hard-surface screenshot is missing or stale; see $logPath" }
     if ($feedbackLog -notmatch 'STEPPE_P13_SMOKE: Hoofbeats=[1-9][0-9]* LassoEvents=[2-9][0-9]*? RiskEvents=[0-9]+ Wind=0\.[0-9]+ Breath=0\.[0-9]+ Rope=0\.[0-9]+ Last=') {
         throw "P13 feedback smoke did not produce movement and lasso signals; see $logPath"
     }
+    if ($feedbackLog -notmatch 'Surface=ESteppeGroundSurface::Hard') { throw "P13 feedback smoke did not route the hard test pad; see $logPath" }
     Write-Output 'P13 feedback smoke: hoof cadence, movement ambience, rope events and visual feedback rendered.'
 }
 Write-Output "Editor exited successfully. Log: $logPath"

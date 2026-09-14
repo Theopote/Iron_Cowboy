@@ -72,6 +72,8 @@ Rider Balance 由张力、侧向比例、速度、目标 Strength 和命中区�
 **状态：已确认**
 Rider 上的 SteppeFeedbackComponent 在既有 Gameplay 组件之后派生步频、风感、呼吸、绳索压力与离散事件，不写回运动、套索、Balance 或任务规则。第一增量使用运行时生成的短 PCM 和灰盒扬尘，避免引入来源不明的临时素材；后续正式声音、Niagara 和动画通过同一信号接口替换。
 
+P13.2 将地表也作为只读表现输入：Physical Material 只选择 Grass/Hard 声音与粒子，不修改马匹运动。正式 SoundBase/NiagaraSystem 通过可编辑资源插槽覆盖程序化回退，资源缺失不会改变状态机或阻塞测试。
+
 ## 待决策事项
 
 以下事项在对应里程碑开始前决定，不提前实现：

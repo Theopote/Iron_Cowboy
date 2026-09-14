@@ -54,6 +54,13 @@ BP_SteppeHorse 的 Attributes：速度上限、敏捷、BaseTurnRate、体力、
 
 在 `/Game/Steppe/Animation/Horses/ABP_Horse` 创建与模型骨架一致的 AnimBP，读取 Horse 的 AnimationData。使用速度、步态、加速、转向和 Lean 驱动表现，不能用动画直接替代运动计算。当前不提供最终马素材。
 
+## P13 表面与表现资源
+
+- Project Settings → Physics 已登记 `SurfaceType1=Grass`、`SurfaceType2=Hard`。
+- `/Game/Steppe/Feedback/PM_Grass` 与 `PM_Hard` 已绑定原型草地和硬地材质；地图中的 `HardSurface_TestPad` 可直接骑上去比较反馈。
+- 在 Rider Blueprint 的 SteppeFeedback → Assets 中配置 GrassHoof、HardHoof、Breath、套索/风险 SoundBase 和 Grass/Hard HoofDust NiagaraSystem。空插槽会使用程序化/灰盒回退，不影响 Gameplay。
+- 导入的正式声音和粒子必须保留来源与许可记录；动画、声音和粒子只读取现有状态接口。
+
 ## 可选：把运行时输入替换为编辑器资产
 
 在 `/Game/Steppe/Input` 创建：

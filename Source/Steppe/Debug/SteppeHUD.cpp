@@ -72,8 +72,9 @@ void ASteppeHUD::DrawHUD()
         {
             const auto EventText=UEnum::GetDisplayValueAsText(Rider->Feedback->LastEvent).ToString().ToUpper();
             DrawRect(FLinearColor(0,0,0,.6f),LassoX-6,169,558,43);
-            DrawText(FString::Printf(TEXT("FEEDBACK HOOF %d | WIND %.0f%% | BREATH %.0f%% | %s"),
-                Rider->Feedback->HoofbeatCount,Rider->Feedback->WindIntensity*100.f,Rider->Feedback->BreathIntensity*100.f,*EventText),
+            DrawText(FString::Printf(TEXT("%s | HOOF %d | WIND %.0f%% | BREATH %.0f%% | %s"),
+                *UEnum::GetDisplayValueAsText(Rider->Feedback->GroundSurface).ToString().ToUpper(),Rider->Feedback->HoofbeatCount,
+                Rider->Feedback->WindIntensity*100.f,Rider->Feedback->BreathIntensity*100.f,*EventText),
                 FLinearColor(.65f,.9f,1.f),LassoX,174,nullptr,.9f);
             DrawRect(FLinearColor(.12f,.12f,.12f,1),LassoX,197,520,7);
             DrawRect(FLinearColor(1.f,.48f,.12f,1),LassoX,197,520*Rider->Feedback->RopeStress,7);

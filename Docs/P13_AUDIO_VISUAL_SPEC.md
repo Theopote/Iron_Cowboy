@@ -1,8 +1,8 @@
 # P13 垂直切片音画规格
 
-**状态：第一增量已完成并验证**
+**状态：前两次增量已完成并验证**
 **依赖：P12**
-**当前范围：反馈信号层、程序化占位音、马蹄/尘土、绳索受力与风险反馈**
+**当前范围：反馈信号层、双地表路由、可替换 Sound/Niagara 插槽、程序化回退、马蹄/尘土、绳索风险与 Horse Card 层级**
 
 ## 目标
 
@@ -49,4 +49,16 @@ Rider 持有 SteppeFeedbackComponent，在 Gameplay 组件之后读取：
 
 ## P13.2 后续范围
 
-接入可替换且许可明确的真实马蹄、呼吸、绳索与环境声音，按地表材质区分步音；把灰盒尘土迁移到 Niagara，把状态驱动接入马与骑手动画接口，并整理 Horse Card、任务提示和结算 UI 层级。所有表现仍只读取现有 Gameplay 状态。
+P13.2 已完成表现资源接入基础：
+
+- `SurfaceType1=Grass`、`SurfaceType2=Hard`；反馈组件以 5 Hz 向坐骑脚下探测物理材质。
+- Grass 与 Hard 使用不同步频、程序化音色和扬尘强度；原型地图包含 `PM_Grass`、`PM_Hard` 与使用对应材质的可骑乘 `HardSurface_TestPad`。
+- `FSteppeFeedbackAssets` 暴露草地/硬地马蹄、呼吸、套索、控制、捕获、Balance、落马声音及两类 HoofDust Niagara 插槽。配置正式资源时优先播放资源，缺失时使用现有程序化声音或灰盒尘土。
+- BreathIntensity 超过阈值后按疲劳强度产生独立呼吸节奏事件。
+- Horse Card 调整为 Identity、Temperament、Capability、Name 四层，并提供 Confirm 与 Replay 明确操作。
+
+P13.2 验证保持 **18 passed、0 failed**。实际冒烟先记录并显示 `Surface=Grass`，随后进入绑定 `PM_Hard` 的测试垫并记录 `Surface=Hard`；完整牵回、Horse Card、命名和 Trial Success 再次通过。证据位于 `Validation/P13.2-Results.json`、`P13.2-Grass.png`、`P13.2-Hard.png`、`P13.2-HorseCard.png`、`P13.2-FullLoop.png` 和 `P13.2-Runs.txt`。
+
+## P13.3 后续范围
+
+选择许可明确的正式声音和 Niagara 资源填入现有插槽；接入与真实骨架匹配的马匹/骑手 AnimBP，并整理任务提示和结算 UI。所有表现仍只读取现有 Gameplay 状态。

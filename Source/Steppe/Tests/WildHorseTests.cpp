@@ -486,12 +486,16 @@ bool FFeedbackSignalsTest::RunTest(const FString& Parameters)
     auto* Rider=Fixture.World->SpawnActor<ASteppeRiderCharacter>(FVector(0,180,100),FRotator::ZeroRotator);
     auto* Wild=Fixture.World->SpawnActor<ASteppeWildHorseCharacter>(FVector(1100,0,100),FRotator::ZeroRotator);
     Fixture.Begin();
-    Rider->Feedback->bEnablePlaceholderAudio=false;
+    Rider->Feedback->bEnableProceduralFallback=false;
     TestTrue(TEXT("Sprint hoof cadence is faster than walking"),
         Rider->Feedback->GetHoofbeatInterval(EHorseGait::Sprint)<Rider->Feedback->GetHoofbeatInterval(EHorseGait::Walk));
     TestTrue(TEXT("Fatigued sprint breathing exceeds rested walking"),
         Rider->Feedback->CalculateBreathIntensity(1.f,.2f,EHorseGait::Sprint)>
         Rider->Feedback->CalculateBreathIntensity(.2f,1.f,EHorseGait::Walk));
+    TestEqual(TEXT("Surface type 1 routes to grass"),Rider->Feedback->ResolveGroundSurface(SurfaceType1),ESteppeGroundSurface::Grass);
+    TestEqual(TEXT("Surface type 2 routes to hard ground"),Rider->Feedback->ResolveGroundSurface(SurfaceType2),ESteppeGroundSurface::Hard);
+    TestTrue(TEXT("Hard ground has a distinct cadence"),
+        Rider->Feedback->GetSurfaceCadenceScale(ESteppeGroundSurface::Hard)<Rider->Feedback->GetSurfaceCadenceScale(ESteppeGroundSurface::Grass));
 
     TestTrue(TEXT("Feedback fixture mounts safely"),Rider->Riding->TryMount(Mount));
     auto* Move=CastChecked<UHorseMovementComponent>(Mount->GetCharacterMovement());
@@ -504,6 +508,7 @@ bool FFeedbackSignalsTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Mounted gallop emits multiple hoofbeats"),Rider->Feedback->HoofbeatCount>=2);
     TestTrue(TEXT("Mounted speed drives wind feedback"),Rider->Feedback->WindIntensity>.1f);
     TestTrue(TEXT("Fatigue and speed drive breath feedback"),Rider->Feedback->BreathIntensity>.2f);
+    TestEqual(TEXT("Prototype floor resolves to grass"),Rider->Feedback->GroundSurface,ESteppeGroundSurface::Grass);
     TestTrue(TEXT("Hoofbeats drive a dust pulse"),Rider->Feedback->DustPulse>0.f);
 
     TestTrue(TEXT("Isolated target can enter feedback swing"),Rider->Lasso->BeginAimForTarget(Wild,true));

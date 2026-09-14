@@ -1,8 +1,8 @@
 # Current Phase
 
-**P13.1 — 反馈信号、程序化占位音、马蹄/尘土与绳索风险表现已经实现并验证。**
+**P13.2 — 双地表反馈路由、可替换表现资源接口与新版 Horse Card 已经实现并验证。**
 
-项目使用 UE 5.8.2。完整灰盒闭环继续可玩；Gameplay 之外新增统一反馈组件，把速度、体力、摆绳、张力和骑手风险转换为可替换的音画信号。
+项目使用 UE 5.8.2。完整灰盒闭环继续可玩；反馈组件现在能识别 Grass/Hard 物理表面，并把现有信号路由到可配置的 Sound 与 Niagara 资源，缺失资源时安全回退。
 
 # Completed
 
@@ -18,6 +18,10 @@
 - Gait 驱动马蹄节拍，速度与低体力驱动风感和呼吸；马蹄脉冲生成灰盒扬尘。
 - 摆绳、投掷、附着、释放/断裂、控制完成、捕获和失衡均生成独立事件；程序化 PCM 提供无外部授权依赖的临时声音。
 - 绳线按有效张力和危险程度显示黄、绿、橙、红并动态增粗；临时 FEEDBACK HUD 用于调参与验证。
+- PhysicsSettings 登记 Grass/Hard；`PM_Grass`、`PM_Hard` 已创建并绑定原型材质，地图加入使用硬地材质的 HardSurface_TestPad。
+- FSteppeFeedbackAssets 提供 14 类 Sound 和两类 Niagara 插槽；Grass/Hard 具有不同步频、音色与扬尘强度。
+- 高呼吸强度会产生独立 HorseBreath 节奏事件，正式循环/单次素材可直接替换程序化回退。
+- Horse Card 形成 Identity、Temperament、Capability、Name 四层，并增加明确的 Confirm Name 与 Replay Round 操作。
 
 # Build Result
 
@@ -31,9 +35,9 @@ UHT、C++、UMG 编译与链接成功。没有修改引擎，也没有增加物�
 
 `Steppe.P13.FeedbackSignalsAndEvents` 覆盖步态节拍、疲劳呼吸、骑乘风感、扬尘脉冲、套索事件、风险事件和禁用音频时的确定性信号。P1–P12 回归继续通过。
 
-实际渲染记录 `Hoofbeats=9 / LassoEvents=3 / RiskEvents=0 / Wind=0.31 / Breath=0.14 / Rope=0.00 / Last=Hoofbeat`，截图时套索保持 Neck 附着。正向完整路线仍将 `Saran` 牵回、命名并以 Trial Success 结束。
+双地表冒烟先在草地完成骑乘与 Neck 附着，随后进入 HardSurface_TestPad；最终日志记录 `Surface=Hard / Hoofbeats=5 / LassoEvents=3`。正向完整路线仍将 `Saran` 牵回，通过新版 Horse Card 命名并以 Trial Success 结束。
 
-证据：`Validation/P13-Results.json`、`P13-Feedback.png`、`P13-FullLoop.png` 和 `P13-Runs.txt`。原始日志为 `Saved/Logs/P13-Tests.log`、`P13-Feedback-Smoke.log` 与 `P13-FullLoop-Smoke.log`。
+证据：`Validation/P13.2-Results.json`、`P13.2-Grass.png`、`P13.2-Hard.png`、`P13.2-HorseCard.png`、`P13.2-FullLoop.png` 和 `P13.2-Runs.txt`。原始日志为 `Saved/Logs/P13.2-Tests.log`、`P13.2-CreateSurfaceAssets.log`、`P13.2-Surface-Smoke.log` 与 `P13.2-FullLoop-Smoke.log`。
 
 # Manual Steps
 
@@ -42,7 +46,7 @@ UHT、C++、UMG 编译与链接成功。没有修改引擎，也没有增加物�
 # Known Limits
 
 - 摆绳、落马和拖行目前由状态、速度、HUD、程序化占位音和灰盒模型表达，尚无正式角色动画、布娃娃或绳圈模型。
-- 尚未按草地/硬地区分步音；尘土尚未迁移到 Niagara，风感和呼吸也未接入正式循环素材与混音。
+- 草地/硬地路由已完成，但正式录音和 Niagara 资产尚未选定；当前仍由程序化音色和灰盒尘土回退。
 - 命中区基于灰盒 Capsule 局部高度；换成骨骼马后应改用独立碰撞体或骨骼映射。
 - Balance 周期、阈值、拖行速度和 1.25 秒上限尚未经过多人试玩平衡。
 - 没有生命值或伤害；落马是可恢复的操作后果。
@@ -51,7 +55,7 @@ UHT、C++、UMG 编译与链接成功。没有修改引擎，也没有增加物�
 
 # Next Recommended Work
 
-继续 P13.2：接入许可明确、可替换的正式马蹄/呼吸/绳索/环境声音和地表分类，把扬尘迁移到 Niagara，接入基础马与骑手动画接口，并整理 Horse Card、任务提示和结算 UI 层级。
+继续 P13.3：为既有插槽选择许可明确的马蹄、呼吸、绳索和 Niagara 资源，接入与真实骨架匹配的马/骑手 AnimBP，并整理任务提示与结算 UI。
 
 # Milestones
 
@@ -63,3 +67,4 @@ UHT、C++、UMG 编译与链接成功。没有修改引擎，也没有增加物�
 - 2026-09-13 P12.1：完成确定性摆绳稳定窗口、投掷参数和三类命中区域。
 - 2026-09-14 P12.2：完成 Rider Balance、侧向负荷、落马、限时拖行和主动松绳恢复；17 项测试、两条 P12 渲染路线和完整闭环回归通过。
 - 2026-09-14 P13.1：完成独立反馈层、程序化占位音、马蹄/风感/呼吸、灰盒扬尘和动态绳索风险表现；18 项测试、P13 渲染和完整闭环回归通过。
+- 2026-09-14 P13.2：完成 Grass/Hard 实际物理材质路由、Sound/Niagara 资源插槽、呼吸事件和 Horse Card 层级；18 项测试、双地表渲染和完整闭环回归通过。
