@@ -4,6 +4,7 @@
 #include "Character/Horse/HorseAttributeComponent.h"
 #include "Character/Horse/HorseMovementComponent.h"
 #include "Character/Horse/SteppeHorseCharacter.h"
+#include "Presentation/HorsePresentationComponent.h"
 #include "Character/Rider/RidingComponent.h"
 #include "Character/Rider/SteppeRiderCharacter.h"
 #include "Engine/Engine.h"
@@ -11,6 +12,9 @@
 #include "Engine/StaticMeshActor.h"
 #include "Engine/StaticMesh.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Animation/AnimSingleNodeInstance.h"
+#include "Animation/BlendSpace1D.h"
 #include "Materials/MaterialInterface.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -88,6 +92,10 @@ bool FSteppeWorldTest::RunTest(const FString& Parameters)
         for (int32 I=0; I<FMath::RoundToInt(Seconds*60); ++I) { ++GFrameCounter; World->Tick(LEVELTICK_All,1.f/60); }
     };
     Step(.5f);
+    TestTrue(TEXT("Temporary skeletal horse replaces visible placeholder"),Horse->GetMesh()->GetSkeletalMeshAsset()
+        && !Horse->GetPlaceholderRoot()->IsVisible());
+    TestTrue(TEXT("Horse animation uses the imported speed blend"),Horse->GetMesh()->GetSingleNodeInstance()
+        && Horse->GetMesh()->GetSingleNodeInstance()->GetAnimationAsset()==Horse->Presentation->TemporarySpeedBlend.Get());
     auto* Move=CastChecked<UHorseMovementComponent>(Horse->GetCharacterMovement());
     Floor->GetStaticMeshComponent()->SetMaterial(0,LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Steppe/Debug/M_PrototypeGrass.M_PrototypeGrass")));
     Step(.1f); const float GrassGrip=Move->EffectiveGripRate;

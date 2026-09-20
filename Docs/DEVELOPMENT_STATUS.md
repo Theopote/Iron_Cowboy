@@ -1,6 +1,6 @@
 # Current Phase
 
-**P16 第一轮动力学已实现并通过自动化，待真人手感复核；下一阶段为 P16.5 表现集成准备。**
+**P16 第一轮动力学已实现；P16.5 临时骨骼马和速度动画已接入，待真人视觉与手感复核。**
 
 首批真人试玩发现玩家看不到准备中的套索、不清楚何时按 Q，且原有底部提示容易被忽略。P14.4 已完成针对性修复：准星中的候选马显示黄色 `Q SELECT` 框，选中目标后显示青色持续标记；屏幕中央新增按阶段变化的大型操作卡；按住右键时绘制清晰的套索环，稳定窗口由橙色变为绿色，并明确提示此时按左键投掷。
 
@@ -16,11 +16,15 @@
 
 P15.2 已把 Head、Neck、Chest、Torso 命中几何移入野马的 `ULassoTargetComponent`。体积随马的变换进入世界空间，可在 Blueprint 上调节或替换；投索组件只处理轨迹、障碍和跨马匹的最早命中。Chest 仍沿用 Torso 的 Gameplay 风险倍率。P16 第一轮已让朝向和速度短暂分离，Grass/Hard 缩放抓地响应，套索以有界侧向加速度拉动被套野马；正式马与骑手动画安排在动力学体验复核之后。
 
+P16.5 使用 Quaternius CC0 临时马替换所有马匹的灰盒显示。骨骼网格和 13 段源动画已导入，当前以 Idle/Walk/Gallop Blend Space 响应现有运动数据；三类野马通过动态材质区分毛色。旧 16 部件模型仍作回退，Gameplay 碰撞、马匹运动、AI、套索和骑乘逻辑未变。详见 `Docs/P16.5_TEMPORARY_HORSE.md`。
+
 P16 验证：UE 5.8.2 Editor 与 Shipping 编译成功，24 项自动化测试全部通过，实际渲染的完整捕获到命名 Smoke 通过；新 Windows 包完成 Smoke 启动检查。
 
 验证状态：UE 5.8.2 Editor 编译成功；24 项 Steppe 自动化测试通过，0 项失败；P16 测试覆盖抓地、侧滑、地表差异、有界绳索拉力及释放清理；带渲染的完整捕获、牵回和命名继续成功。Shipping Cook 506 个包、0 error/0 warning，打包后 Smoke 退出码 0。正式玩家研究安排在动力学与表现切片后，日常试玩仍可继续发现回归。
 
-项目使用 UE 5.8.2。完整灰盒闭环继续可玩；Sound、Niagara 和 AnimBP 所需的数据边界已经建立，灰盒马匹与骑手会实际表现步态起伏、加速俯仰、转向侧倾和受力姿态。
+P16.5 验证：24 项自动化测试通过；三类马专用渲染与完整捕获闭环通过；Win64 Shipping Build/Cook/Stage/Archive 成功，新包的 Shipping 二进制 Smoke 退出码为 0。分发 ZIP 为 `Packages/ProjectSTEPPE-Windows-20260920-1914.zip`（SHA-256 `CFC43D0FFC851E51E85629A72E2B6D546E061458D752F26D1FC35792607EFCA8`）。
+
+项目使用 UE 5.8.2。完整玩法闭环继续可玩；Sound、Niagara 和 AnimBP 所需的数据边界已经建立。马匹现在使用临时骨骼网格及基础步态动画，骑手仍是灰盒表现。
 
 # Completed
 
@@ -55,12 +59,13 @@ P16 验证：UE 5.8.2 Editor 与 Shipping 编译成功，24 项自动化测试�
 - 全马共用不缩放的表现根节点，继续响应已有 BodyBob/Pitch/Roll；四腿使用肩/胯枢轴按对角步态交替摆动，蹄部随腿运动。
 - 野马全部部件继承原 Blueprint 躯干材质；视觉组件无碰撞，原 Capsule、移动、AI、套索命中和骑乘规则保持不变。
 - P15 已将直线 Sphere Sweep 替换为动态空间绳圈；Q 不再限定实际附着对象。P16 第一轮已分离面朝与速度，并让套索张力对被套野马施加有界侧向加速度。
+- P16.5 将 CC0 骨骼马应用到坐骑和野马，保留灰盒回退；速度驱动 Idle/Walk/Gallop，Fast/Strong/Nervous 具有可辨毛色。
 - `Docs/Playtests/` 提供 15 轮匿名记录表、访谈模板和现场说明；`SummarizePlaytests.ps1` 汇总客观 JSON。
 - 试玩 JSON 升级为 schema 1.1 并记录 `isAutomated`；真人汇总默认排除自动 Smoke 与旧版无来源记录。
 - `.idea/`、`.vscode/` 已加入忽略；6 个 `.idea` 文件停止 Git 跟踪，本机副本保留。
 - P14.3 玩家教程覆盖启动、完整操作、三轮流程、卡住恢复和数据说明；组织者指南规定教程协助标记、逐轮口述和 JSON 对应方法。
 - `PackageWindows.ps1` 提供 UE 5.8.2 Win64 Shipping 的 Build/Cook/Stage/Pak/Archive 与可选 ZIP；分发包自动附带 PlaytestKit 和本地结果收集脚本。
-- Win64 Shipping 已实际完成打包和启动验证：Cook 506 个包、0 error/0 warning；最新 ZIP 314,490,616 bytes，Shipping Smoke 退出码 0。
+- Win64 Shipping 已实际完成打包和启动验证：P16.5 最新 ZIP 315,189,298 bytes，Shipping Smoke 退出码 0。
 
 # Build Result
 
@@ -98,9 +103,9 @@ P14.3 准备证据：`Validation/P14.3-Audit-Results.json`、`P14.3-Automated-Me
 
 # Known Limits
 
-- 摆绳、落马和拖行目前由状态、速度、HUD、程序化占位音和灰盒模型表达；P15 已有空间环与动态绳线，但尚无正式角色动画、绳索网格或布娃娃。
+- 摆绳、落马和拖行目前由状态、速度、HUD、程序化占位音和灰盒骑手表达；马匹已有临时骨骼网格与基础步态，但尚无正式受力/落马动画、绳索网格或布娃娃。
 - 草地/硬地路由已完成，但正式录音和 Niagara 资产尚未选定；当前仍由程序化音色和灰盒尘土回退。
-- 命中区使用野马身上四个可编辑灰盒体积（Head/Neck/Chest/Torso，Chest 沿用 Torso 风险）；换成骨骼马后仍需重新绑定碰撞体或骨骼 Socket。
+- 命中区仍使用野马身上四个可编辑体积（Head/Neck/Chest/Torso，Chest 沿用 Torso 风险）；骨骼马已显示，但体积尚未按新模型的头颈和身体重新校准或绑定 Socket。
 - P16 的抓地率与套索侧拉上限已有确定性回归，但尚未经过玩家手感复核；复杂地形及长时间追逐还需实际试玩。
 - Balance、急停冲击阈值、2 秒倒地拖行和徒步牵引速度仍需更多真人样本平衡。
 - 没有生命值或伤害；落马是可恢复的操作后果。
@@ -109,7 +114,7 @@ P14.3 准备证据：`Validation/P14.3-Audit-Results.json`、`P14.3-Automated-Me
 
 # Next Recommended Work
 
-下一步先让玩家复核 P16 的高速转向、低速贴近、绳索侧拉和障碍场景；根据结果调节抓地率与外力上限。之后进入 P16.5 真正马匹、骑手与动画集成，完成有限草原切片，再组织第二轮正式真人试玩。
+下一步让玩家复核 P16 的高速转向、低速贴近、绳索侧拉，以及 P16.5 骨骼马在骑乘视角中的比例、步态和套索命中位置。再补骑手与受力动画、马鞍座位和命中体积校准，完成有限草原切片，组织第二轮正式真人试玩。
 
 # Milestones
 
@@ -133,3 +138,4 @@ P14.3 准备证据：`Validation/P14.3-Audit-Results.json`、`P14.3-Automated-Me
 - 2026-09-15 P15.1：实现抛物线 Loop Center、动态 Swing Plane/Radius/Angular Phase、实际马体几何命中、非 Q 目标附着和随张力变化的分段绳线；22 项回归与两条渲染路线通过。
 - 2026-09-20 P15.2：用野马上的可编辑套索目标体积替代投索组件中的硬编码马体坐标；23 项自动化测试和完整渲染闭环通过，路线图插入 P16.5–P16.7 表现阶段与第二轮试玩门。
 - 2026-09-20 P16 第一轮：朝向与水平速度分离，Grass/Hard 抓地参数接入，套索张力改为有界侧向加速度；24 项自动化、渲染完整闭环和新 Shipping 包启动验证通过。
+- 2026-09-20 P16.5 临时马表现：Quaternius CC0 骨骼网格、13 段源动画和三步态 Blend Space 接入所有马匹；24 项自动化与三马渲染、完整捕获闭环通过。

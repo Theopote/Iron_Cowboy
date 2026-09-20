@@ -4,8 +4,10 @@
 #include "Character/Horse/HorseMovementComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Components/SceneComponent.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/SkeletalMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Core/SteppeGameplayTags.h"
@@ -17,6 +19,18 @@ ASteppeHorseCharacter::ASteppeHorseCharacter(const FObjectInitializer& ObjectIni
     Attributes = CreateDefaultSubobject<UHorseAttributeComponent>(TEXT("HorseAttributes"));
     Presentation = CreateDefaultSubobject<UHorsePresentationComponent>(TEXT("HorsePresentation"));
     Presentation->AddTickPrerequisiteComponent(GetCharacterMovement());
+    static ConstructorHelpers::FObjectFinder<USkeletalMesh> TemporaryHorse(
+        TEXT("/Game/Steppe/ThirdParty/Quaternius/AnimatedAnimals/Horse/Horse/SkeletalMeshes/Horse.Horse"));
+    if (TemporaryHorse.Succeeded())
+    {
+        GetMesh()->SetSkeletalMeshAsset(TemporaryHorse.Object);
+        GetMesh()->SetRelativeLocation(FVector(0,0,-94.f));
+        GetMesh()->SetRelativeRotation(FRotator(0,-90.f,0));
+        GetMesh()->SetRelativeScale3D(FVector(.45f));
+        GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        GetMesh()->SetGenerateOverlapEvents(false);
+        Presentation->bAnimatePlaceholder=false;
+    }
     PlaceholderRoot = CreateDefaultSubobject<USceneComponent>(TEXT("PlaceholderHorseRoot"));
     PlaceholderRoot->SetupAttachment(GetRootComponent());
     Placeholder = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PlaceholderBody"));
@@ -73,6 +87,7 @@ ASteppeHorseCharacter::ASteppeHorseCharacter(const FObjectInitializer& ObjectIni
 void ASteppeHorseCharacter::BeginPlay()
 {
     Super::BeginPlay();
+    if (GetMesh()->GetSkeletalMeshAsset()) { PlaceholderRoot->SetVisibility(false,true); }
     if (!Placeholder) { return; }
     UMaterialInterface* BodyMaterial=Placeholder->GetMaterial(0);
     for (UStaticMeshComponent* Part : PlaceholderParts)
@@ -83,6 +98,22 @@ void ASteppeHorseCharacter::BeginPlay()
 
 void ASteppeHorseCharacter::ApplyPlaceholderColor(const FLinearColor& Color)
 {
+    // The temporary horse has three coat material slots with the same editable factor.
+    // Keep the archetypes readable while retaining the imported light/dark coat pattern.
+    const float CoatShade[]={1.f,.56f,1.5f};
+    if (GetMesh()->GetSkeletalMeshAsset())
+    {
+        for (int32 Index=0;Index<UE_ARRAY_COUNT(CoatShade);++Index)
+        {
+            if (auto* Material=GetMesh()->CreateAndSetMaterialInstanceDynamic(Index))
+            {
+                Material->SetVectorParameterValue(TEXT("BaseColorFactor"),FLinearColor(
+                    FMath::Min(1.f,Color.R*CoatShade[Index]),
+                    FMath::Min(1.f,Color.G*CoatShade[Index]),
+                    FMath::Min(1.f,Color.B*CoatShade[Index])));
+            }
+        }
+    }
     for (UStaticMeshComponent* Part : PlaceholderParts)
     {
         if (!Part) { continue; }

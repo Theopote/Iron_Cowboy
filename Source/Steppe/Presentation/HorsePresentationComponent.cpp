@@ -1,11 +1,18 @@
 #include "Presentation/HorsePresentationComponent.h"
 #include "Character/Horse/SteppeHorseCharacter.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Animation/BlendSpace1D.h"
+#include "Animation/AnimSingleNodeInstance.h"
+#include "UObject/ConstructorHelpers.h"
 
 UHorsePresentationComponent::UHorsePresentationComponent()
 {
     PrimaryComponentTick.bCanEverTick=true;
     PrimaryComponentTick.TickGroup=TG_PostUpdateWork;
+    static ConstructorHelpers::FObjectFinder<UBlendSpace1D> HorseBlend(
+        TEXT("/Game/Steppe/Animation/Horses/BS_TemporaryHorseSpeed.BS_TemporaryHorseSpeed"));
+    TemporarySpeedBlend=HorseBlend.Object;
 }
 
 void UHorsePresentationComponent::BeginPlay()
@@ -17,6 +24,10 @@ void UHorsePresentationComponent::BeginPlay()
         {
             BaseLocation=Mesh->GetRelativeLocation();
             BaseRotation=Mesh->GetRelativeRotation();
+        }
+        if (auto* AnimatedMesh=Horse->GetMesh(); AnimatedMesh && AnimatedMesh->GetSkeletalMeshAsset() && TemporarySpeedBlend)
+        {
+            AnimatedMesh->PlayAnimation(TemporarySpeedBlend,true);
         }
     }
 }
@@ -54,6 +65,14 @@ void UHorsePresentationComponent::TickComponent(float Dt,ELevelTick TickType,FAc
     Data.BodyBob=FMath::FInterpTo(Data.BodyBob,TargetBob,Dt,PoseResponse);
     Data.BodyPitch=FMath::FInterpTo(Data.BodyPitch,TargetPitch,Dt,PoseResponse);
     Data.BodyRoll=FMath::FInterpTo(Data.BodyRoll,TargetRoll,Dt,PoseResponse);
+
+    if (auto* AnimatedMesh=Horse->GetMesh(); AnimatedMesh && AnimatedMesh->GetSkeletalMeshAsset())
+    {
+        if (auto* Instance=AnimatedMesh->GetSingleNodeInstance())
+        {
+            Instance->SetBlendSpacePosition(FVector(Data.NormalizedSpeed*100.f,0,0));
+        }
+    }
 
     if (auto* Mesh=Horse->GetPlaceholderRoot())
     {
