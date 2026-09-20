@@ -69,7 +69,7 @@ Q 输入经 Rider 转发到 PlayerController，再由 GameMode 的 HerdManager �
 
 ## P5：套索
 
-`ULassoComponent` 属于 Rider，接收 RMB/LMB 输入并维护 Stored、Aiming、Thrown、Attached、Subdued、Captured、Recovering。P15 后，投掷阶段推进带重力的 Loop Center，并维护 Swing Plane、Loop Radius、Angular Phase 与两条环轴；马体采样点进入环平面和半径范围时附着实际对象。Q 目标只负责关注、HUD 和隔离前置。Attached 通过 HorseBrain 的 Lassoed 状态让野马继续挣扎，并根据控绳进度逐渐降低逃跑速度。主动释放、脱靶、障碍、急停冲击、极端距离或目标销毁汇入恢复流程。状态同时通过 Native Gameplay Tags 暴露。详细范围见 P5_LASSO.md 与 P15_PHYSICAL_LASSO_V2.md。
+`ULassoComponent` 属于 Rider，接收 RMB/LMB 输入并维护 Stored、Aiming、Thrown、Attached、Subdued、Captured、Recovering。P15 后，投掷阶段推进带重力的 Loop Center，并维护 Swing Plane、Loop Radius、Angular Phase 与两条环轴；野马上的 `ULassoTargetComponent` 持有 Head/Neck/Chest/Torso 可调局部体积并执行空间相交，投索组件跨马匹选取最早有效命中。Q 目标只负责关注、HUD 和隔离前置。Attached 通过 HorseBrain 的 Lassoed 状态让野马继续挣扎，并根据控绳进度逐渐降低逃跑速度。主动释放、脱靶、障碍、急停冲击、极端距离或目标销毁汇入恢复流程。状态同时通过 Native Gameplay Tags 暴露。详细范围见 P5_LASSO.md 与 P15_PHYSICAL_LASSO_V2.md。
 
 ## P6：绳索对抗
 

@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "GameplayTagContainer.h"
+#include "Lasso/LassoTargetComponent.h"
 #include "LassoComponent.generated.h"
 
 class ASteppeWildHorseCharacter;
@@ -10,9 +11,6 @@ class ASteppeHerdManager;
 
 UENUM(BlueprintType)
 enum class ELassoState : uint8 { Stored, Aiming, Thrown, Attached, Recovering, Subdued, Captured };
-
-UENUM(BlueprintType)
-enum class ELassoHitZone : uint8 { None, Head, Neck, Torso };
 
 UCLASS(ClassGroup=(Steppe), meta=(BlueprintSpawnableComponent))
 class STEPPE_API ULassoComponent : public UActorComponent
@@ -111,7 +109,8 @@ private:
     void StartRecovery(const TCHAR* Message);
     void UpdateSwing(float DeltaSeconds);
     void UpdateRopeObstacle(float DeltaSeconds);
-    bool FindPhysicalLoopHit(const FVector& PreviousCenter, const FVector& NextCenter, ASteppeWildHorseCharacter*& OutHorse, FVector& OutHitLocation) const;
-    void AttachHorse(ASteppeWildHorseCharacter* Horse, const FVector& HitLocation);
+    bool FindPhysicalLoopHit(const FVector& PreviousCenter, const FVector& NextCenter,
+        ASteppeWildHorseCharacter*& OutHorse, FVector& OutHitLocation, ELassoHitZone& OutZone) const;
+    void AttachHorse(ASteppeWildHorseCharacter* Horse, const FVector& HitLocation, ELassoHitZone Zone);
     void UpdateLoopAxes();
 };

@@ -194,9 +194,7 @@ float ULassoComponent::GetEffectiveSubdueSeconds(const ASteppeWildHorseCharacter
 
 ELassoHitZone ULassoComponent::ClassifyHitZone(const ASteppeWildHorseCharacter* Horse, FVector HitLocation) const
 {
-    if (!Horse) { return ELassoHitZone::None; }
-    const float LocalHeight=Horse->GetActorTransform().InverseTransformPosition(HitLocation).Z;
-    return LocalHeight>85.f?ELassoHitZone::Head:(LocalHeight>=35.f?ELassoHitZone::Neck:ELassoHitZone::Torso);
+    return Horse && Horse->LassoTarget?Horse->LassoTarget->ClassifyLocation(HitLocation):ELassoHitZone::None;
 }
 
 float ULassoComponent::GetHitZoneTensionMultiplier() const
@@ -240,52 +238,40 @@ void ULassoComponent::UpdateLoopAxes()
 }
 
 bool ULassoComponent::FindPhysicalLoopHit(const FVector& PreviousCenter, const FVector& NextCenter,
-    ASteppeWildHorseCharacter*& OutHorse, FVector& OutHitLocation) const
+    ASteppeWildHorseCharacter*& OutHorse, FVector& OutHitLocation, ELassoHitZone& OutZone) const
 {
     OutHorse=nullptr;
     OutHitLocation=FVector::ZeroVector;
+    OutZone=ELassoHitZone::None;
     UWorld* World=GetWorld();
     if (!World) { return false; }
-    const FVector Segment=NextCenter-PreviousCenter;
-    const float SegmentLengthSquared=Segment.SizeSquared();
     float BestAlong=BIG_NUMBER;
     for (TActorIterator<ASteppeWildHorseCharacter> It(World); It; ++It)
     {
         ASteppeWildHorseCharacter* Horse=*It;
-        if (!IsValid(Horse) || !Horse->Brain || Horse->Brain->bCaptured) { continue; }
-        const FVector Forward=Horse->GetActorForwardVector();
-        const FVector Samples[] =
+        if (!IsValid(Horse) || !Horse->Brain || Horse->Brain->bCaptured || !Horse->LassoTarget) { continue; }
+        float Along=BIG_NUMBER;
+        FVector Location=FVector::ZeroVector;
+        ELassoHitZone Zone=ELassoHitZone::None;
+        if (Horse->LassoTarget->FindLoopIntersection(PreviousCenter,NextCenter,SwingPlaneNormal,
+            LoopRadius,LoopPlaneThickness,Along,Location,Zone) && Along<BestAlong)
         {
-            Horse->GetActorLocation()+FVector(0,0,38.f),
-            Horse->GetActorLocation()+Forward*105.f+FVector(0,0,72.f),
-            Horse->GetActorLocation()+Forward*175.f+FVector(0,0,105.f)
-        };
-        for (const FVector& Sample : Samples)
-        {
-            const float Along=SegmentLengthSquared>SMALL_NUMBER
-                ?FMath::Clamp(FVector::DotProduct(Sample-PreviousCenter,Segment)/SegmentLengthSquared,0.f,1.f):0.f;
-            const FVector Center=FMath::Lerp(PreviousCenter,NextCenter,Along);
-            const FVector Relative=Sample-Center;
-            const float PlaneDistance=FMath::Abs(FVector::DotProduct(Relative,SwingPlaneNormal));
-            const FVector InPlane=Relative-SwingPlaneNormal*FVector::DotProduct(Relative,SwingPlaneNormal);
-            if (PlaneDistance<=LoopPlaneThickness && InPlane.Size()<=LoopRadius && Along<BestAlong)
-            {
-                BestAlong=Along;
-                OutHorse=Horse;
-                OutHitLocation=Sample;
-            }
+            BestAlong=Along;
+            OutHorse=Horse;
+            OutHitLocation=Location;
+            OutZone=Zone;
         }
     }
     return OutHorse!=nullptr;
 }
 
-void ULassoComponent::AttachHorse(ASteppeWildHorseCharacter* Horse, const FVector& HitLocation)
+void ULassoComponent::AttachHorse(ASteppeWildHorseCharacter* Horse, const FVector& HitLocation, ELassoHitZone Zone)
 {
     if (!Horse) { return; }
     Target=Horse;
     bTargetIsolated=true;
     State=ELassoState::Attached;
-    HitZone=ClassifyHitZone(Horse,HitLocation);
+    HitZone=Zone;
     LoopLocation=Horse->GetActorLocation()+FVector(0,0,90);
     RopeLength=FMath::Max(200.f,FVector::Dist(RopeStart,LoopLocation)-120.f);
     Tension=120.f/FMath::Max(10.f,TensionRange)*GetHitZoneTensionMultiplier();
@@ -459,9 +445,10 @@ void ULassoComponent::TickComponent(float Dt, ELevelTick TickType, FActorCompone
     }
     ASteppeWildHorseCharacter* CaughtHorse=nullptr;
     FVector PhysicalHitLocation=FVector::ZeroVector;
-    if (FindPhysicalLoopHit(Previous,Next,CaughtHorse,PhysicalHitLocation))
+    ELassoHitZone PhysicalHitZone=ELassoHitZone::None;
+    if (FindPhysicalLoopHit(Previous,Next,CaughtHorse,PhysicalHitLocation,PhysicalHitZone))
     {
-        AttachHorse(CaughtHorse,PhysicalHitLocation);
+        AttachHorse(CaughtHorse,PhysicalHitLocation,PhysicalHitZone);
         return;
     }
     LoopLocation=Next;

@@ -31,6 +31,7 @@
 - P14.3_PACKAGING_AND_DISTRIBUTION.md：Win64 Shipping 一键打包、ZIP 分发和结果回收方法。
 - P14.3_GAMEPLAY_RESEARCH_REVIEW.md：累计真人反馈、阶段门结论与数据限制。
 - P15_PHYSICAL_LASSO_V2.md：三维绳圈、实际几何命中、动态绳线和当前限制。
+- P16_HORSE_DYNAMICS_V2.md：朝向/速度分离、地面抓地与绳索外力的实施基线。
 - DESIGN_DECISIONS.md：跨系统技术与产品决策。
 - References/：两份早期讨论 PDF 原件及使用说明。
 

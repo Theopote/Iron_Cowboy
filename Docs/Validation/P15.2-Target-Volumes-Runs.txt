@@ -1,0 +1,25 @@
+Project STEPPE P15.2 Lasso Target Volumes — 2026-09-20 — UE 5.8.2
+
+Build
+  .\Scripts\Build.ps1 -EngineRoot 'C:\Program Files\Epic Games\UE_5.8'
+  Result: SteppeEditor Win64 Development succeeded
+
+Automation
+  .\Scripts\RunEditor.ps1 -Tests -ExpectedTests 23 -Commands 'Automation RunTests Steppe;Quit' -LogName P15.2-TargetVolumes-Regression-2
+  Result: 23 passed, 0 failed, 3 passed with existing RiderSeat fallback warnings
+
+Rendered full loop
+  .\Scripts\RunEditor.ps1 -Game -Smoke -Render -FullLoopSmoke -LogName P15.2-TargetVolumes-FullLoop
+  Result: capture, lead, delivery and naming completed
+
+Target contract
+  Four editable volumes: Head, Neck, Chest, Torso
+  Chest maps to Torso Gameplay hit zone
+  LassoComponent no longer stores horse-local target offsets
+
+Windows Shipping
+  Cook: 506 packages, 0 errors, 0 warnings
+  Launch smoke exit code: 0
+  ZIP: Packages\ProjectSTEPPE-Windows-20260920-1412.zip
+  Bytes: 314513649
+  SHA256: C3B108EB6E6925AC4F5BDDEF2AEA616A679E7BB385C478E7BEC6C9075144F89E

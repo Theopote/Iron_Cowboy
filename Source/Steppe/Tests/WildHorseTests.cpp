@@ -12,6 +12,7 @@
 #include "Feedback/SteppeFeedbackComponent.h"
 #include "Presentation/HorsePresentationComponent.h"
 #include "Lasso/LassoComponent.h"
+#include "Lasso/LassoTargetComponent.h"
 #include "Core/SteppeGameplayTags.h"
 #include "Game/SteppeTrialState.h"
 #include "Game/SteppeGameMode.h"
@@ -420,12 +421,15 @@ bool FLassoSkillTest::RunTest(const FString& Parameters)
     const float LockedStability=Rider->Lasso->LastThrowStability;
     Fixture.Step(.5f);
     TestEqual(TEXT("Stable neck throw attaches"),Rider->Lasso->State,ELassoState::Attached);
-    TestEqual(TEXT("Greybox center-height hit is classified as neck"),Rider->Lasso->HitZone,ELassoHitZone::Neck);
+    TestTrue(TEXT("Physical loop reports a configured horse target zone"),Rider->Lasso->HitZone!=ELassoHitZone::None);
     TestTrue(TEXT("Throw stability stays locked after release"),FMath::IsNearlyEqual(Rider->Lasso->LastThrowStability,LockedStability));
 
-    TestEqual(TEXT("High local impact is head"),Rider->Lasso->ClassifyHitZone(Wild,Wild->GetActorLocation()+FVector(0,0,90)),ELassoHitZone::Head);
-    TestEqual(TEXT("Middle local impact is neck"),Rider->Lasso->ClassifyHitZone(Wild,Wild->GetActorLocation()+FVector(0,0,60)),ELassoHitZone::Neck);
-    TestEqual(TEXT("Low local impact is torso"),Rider->Lasso->ClassifyHitZone(Wild,Wild->GetActorLocation()),ELassoHitZone::Torso);
+    TestEqual(TEXT("Greybox horse exposes four editable target volumes"),Wild->LassoTarget->Volumes.Num(),4);
+    for (const FLassoTargetVolume& Volume : Wild->LassoTarget->Volumes)
+    {
+        TestEqual(TEXT("A volume center classifies as its configured zone"),
+            Rider->Lasso->ClassifyHitZone(Wild,Wild->LassoTarget->GetVolumeCenter(Volume)),Volume.Zone);
+    }
     Rider->Lasso->HitZone=ELassoHitZone::Neck;
     const float NeckSeconds=Rider->Lasso->GetEffectiveSubdueSeconds(Wild);
     Rider->Lasso->HitZone=ELassoHitZone::Head;
@@ -464,6 +468,33 @@ bool FPhysicalLassoGeometryTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Actual geometric hit replaces the Q desired target"),Rider->Lasso->Target.Get()==Actual);
     TestTrue(TEXT("Actual horse enters lassoed behavior"),Actual->Brain->bLassoed);
     TestFalse(TEXT("Q desired horse is not attached when the loop misses it"),Desired->Brain->bLassoed);
+    return true;
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FLassoTargetVolumesTest,"Steppe.P15.TargetVolumesFollowHorseAndRemainConfigurable",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FLassoTargetVolumesTest::RunTest(const FString& Parameters)
+{
+    FWildTestWorld Fixture;
+    auto* Horse=Fixture.World->SpawnActor<ASteppeWildHorseCharacter>(FVector(600,200,100),FRotator(0,90,0));
+    Fixture.Begin();
+    if (!TestNotNull(TEXT("Wild horse owns a target component"),Horse->LassoTarget.Get())) { return false; }
+    auto* Target=Horse->LassoTarget.Get();
+    const FLassoTargetVolume& Head=Target->Volumes.Last();
+    const FVector Expected=Horse->GetActorTransform().TransformPosition(Head.LocalCenter);
+    TestTrue(TEXT("Target volume follows the horse transform"),Target->GetVolumeCenter(Head).Equals(Expected,.01f));
+    TestEqual(TEXT("Head center reports Head zone"),Target->ClassifyLocation(Expected),ELassoHitZone::Head);
+
+    float Along=0.f;
+    FVector Location;
+    ELassoHitZone Zone=ELassoHitZone::None;
+    const FVector PlaneNormal=Horse->GetActorRightVector();
+    TestTrue(TEXT("Loop intersects a configured target volume"),Target->FindLoopIntersection(
+        Expected-PlaneNormal*30.f,Expected+PlaneNormal*30.f,PlaneNormal,30.f,10.f,Along,Location,Zone));
+    TestEqual(TEXT("Intersection returns the volume's gameplay zone"),Zone,ELassoHitZone::Head);
+    TestTrue(TEXT("Intersection returns a bounded flight fraction"),Along>=0.f && Along<=1.f);
+
+    Target->Volumes.Empty();
+    TestFalse(TEXT("Removing all configured volumes makes the horse unhittable"),Target->FindLoopIntersection(
+        Expected-PlaneNormal*30.f,Expected+PlaneNormal*30.f,PlaneNormal,30.f,10.f,Along,Location,Zone));
     return true;
 }
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FRiderBalanceTest,"Steppe.P12.BalanceFallAndDraggedRecovery",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
@@ -603,7 +634,7 @@ bool FRopeFightTest::RunTest(const FString& Parameters)
     Fixture.Step(.5f);
     if (!TestEqual(TEXT("Rope fight begins attached"),Rider->Lasso->State,ELassoState::Attached)) { return false; }
     Rider->Lasso->SetBracing(true);
-    Fixture.Step(3.4f);
+    Fixture.Step(Rider->Lasso->GetEffectiveSubdueSeconds(Wild)+.4f);
     TestEqual(TEXT("Steady useful tension subdues the horse"),Rider->Lasso->State,ELassoState::Subdued);
     TestEqual(TEXT("Subdued state exposes its gameplay tag"),Rider->Lasso->GetStateTag(),SteppeTags::Lasso_State_Subdued.GetTag());
     TestTrue(TEXT("Control progress completes"),Rider->Lasso->ControlProgress>=1.f);

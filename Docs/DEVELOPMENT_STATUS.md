@@ -1,6 +1,6 @@
 # Current Phase
 
-**P15 — Physical Lasso v2：三维绳圈轨迹、实际几何命中与动态绳线。**
+**P15.2 完成，P16 Horse Dynamics v2 待开始。**
 
 首批真人试玩发现玩家看不到准备中的套索、不清楚何时按 Q，且原有底部提示容易被忽略。P14.4 已完成针对性修复：准星中的候选马显示黄色 `Q SELECT` 框，选中目标后显示青色持续标记；屏幕中央新增按阶段变化的大型操作卡；按住右键时绘制清晰的套索环，稳定窗口由橙色变为绿色，并明确提示此时按左键投掷。
 
@@ -14,9 +14,11 @@
 
 项目负责人根据累计真人反馈确认 P14.3 阶段门通过：玩家认可核心玩法的趣味、沉浸感和胜负欲，当前主要缺口转为灰盒马的视觉真实度及绳索物理感。P15 第一轮已用带重力的 Loop Center、Swing Plane、展开半径、角相位和 Head/Neck/Torso 几何采样替换直线 Sphere Sweep；Q 只保留关注与隔离引导，环可套中实际穿过的另一匹马。视觉绳改为分段下垂曲线，并随张力拉直。
 
-当前 P15 验证：Editor 与 Shipping 编译成功，22 项自动化测试全部通过；稳定窗口投索渲染 Smoke 和完整捕获到命名 Smoke 通过；新 Shipping 包完成启动检查。
+P15.2 已把 Head、Neck、Chest、Torso 命中几何移入野马的 `ULassoTargetComponent`。体积随马的变换进入世界空间，可在 Blueprint 上调节或替换；投索组件只处理轨迹、障碍和跨马匹的最早命中。Chest 仍沿用 Torso 的 Gameplay 风险倍率。下一阶段为 P16 速度/朝向分离、抓地和外力入口；正式马与骑手动画安排在动力学稳定之后。
 
-验证状态：UE 5.8.2 Editor 编译成功；22 项 Steppe 自动化测试通过，0 项失败；P15 新测试证明重力轨迹、环展开、空间轴正交以及误套非 Q 目标；完整捕获、牵回和命名继续成功；Shipping Cook 506 个包、0 error/0 warning，启动退出码 0。下一批真人样本重点确认抛物提前量、环口大小、误套结果和绳线松紧是否直观。
+P15.2 验证：UE 5.8.2 Editor 与 Shipping 编译成功，23 项自动化测试全部通过，实际渲染的完整捕获到命名 Smoke 通过；新 Windows 包完成启动检查。
+
+验证状态：UE 5.8.2 Editor 编译成功；23 项 Steppe 自动化测试通过，0 项失败；P15 测试覆盖重力轨迹、环展开、非 Q 目标附着及可调目标体积；完整捕获、牵回和命名继续成功；Shipping Cook 506 个包、0 error/0 warning，启动退出码 0。正式玩家研究安排在 P16 动力学与表现切片后，日常试玩仍可继续发现回归。
 
 项目使用 UE 5.8.2。完整灰盒闭环继续可玩；Sound、Niagara 和 AnimBP 所需的数据边界已经建立，灰盒马匹与骑手会实际表现步态起伏、加速俯仰、转向侧倾和受力姿态。
 
@@ -58,7 +60,7 @@
 - `.idea/`、`.vscode/` 已加入忽略；6 个 `.idea` 文件停止 Git 跟踪，本机副本保留。
 - P14.3 玩家教程覆盖启动、完整操作、三轮流程、卡住恢复和数据说明；组织者指南规定教程协助标记、逐轮口述和 JSON 对应方法。
 - `PackageWindows.ps1` 提供 UE 5.8.2 Win64 Shipping 的 Build/Cook/Stage/Pak/Archive 与可选 ZIP；分发包自动附带 PlaytestKit 和本地结果收集脚本。
-- Win64 Shipping 已实际完成打包和启动验证：Cook 506 个包、0 error/0 warning；最新 ZIP 314,635,391 bytes，Shipping 进程退出码 0。
+- Win64 Shipping 已实际完成打包和启动验证：Cook 506 个包、0 error/0 warning；最新 ZIP 314,513,649 bytes，Shipping 进程退出码 0。
 
 # Build Result
 
@@ -68,7 +70,9 @@ UHT、C++、UMG 编译与链接成功。没有修改引擎；物理绳圈采用�
 
 # Validation
 
-自动测试：**22 passed, 0 failed**。其中 3 项因覆盖正常骑乘和事故落马而记录既有 RiderSeat 灰盒回退警告。
+自动测试：**23 passed, 0 failed**。其中 3 项因覆盖正常骑乘和事故落马而记录既有 RiderSeat 灰盒回退警告。
+
+新增 `Steppe.P15.TargetVolumesFollowHorseAndRemainConfigurable`，覆盖体积随 Actor 变换、体积命中区、飞行段相交及移除体积后的不可命中行为。
 
 新增 `Steppe.P15.PhysicalLoopGeometryAndActualHit`，覆盖重力改变飞行切线、环半径展开、空间轴正交，以及 Q 关注马偏离时实际套中环内另一匹马。
 
@@ -104,7 +108,7 @@ P14.3 准备证据：`Validation/P14.3-Audit-Results.json`、`P14.3-Automated-Me
 
 # Next Recommended Work
 
-试玩 P15 第一轮物理套索，重点观察玩家能否从环的空间姿态判断提前量、是否理解误套另一匹马、绳线下垂到拉直是否能表达张力。根据反馈调整几何采样和环参数后，再决定 P15 收尾或进入 P16 Horse Dynamics v2。
+下一步开始 P16 Horse Dynamics v2：先分离朝向与速度，在低速保留操控性，再加入速度相关地面抓地和绳索外力入口。P16 稳定后接入真正马匹、骑手与动画，完成有限草原切片，再组织第二轮正式真人试玩。
 
 # Milestones
 
@@ -126,3 +130,4 @@ P14.3 准备证据：`Validation/P14.3-Audit-Results.json`、`P14.3-Automated-Me
 - 2026-09-14 P14.4 马群与绳索递进：默认扩大为 12 匹并增强共同逃跑方向、速度对齐和凝聚；加入不可回升的紧绳速度限制与单障碍弯折支点；21 项回归、三条 Smoke 和 Shipping 启动验证通过。
 - 2026-09-15 P14.3 阶段门：项目负责人依据累计真人反馈确认核心玩法有趣、具有沉浸感和重试动力；诚实保留结构化 15 轮表格未完整回收的数据限制。
 - 2026-09-15 P15.1：实现抛物线 Loop Center、动态 Swing Plane/Radius/Angular Phase、实际马体几何命中、非 Q 目标附着和随张力变化的分段绳线；22 项回归与两条渲染路线通过。
+- 2026-09-20 P15.2：用野马上的可编辑套索目标体积替代投索组件中的硬编码马体坐标；23 项自动化测试和完整渲染闭环通过，路线图插入 P16.5–P16.7 表现阶段与第二轮试玩门。

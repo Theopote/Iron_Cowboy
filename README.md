@@ -1,6 +1,6 @@
 # 《套马的汉子》 / Project STEPPE
 
-UE **5.8.2** 的 C++ 骑乘游戏原型。P14.3 真人阶段门已经通过，当前进入 P15 Physical Lasso v2：绳圈具有抛物线中心轨迹、空间平面、展开半径和角相位，实际马匹由环几何命中；视觉绳会随松紧呈现下垂或拉直。默认 12 匹野马保持共同逃跑方向和群体凝聚。
+UE **5.8.2** 的 C++ 骑乘游戏原型。P15.2 已完成：绳圈具有抛物线轨迹、空间平面、展开半径和角相位，实际马匹由可编辑的 Head/Neck/Chest/Torso 目标体积命中；视觉绳会随松紧呈现下垂或拉直。下一阶段为 P16 Horse Dynamics v2，之后才接正式马与骑手动画。默认 12 匹野马保持共同逃跑方向和群体凝聚。
 
 ## 打开与试玩
 
@@ -47,7 +47,7 @@ UE **5.8.2** 的 C++ 骑乘游戏原型。P14.3 真人阶段门已经通过，�
 ## 验证
 
 ```powershell
-.\Scripts\RunEditor.ps1 -Tests -ExpectedTests 22 -Commands 'Automation RunTests Steppe;Quit' -LogName P15-Tests
+.\Scripts\RunEditor.ps1 -Tests -ExpectedTests 23 -Commands 'Automation RunTests Steppe;Quit' -LogName P15.2-Tests
 .\Scripts\RunEditor.ps1 -Game -Render -Smoke -PresentationSmoke -Commands '' -LogName P14.4-Presentation-Smoke
 .\Scripts\RunEditor.ps1 -Game -Render -Smoke -FullLoopSmoke -Commands '' -LogName P14.4-FullLoop-Smoke
 ```
