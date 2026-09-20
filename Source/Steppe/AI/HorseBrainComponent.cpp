@@ -3,6 +3,8 @@
 #include "Character/Horse/SteppeHorseCharacter.h"
 #include "Character/Horse/HorseMovementComponent.h"
 #include "Character/Horse/HorseLocomotionConfig.h"
+#include "Character/Rider/SteppeRiderCharacter.h"
+#include "Character/Rider/RidingComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Core/SteppeGameplayTags.h"
 #include "Engine/World.h"
@@ -177,9 +179,14 @@ void UHorseBrainComponent::ChangeState(EWildHorseState NewState)
 }
 void UHorseBrainComponent::ChooseRoamGoal()
 {
-    const float Angle = Random.FRandRange(-PI, PI);
-    const float Radius = FMath::Max(0.f, GetConfig().RoamRadius) * Random.FRandRange(.3f,1.f);
-    Goal = Home + FVector(FMath::Cos(Angle), FMath::Sin(Angle), 0.f) * Radius;
+    const FVector Here=GetOwner()->GetActorLocation();
+    const float RoamRadius=FMath::Max(0.f,GetConfig().RoamRadius);
+    const FVector HomeOffset=(Home-Here).GetSafeNormal2D();
+    const FVector Facing=GetOwner()->GetActorForwardVector().GetSafeNormal2D();
+    const FVector BaseDirection=FVector::Dist2D(Here,Home)>RoamRadius*.75f ? HomeOffset : Facing;
+    const FVector Direction=BaseDirection.RotateAngleAxis(Random.FRandRange(-65.f,65.f),FVector::UpVector);
+    const FVector Candidate=Here+Direction*RoamRadius*Random.FRandRange(.3f,.6f);
+    Goal=Home+(Candidate-Home).GetClampedToMaxSize2D(RoamRadius);
     PauseRemaining = FMath::Max(0.f, GetConfig().PauseSeconds*IndividualPauseScale*Random.FRandRange(.8f,1.2f));
     RoamGoalSeconds = 0.f;
 }
@@ -238,16 +245,21 @@ void UHorseBrainComponent::TickComponent(float Dt, ELevelTick TickType, FActorCo
         if (bLeading && LeadTarget.IsValid())
         {
             const AActor* Leader=LeadTarget.Get();
-            const FVector Anchor=Leader->GetActorLocation()-Leader->GetActorForwardVector()*LeadFollowDistance;
+            const auto* Rider=Cast<ASteppeRiderCharacter>(Leader);
+            const AActor* MotionSource=Rider && Rider->Riding && Rider->Riding->IsMounted()
+                ?Cast<AActor>(Rider->Riding->GetHorse()):Leader;
+            if (!MotionSource) { MotionSource=Leader; }
+            const FVector Anchor=MotionSource->GetActorLocation()-MotionSource->GetActorForwardVector()*LeadFollowDistance;
             const FVector ToAnchor=Anchor-Horse->GetActorLocation();
-            LeadDistance=FVector::Dist2D(Horse->GetActorLocation(),Leader->GetActorLocation());
-            if (LeadDistance<=LeadMaxDistance && ToAnchor.Size2D()>LeadMoveThreshold)
+            LeadDistance=FVector::Dist2D(Horse->GetActorLocation(),MotionSource->GetActorLocation());
+            if (ToAnchor.Size2D()>LeadMoveThreshold)
             {
                 const FVector SafeDirection=FindSafeDirection(*Horse,ToAnchor.GetSafeNormal2D());
                 if (!SafeDirection.IsNearlyZero())
                 {
                     const float HeadingError=FMath::FindDeltaAngleDegrees(Horse->GetActorRotation().Yaw,SafeDirection.Rotation().Yaw);
-                    CapturedIntent.DesiredSpeed=LeadWalkSpeed;
+                    const float MaximumSpeed=Rider && Rider->Riding && Rider->Riding->IsMounted()?LeadMountedSpeed:LeadWalkSpeed*1.5f;
+                    CapturedIntent.DesiredSpeed=FMath::Clamp(FMath::Max(LeadWalkSpeed,MotionSource->GetVelocity().Size2D()*1.15f),LeadWalkSpeed,MaximumSpeed);
                     CapturedIntent.DesiredTurn=FMath::Clamp(HeadingError/45.f,-1.f,1.f);
                     CapturedIntent.RequestedGait=EHorseGait::Walk;
                     SteeringDirection=SafeDirection;
@@ -385,6 +397,12 @@ void UHorseBrainComponent::TickComponent(float Dt, ELevelTick TickType, FActorCo
         SteeringDirection = FindSafeDirection(*Horse, Desired);
         const float HeadingError = FMath::FindDeltaAngleDegrees(Horse->GetActorRotation().Yaw, SteeringDirection.Rotation().Yaw);
         Intent.DesiredTurn = FMath::Clamp(HeadingError / FMath::Max(1.f,C.FullTurnAngle), -1.f, 1.f);
+        if (State==EWildHorseState::Roaming)
+        {
+            // Keep emergency obstacle recovery responsive while ordinary grazing turns stay slow.
+            const float TurnLimit=bPathBlocked || RecoveryTurnRemaining>0.f ? .7f : C.CalmTurnIntentLimit;
+            Intent.DesiredTurn=FMath::Clamp(Intent.DesiredTurn,-TurnLimit,TurnLimit);
+        }
         // Turn before charging away when the safe direction is behind us. Existing momentum still brakes through CMC.
         Intent.DesiredSpeed *= FMath::Clamp(FVector::DotProduct(Horse->GetActorForwardVector(), SteeringDirection), 0.f, 1.f);
         if (bPathBlocked && RecoveryTurnRemaining<=0.f) { RecoveryTurnRemaining=C.BlockedTurnSeconds; }

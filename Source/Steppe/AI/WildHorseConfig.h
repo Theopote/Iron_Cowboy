@@ -42,7 +42,8 @@ public:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Roaming", meta=(ClampMin="1")) float ArrivalRadius = 160.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Roaming", meta=(ClampMin="0")) float PauseSeconds = 2.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Roaming", meta=(ClampMin="1")) float RoamGoalTimeout = 30.f;
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Roaming", meta=(ClampMin="1")) float RoamSpeed = 180.f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Roaming", meta=(ClampMin="1")) float RoamSpeed = 115.f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Roaming", meta=(ClampMin="0.05",ClampMax="1")) float CalmTurnIntentLimit = .25f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Flight", meta=(ClampMin="1")) float FlightSpeed = 1200.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Flight", meta=(ClampMin="1")) float EscapeLookAhead = 2000.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Steering", meta=(ClampMin="1")) float FullTurnAngle = 45.f;

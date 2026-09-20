@@ -158,7 +158,8 @@ bool ASteppeHerdManager::HandleFirstContactInteraction(ASteppeRiderCharacter* Ri
     for (const TObjectPtr<ASteppeWildHorseCharacter>& HorsePtr : CapturedHorses)
     {
         auto* Horse=HorsePtr.Get();
-        if (!IsValid(Horse) || !Horse->Trust || Horse->Trust->bNamed) { continue; }
+        if (!IsValid(Horse) || !Horse->Trust || Horse->Trust->State==EPostCaptureState::Leading
+            || Horse->Trust->State==EPostCaptureState::Delivered || Horse->Trust->bNamed) { continue; }
         const float Distance=FVector::Dist2D(Horse->GetActorLocation(),Rider->GetActorLocation());
         if (Distance<=Horse->Trust->AwarenessRadius && Distance<ClosestDistance)
         {
@@ -175,6 +176,7 @@ bool ASteppeHerdManager::HandleFirstContactInteraction(ASteppeRiderCharacter* Ri
     {
         FirstContactHorses.AddUnique(Closest);
         FirstContactCount=FirstContactHorses.Num();
+        if (Closest->Trust->BeginLeading(Rider)) { LeadingHorse=Closest; }
     }
     // Consume E near a secured horse even when it is not ready, preventing an
     // unrelated mount attempt from hiding the approach feedback.

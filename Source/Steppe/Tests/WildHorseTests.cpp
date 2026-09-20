@@ -245,11 +245,23 @@ bool FSmallHerdTest::RunTest(const FString& Parameters)
     for (const TObjectPtr<ASteppeWildHorseCharacter>& Member : Herd->Members) { StartLocations.Add(Member->GetActorLocation()); }
     Fixture.Step(4.f);
     int32 MovingMembers=0;
+    int32 CalmMembers=0;
     for (int32 Index=0; Index<Herd->Members.Num(); ++Index)
     {
-        MovingMembers+=FVector::Dist2D(StartLocations[Index],Herd->Members[Index]->GetActorLocation())>20.f;
+        const auto* Member=Herd->Members[Index].Get();
+        MovingMembers+=FVector::Dist2D(StartLocations[Index],Member->GetActorLocation())>10.f;
+        if (Member->Brain->State==EWildHorseState::Roaming)
+        {
+            ++CalmMembers;
+            const auto* Movement=Cast<UHorseMovementComponent>(Member->GetCharacterMovement());
+            TestTrue(TEXT("Calm herd uses a walking target speed"),Movement->HorseIntent.DesiredSpeed<=115.1f);
+            TestTrue(TEXT("Calm turn stays bounded outside obstacle recovery"),
+                Member->Brain->bPathBlocked || Member->Brain->bRecoveringFromBlockage
+                    || FMath::Abs(Movement->HorseIntent.DesiredTurn)<=.251f);
+        }
     }
-    TestTrue(TEXT("Independent pauses allow most members to begin roaming"),MovingMembers>=3);
+    TestTrue(TEXT("Calm members remain in roaming state"),CalmMembers>=3);
+    TestTrue(TEXT("Independent pauses allow herd members to begin roaming"),MovingMembers>=2);
     TestTrue(TEXT("Roaming herd keeps bodies from collapsing into one point"),Herd->MinimumMemberSpacing>100.f);
 
     const FVector PrimaryLocation=Herd->Members[0]->GetActorLocation();
@@ -841,6 +853,8 @@ bool FPostCaptureApproachTest::RunTest(const FString& Parameters)
 
     TestTrue(TEXT("Ready interaction is consumed"),Herd->HandleFirstContactInteraction(Rider));
     TestTrue(TEXT("First contact is recorded on horse"),Wild->Trust->bFirstContact);
+    TestEqual(TEXT("First contact immediately begins leading"),Wild->Trust->State,EPostCaptureState::Leading);
+    TestTrue(TEXT("Rider holds the lead horse"),Rider->Riding->GetLeadingHorse()==Wild);
     TestEqual(TEXT("First contact grants minimum trust"),Wild->Trust->Trust,Wild->Trust->FirstContactTrust);
     TestEqual(TEXT("Herd records first contact once"),Herd->FirstContactCount,1);
     TestTrue(TEXT("Horse remains captured after contact"),Wild->Brain->bCaptured && Herd->CapturedCount==1);
@@ -872,13 +886,33 @@ bool FLeadDeliveryNamingTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("First-contact interaction starts leading"),Herd->HandleFirstContactInteraction(Rider));
     TestEqual(TEXT("First-contact horse enters lead state"),Wild->Trust->State,EPostCaptureState::Leading);
     TestTrue(TEXT("Brain holds active lead target"),Wild->Brain->bLeading);
+    TestTrue(TEXT("Rider holds lead rope on foot"),Rider->Riding->GetLeadingHorse()==Wild);
 
     Herd->Tick(.2f);
     TestEqual(TEXT("Horse alone outside camp is not delivered"),Herd->DeliveredCount,0);
+    auto* Mount=Fixture.World->SpawnActor<ASteppeHorseCharacter>(FVector(0,150,100),FRotator::ZeroRotator);
+    TestFalse(TEXT("Leading horse does not consume mount interaction"),Herd->HandleFirstContactInteraction(Rider));
+    TestTrue(TEXT("Rider can mount while holding lead rope"),Rider->Riding->TryMount(Mount));
+    FRidingIntent SlowRide;
+    SlowRide.Forward=1.f;
+    SlowRide.bSprint=true;
+    Rider->Riding->SetIntent(SlowRide);
+    Rider->Riding->TickComponent(.1f,LEVELTICK_All,nullptr);
+    const auto* MountMovement=Cast<UHorseMovementComponent>(Mount->GetCharacterMovement());
+    TestTrue(TEXT("Mounted leading limits forward intent"),MountMovement->RiderIntent.Forward<=Rider->Riding->LeadRidingMaxForward+.001f);
+    TestFalse(TEXT("Mounted leading prevents sprint"),MountMovement->RiderIntent.bSprint);
+    Wild->Trust->TickComponent(.1f,LEVELTICK_All,nullptr);
+    TestTrue(TEXT("Mounting preserves lead state"),Wild->Trust->State==EPostCaptureState::Leading && Wild->Brain->bLeading);
+    Wild->SetActorLocation(FVector(2200,0,100),false,nullptr,ETeleportType::TeleportPhysics);
+    Wild->Brain->TickComponent(.1f,LEVELTICK_All,nullptr);
+    const auto* WildMovement=Cast<UHorseMovementComponent>(Wild->GetCharacterMovement());
+    TestTrue(TEXT("Captured horse catches up beyond the old lead distance limit"),
+        Wild->Brain->LeadDistance>Wild->Brain->LeadMaxDistance && WildMovement->HorseIntent.DesiredSpeed>0.f);
     Wild->SetActorLocation(FVector(100,0,100),false,nullptr,ETeleportType::TeleportPhysics);
     Herd->Tick(.2f);
-    TestEqual(TEXT("Rider and horse together in camp deliver once"),Herd->DeliveredCount,1);
+    TestEqual(TEXT("Mounted rider and horse together in camp deliver once"),Herd->DeliveredCount,1);
     TestEqual(TEXT("Delivery stops lead intent"),Wild->Trust->State,EPostCaptureState::Delivered);
+    TestTrue(TEXT("Delivery releases lead rope"),Rider->Riding->GetLeadingHorse()==nullptr);
     TestTrue(TEXT("Empty horse name is rejected"),!Herd->ConfirmDeliveredHorseName(Wild,TEXT("   ")));
     TestTrue(TEXT("Valid horse name is accepted"),Herd->ConfirmDeliveredHorseName(Wild,TEXT("Saran")));
     TestEqual(TEXT("Horse stores trimmed name"),Wild->Trust->HorseName,FString(TEXT("Saran")));

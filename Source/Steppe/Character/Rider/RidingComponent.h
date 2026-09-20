@@ -4,6 +4,7 @@
 #include "Character/Rider/RidingIntent.h"
 #include "RidingComponent.generated.h"
 class ASteppeHorseCharacter;
+class ASteppeWildHorseCharacter;
 UCLASS(ClassGroup=(Steppe), meta=(BlueprintSpawnableComponent))
 class STEPPE_API URidingComponent : public UActorComponent
 {
@@ -17,12 +18,16 @@ public:
     bool ForceDismount(FVector LaunchVelocity);
     UFUNCTION(BlueprintPure) bool IsMounted() const { return MountedHorse.IsValid(); }
     UFUNCTION(BlueprintPure) ASteppeHorseCharacter* GetHorse() const { return MountedHorse.Get(); }
+    void SetLeadingHorse(ASteppeWildHorseCharacter* Horse);
+    ASteppeWildHorseCharacter* GetLeadingHorse() const { return LeadingHorse.Get(); }
     void SetIntent(const FRidingIntent& NewIntent) { Intent=NewIntent; Intent.Clamp(); }
     UPROPERTY(EditDefaultsOnly, Category="Riding") float MountDistance = 350.f;
     UPROPERTY(EditDefaultsOnly, Category="Riding") float DismountMaxSpeed = 200.f;
     UPROPERTY(EditDefaultsOnly, Category="Riding") float DismountOffset = 180.f;
+    UPROPERTY(EditDefaultsOnly, Category="Lead") float LeadRidingMaxForward = .42f;
 private:
     UFUNCTION() void OnHorseDestroyed(AActor* Actor);
     UPROPERTY() TWeakObjectPtr<ASteppeHorseCharacter> MountedHorse;
+    UPROPERTY() TWeakObjectPtr<ASteppeWildHorseCharacter> LeadingHorse;
     FRidingIntent Intent;
 };

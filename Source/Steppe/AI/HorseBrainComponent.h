@@ -63,9 +63,10 @@ public:
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lead") bool bLeading = false;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lead") float LeadDistance = 0.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lead", meta=(ClampMin="50")) float LeadFollowDistance = 280.f;
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lead", meta=(ClampMin="50")) float LeadMoveThreshold = 380.f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lead", meta=(ClampMin="50")) float LeadMoveThreshold = 120.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lead", meta=(ClampMin="50")) float LeadMaxDistance = 1800.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lead", meta=(ClampMin="10")) float LeadWalkSpeed = 300.f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Lead", meta=(ClampMin="10")) float LeadMountedSpeed = 650.f;
     const UWildHorseConfig& GetConfig() const;
 private:
     void Sense(float Dt, const ASteppeHorseCharacter& Horse);

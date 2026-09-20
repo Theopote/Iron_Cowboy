@@ -1,16 +1,34 @@
 #include "Character/Rider/RidingComponent.h"
 #include "Character/Rider/SteppeRiderCharacter.h"
 #include "Character/Horse/SteppeHorseCharacter.h"
+#include "Character/Horse/SteppeWildHorseCharacter.h"
 #include "Character/Horse/HorseMovementComponent.h"
+#include "AI/HorseBrainComponent.h"
+#include "Capture/HorseTrustComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/World.h"
 #include "Steppe.h"
 URidingComponent::URidingComponent() { PrimaryComponentTick.bCanEverTick=true; PrimaryComponentTick.TickGroup=TG_PrePhysics; }
+void URidingComponent::SetLeadingHorse(ASteppeWildHorseCharacter* Horse) { LeadingHorse=Horse; }
 void URidingComponent::TickComponent(float Dt,ELevelTick TickType,FActorComponentTickFunction* TickFunction)
 {
     Super::TickComponent(Dt,TickType,TickFunction);
-    if (auto* Horse=MountedHorse.Get()) { CastChecked<UHorseMovementComponent>(Horse->GetCharacterMovement())->SetRiderIntent(Intent); }
+    if (auto* Horse=MountedHorse.Get())
+    {
+        FRidingIntent Effective=Intent;
+        if (const auto* Led=LeadingHorse.Get(); Led && Led->Trust && Led->Trust->bLeading && Led->Brain)
+        {
+            Effective.bSprint=false;
+            Effective.Forward=FMath::Min(Effective.Forward,LeadRidingMaxForward);
+            if (FVector::Dist2D(Horse->GetActorLocation(),Led->GetActorLocation())>Led->Brain->LeadMaxDistance*.7f)
+            {
+                Effective.Forward=0.f;
+                Effective.bBrake=true;
+            }
+        }
+        CastChecked<UHorseMovementComponent>(Horse->GetCharacterMovement())->SetRiderIntent(Effective);
+    }
 }
 bool URidingComponent::TryMount(ASteppeHorseCharacter* Horse)
 {

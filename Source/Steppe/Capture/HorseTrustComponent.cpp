@@ -122,12 +122,13 @@ bool UHorseTrustComponent::TryFirstContact(ASteppeRiderCharacter* Rider)
 
 bool UHorseTrustComponent::BeginLeading(ASteppeRiderCharacter* Rider)
 {
-    if (!Rider || Rider!=Interactor.Get() || Rider->Riding->IsMounted() || State!=EPostCaptureState::FirstContact) { return false; }
+    if (!Rider || Rider!=Interactor.Get() || State!=EPostCaptureState::FirstContact) { return false; }
     State=EPostCaptureState::Leading;
     bLeading=true;
     LeadStartLocation=GetOwner()->GetActorLocation();
-    Feedback=TEXT("Lead the horse back to CAMP / PEN");
+    Feedback=TEXT("Lead on foot or mount your horse and ride slowly to CAMP / PEN");
     if (auto* Horse=Cast<ASteppeWildHorseCharacter>(GetOwner())) { Horse->Brain->SetLeadTarget(Rider); }
+    Rider->Riding->SetLeadingHorse(Cast<ASteppeWildHorseCharacter>(GetOwner()));
     return true;
 }
 
@@ -145,8 +146,9 @@ bool UHorseTrustComponent::AcceptRopeSurrender(ASteppeRiderCharacter* Rider)
     Pressure=0.f;
     Trust=FMath::Clamp(FirstContactTrust,0.f,100.f);
     LeadStartLocation=GetOwner()->GetActorLocation();
-    Feedback=TEXT("HORSE SURRENDERED | lead it back to CAMP / PEN");
+    Feedback=TEXT("HORSE SURRENDERED | walk or ride slowly to CAMP / PEN");
     if (auto* Horse=Cast<ASteppeWildHorseCharacter>(GetOwner())) { Horse->Brain->SetLeadTarget(Rider); }
+    Rider->Riding->SetLeadingHorse(Cast<ASteppeWildHorseCharacter>(GetOwner()));
     return true;
 }
 
@@ -158,6 +160,7 @@ bool UHorseTrustComponent::MarkDelivered(ASteppeRiderCharacter* Rider)
     bDelivered=true;
     Feedback=TEXT("Horse delivered - choose a name");
     if (auto* Horse=Cast<ASteppeWildHorseCharacter>(GetOwner())) { Horse->Brain->SetLeadTarget(nullptr); }
+    if (Rider->Riding->GetLeadingHorse()==GetOwner()) { Rider->Riding->SetLeadingHorse(nullptr); }
     return true;
 }
 
@@ -182,13 +185,7 @@ void UHorseTrustComponent::TickComponent(float Dt, ELevelTick TickType, FActorCo
     if (!Rider) { Feedback=TEXT("Rider unavailable"); return; }
     if (State==EPostCaptureState::Leading)
     {
-        if (Rider->Riding->IsMounted())
-        {
-            State=EPostCaptureState::FirstContact;
-            bLeading=false;
-            Feedback=TEXT("Dismount and press E to take the lead rope again");
-            if (auto* Horse=Cast<ASteppeWildHorseCharacter>(GetOwner())) { Horse->Brain->SetLeadTarget(nullptr); }
-        }
+        // The rope holder remains the same rider when they mount their own horse.
         return;
     }
     const FVector ToHorse=(GetOwner()->GetActorLocation()-Rider->GetActorLocation()).GetSafeNormal2D();

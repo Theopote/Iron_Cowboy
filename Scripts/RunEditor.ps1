@@ -199,7 +199,7 @@ if ($PostCaptureSmoke) {
     if (!(Test-Path $approachPath) -or (Get-Item $approachPath).LastWriteTime -lt $runStarted) {
         throw "Post-capture approach screenshot is missing or stale; see $logPath"
     }
-    if ($sliceLog -notmatch 'STEPPE_P9_SMOKE: PostState=EPostCaptureState::FirstContact FirstContact=1 FirstContacts=1 Mounted=0 Calm=1\.00 Trial=ESteppeTrialState::Running') {
+    if ($sliceLog -notmatch 'STEPPE_P9_SMOKE: PostState=EPostCaptureState::Leading FirstContact=1 FirstContacts=1 Mounted=0 Calm=1\.00 Trial=ESteppeTrialState::Running') {
         throw "Post-capture smoke did not complete calm first contact while leaving P10 pending; see $logPath"
     }
     Write-Output 'Post-capture smoke: rider dismounted, completed calm approach and left the P10 delivery step pending.'
