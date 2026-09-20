@@ -5,6 +5,8 @@
 #include "Character/Horse/HorseLocomotionMath.h"
 #include "Components/CapsuleComponent.h"
 #include "Engine/World.h"
+#include "Materials/MaterialInterface.h"
+#include "PhysicalMaterials/PhysicalMaterial.h"
 
 UHorseMovementComponent::UHorseMovementComponent()
 {
@@ -31,6 +33,13 @@ void UHorseMovementComponent::ClearIntent()
     RiderIntent.Reset(); HorseIntent=FHorseMovementIntent(); ResponseForward=ResponseTurn=0.f; bRiderSource=true;
     bRiderAvoidingObstacle=false; RiderAvoidanceTurn=0.f; RiderObstacleDistance=0.f; RiderAvoidanceSpeedScale=1.f;
 }
+void UHorseMovementComponent::SetExternalAcceleration(FVector InAcceleration)
+{
+    ExternalAcceleration=FMath::IsFinite(InAcceleration.X) && FMath::IsFinite(InAcceleration.Y)
+        ?FVector(InAcceleration.X,InAcceleration.Y,0.f).GetClampedToMaxSize(FMath::Max(0.f,MaximumExternalAcceleration))
+        :FVector::ZeroVector;
+}
+void UHorseMovementComponent::ClearExternalAcceleration() { ExternalAcceleration=FVector::ZeroVector; }
 void UHorseMovementComponent::UpdateResponse(float Dt, ASteppeHorseCharacter& Horse)
 {
     const auto& C=*Horse.GetLocomotionConfig();
@@ -123,6 +132,11 @@ void UHorseMovementComponent::TickComponent(float Dt, ELevelTick TickType, FActo
     auto& A=*Horse->Attributes;
     CurrentSpeed=Velocity.Size2D();
     CurrentHeading=Horse->GetActorRotation().Yaw;
+    const FVector Facing=Horse->GetActorForwardVector().GetSafeNormal2D();
+    const FVector Right=Horse->GetActorRightVector().GetSafeNormal2D();
+    ForwardSpeed=FVector::DotProduct(Velocity,Facing);
+    LateralSpeed=FVector::DotProduct(Velocity,Right);
+    SlipAngleDegrees=CurrentSpeed>1.f?FMath::FindDeltaAngleDegrees(CurrentHeading,Velocity.Rotation().Yaw):0.f;
     ActualAcceleration=(CurrentSpeed-Before)/Dt;
     Gait=SteppeHorseMath::SelectGait(CurrentSpeed,Gait,C);
     HorseState=MovementMode==MOVE_None?EHorseMovementState::Disabled:(IsFalling()?EHorseMovementState::Falling:EHorseMovementState::Grounded);
@@ -161,8 +175,24 @@ void UHorseMovementComponent::CalcVelocity(float Dt,float Friction,bool bFluid,f
     const FRotator Heading(0,CurrentHeading+Delta,0);
     // Rotation belongs to the bounded horse response, never to an input callback.
     MoveUpdatedComponent(FVector::ZeroVector,Heading.Quaternion(),true);
-    Velocity=Heading.Vector()*Speed;
+    const float GripAlpha=FMath::Clamp(Normalized,0.f,1.f);
+    EffectiveGripRate=FMath::Lerp(LowSpeedGripRate,HighSpeedGripRate,GripAlpha)*GetSurfaceGripMultiplier();
+    const FVector Horizontal=SteppeHorseMath::TurnVelocityTowardFacing(Velocity,Heading.Vector(),Speed,EffectiveGripRate,Dt);
+    const FVector Forced=(Horizontal+ExternalAcceleration*Dt).GetClampedToMaxSize(FMath::Max(1.f,A.MaxSpeed)*1.1f);
+    Velocity=FVector(Forced.X,Forced.Y,Velocity.Z);
     Acceleration=Heading.Vector()*(DesiredSpeed>Speed?Accel:-Brake);
+}
+float UHorseMovementComponent::GetSurfaceGripMultiplier() const
+{
+    const FHitResult& FloorHit=CurrentFloor.HitResult;
+    const UPhysicalMaterial* Material=FloorHit.PhysMaterial.Get();
+    // CharacterMovement's floor sweep does not request physical material by default.
+    if (!Material && FloorHit.GetComponent())
+    {
+        const UMaterialInterface* FloorMaterial=FloorHit.GetComponent()->GetMaterial(0);
+        Material=FloorMaterial?FloorMaterial->GetPhysicalMaterial():nullptr;
+    }
+    return Material && UPhysicalMaterial::DetermineSurfaceType(Material)==SurfaceType2?HardGripMultiplier:GrassGripMultiplier;
 }
 void UHorseMovementComponent::PhysicsRotation(float DeltaTime)
 {

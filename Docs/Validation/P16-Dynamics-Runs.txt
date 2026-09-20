@@ -1,0 +1,28 @@
+Project STEPPE P16 Horse Dynamics v2, first implementation — 2026-09-20 — UE 5.8.2
+
+Editor build
+  .\Scripts\Build.ps1 -EngineRoot 'C:\Program Files\Epic Games\UE_5.8'
+  Result: SteppeEditor Win64 Development succeeded
+
+Automation
+  .\Scripts\RunEditor.ps1 -Tests -ExpectedTests 24 -Commands 'Automation RunTests Steppe;Quit' -LogName P16.2-Automation
+  Result: 24 passed, 0 failed, 3 existing RiderSeat fallback warnings
+  Report: Docs/Validation/P16-Results.json
+
+Rendered complete loop
+  .\Scripts\RunEditor.ps1 -Game -Smoke -Render -FullLoopSmoke -LogName P16.2-FullLoop
+  Result: capture, lead, delivery and naming completed
+
+Dynamics contract
+  Facing and Velocity separate transiently during turns; grip converges at low and high speed.
+  Grass and Hard physical materials produce distinct effective grip.
+  Attached lasso supplies bounded horizontal pull toward the holder or obstacle bend.
+  Release, surrender, capture and end play clear the pull.
+
+Windows Shipping
+  .\Scripts\PackageWindows.ps1 -EngineRoot 'C:\Program Files\Epic Games\UE_5.8' -Clean -Zip
+  Cook: 506 packages, 0 errors, 0 warnings
+  Packaged -SteppeSmoke -SteppeHorseModelSmoke launch exit code: 0
+  ZIP: Packages/ProjectSTEPPE-Windows-20260920-1431.zip
+  Bytes: 314490616
+  SHA256: C83AEE8A3F964EE497897ED2985426ABD22EA5818ACEE56373A2C5813AAE8D6D

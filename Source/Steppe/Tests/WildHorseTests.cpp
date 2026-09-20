@@ -649,11 +649,15 @@ bool FRopeFightTest::RunTest(const FString& Parameters)
     Fixture.Step(.6f);
     TestEqual(TEXT("Sustained high tension keeps the rope attached"),Rider->Lasso->State,ELassoState::Attached);
     TestTrue(TEXT("Sustained pull keeps the horse lassoed"),Wild->Brain->bLassoed);
+    const auto* WildMove=CastChecked<UHorseMovementComponent>(Wild->GetCharacterMovement());
+    TestTrue(TEXT("Taut rope supplies a bounded pull toward the holder"),WildMove->ExternalAcceleration.X<0.f
+        && WildMove->ExternalAcceleration.Size2D()<=WildMove->MaximumExternalAcceleration+.1f);
     TestEqual(TEXT("On-foot holder is pulled instead of losing the rope"),Rider->Balance->State,ERiderBalanceState::Pulled);
     TestEqual(TEXT("Steady speed does not create a rope shock"),Rider->Lasso->CalculateShockLoad(1200.f,0.f,1.2f),0.f);
     TestTrue(TEXT("High separating speed plus sudden deceleration creates a break-risk shock"),
         Rider->Lasso->CalculateShockLoad(1200.f,2000.f,1.2f)>Rider->Lasso->ShockBreakThreshold);
     Rider->Lasso->Release();
+    TestTrue(TEXT("Releasing the rope removes its movement force"),WildMove->ExternalAcceleration.IsNearlyZero());
     return true;
 }
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FRopeRatchetAndWrapTest,"Steppe.P14.RopeRatchetAndObstacleWrap",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)

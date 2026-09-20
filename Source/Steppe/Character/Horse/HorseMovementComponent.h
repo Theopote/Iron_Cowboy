@@ -17,6 +17,8 @@ public:
     UFUNCTION(BlueprintCallable) void SetRiderIntent(const FRidingIntent& Intent);
     UFUNCTION(BlueprintCallable) void SetHorseIntent(const FHorseMovementIntent& Intent);
     UFUNCTION(BlueprintCallable) void ClearIntent();
+    UFUNCTION(BlueprintCallable, Category="Horse|Dynamics") void SetExternalAcceleration(FVector InAcceleration);
+    UFUNCTION(BlueprintCallable, Category="Horse|Dynamics") void ClearExternalAcceleration();
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Horse") FHorseMovementIntent HorseIntent;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Horse") FRidingIntent RiderIntent;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Horse") float DesiredSpeed = 0.f;
@@ -27,6 +29,16 @@ public:
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Horse") float TurnStress = 0.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Horse") float ActualAcceleration = 0.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Horse") float GroundSlope = 0.f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Horse|Dynamics") float ForwardSpeed = 0.f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Horse|Dynamics") float LateralSpeed = 0.f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Horse|Dynamics") float SlipAngleDegrees = 0.f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Horse|Dynamics") float EffectiveGripRate = 0.f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Horse|Dynamics") FVector ExternalAcceleration = FVector::ZeroVector;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Horse|Dynamics", meta=(ClampMin="0")) float MaximumExternalAcceleration = 700.f;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Horse|Dynamics", meta=(ClampMin="0.1")) float LowSpeedGripRate = 18.f;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Horse|Dynamics", meta=(ClampMin="0.1")) float HighSpeedGripRate = 3.5f;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Horse|Dynamics", meta=(ClampMin="0",ClampMax="2")) float GrassGripMultiplier = 1.f;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Horse|Dynamics", meta=(ClampMin="0",ClampMax="2")) float HardGripMultiplier = 1.05f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Horse") EHorseGait Gait = EHorseGait::Idle;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Horse") EHorseMovementState HorseState = EHorseMovementState::Grounded;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Horse", meta=(ClampMin="0",ClampMax="2")) float SurfaceMovementMultiplier = 1.f;
@@ -42,6 +54,7 @@ private:
     void UpdateResponse(float DeltaTime, ASteppeHorseCharacter& Horse);
     void ApplyRiderObstacleAvoidance(ASteppeHorseCharacter& Horse);
     bool ProbeRiderPath(ASteppeHorseCharacter& Horse, FVector Direction, float Distance, FHitResult* Hit=nullptr) const;
+    float GetSurfaceGripMultiplier() const;
     bool bRiderSource = true;
     bool bExhausted = false;
     float ResponseForward = 0.f;

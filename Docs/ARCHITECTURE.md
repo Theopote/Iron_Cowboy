@@ -109,8 +109,12 @@ RiderBalanceComponent 在 PostPhysics 且晚于 LassoComponent 更新，读取�
 
 ## P13 第二增量：表面路由与表现资源边界
 
-FeedbackComponent 每 0.2 秒从坐骑向下查询带 Physical Material 的 Visibility Hit，将 SurfaceType1/2 映射为 Grass/Hard。表面只缩放马蹄节拍、程序化音色与尘土表现，不参与 HorseMovement 摩擦或速度计算。`FSteppeFeedbackAssets` 在 Rider Blueprint 默认值中暴露事件 SoundBase 与两类 NiagaraSystem；已配置资源优先，空插槽回退到程序化音或 HUD 灰盒尘土。原型材质绑定 `PM_Grass`、`PM_Hard`，HardSurface_TestPad 为可重复验证入口。Horse Card 仍由 UMG 读取 HorseTrust 与 HorseAttributes，只修改信息和操作层级。
+FeedbackComponent 每 0.2 秒从坐骑向下查询带 Physical Material 的 Visibility Hit，将 SurfaceType1/2 映射为 Grass/Hard。P16 起，HorseMovement 也读取同一表面类别来缩放横向抓地响应；原有表面音色与尘土路由仍由 Feedback 单独管理。`FSteppeFeedbackAssets` 在 Rider Blueprint 默认值中暴露事件 SoundBase 与两类 NiagaraSystem；已配置资源优先，空插槽回退到程序化音或 HUD 灰盒尘土。原型材质绑定 `PM_Grass`、`PM_Hard`，HardSurface_TestPad 为可重复验证入口。Horse Card 仍由 UMG 读取 HorseTrust 与 HorseAttributes，只修改信息和操作层级。
 
 ## P13 第三增量：动画表现数据
 
 HorseMovement 继续写入速度、Gait、加速度、转向、Lean 与 Stamina。随后 `UHorsePresentationComponent` 推进与帧率无关的 GaitPhase，并派生 StrideBlend、BodyBob/Pitch/Roll 与 FootContactPulse；灰盒 StaticMesh 只是一个可关闭的消费者。Rider 的 PostUpdate Tick 读取坐骑 AnimationData、Lasso Bracing 和 RiderBalance，写入 `FRiderPresentationData` 并驱动灰盒骑手姿态。未来 AnimBP 直接读取 Horse.AnimationData 和 Rider.PresentationData，不能反向移动 Actor。HorseNamingWidget 成功后由 PlayerController 统一收起并恢复 GameOnly 输入，HUD 再显示权威 Trial 结果。
+
+## P16 第一轮：马匹方向、抓地与套索外力
+
+HorseMovement 继续独占地面速度积分，但把 Actor Facing 与水平 Velocity 分开。输入先改变受转向率约束的 Facing，速度再以抓地率逐步转向 Facing；现有加速、减速、步态、体力与骑乘避障仍使用同一运动组件。Grass/Hard Physical Surface 只调节方向收敛速度。LassoComponent 在 Attached 状态把受限水平加速度交给目标马的 HorseMovement，方向为马到骑手或绳索弯折点；运动组件控制上限和最终轨迹。Brain 仍只提交期望速度与转向，Lasso 结束或完成捕获时清除外力。详见 P16_HORSE_DYNAMICS_V2.md。

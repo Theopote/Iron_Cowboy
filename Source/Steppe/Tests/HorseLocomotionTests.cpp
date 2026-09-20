@@ -11,6 +11,7 @@
 #include "Engine/StaticMeshActor.h"
 #include "Engine/StaticMesh.h"
 #include "Components/StaticMeshComponent.h"
+#include "Materials/MaterialInterface.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/WorldSettings.h"
@@ -41,6 +42,29 @@ bool FSteppeMathTest::RunTest(const FString& Parameters)
     return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSteppeGripMathTest,"Steppe.P16.GripResponse",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FSteppeGripMathTest::RunTest(const FString& Parameters)
+{
+    const FVector Initial(1000.f,0.f,0.f);
+    const FVector Facing(0.f,1.f,0.f);
+    const FVector Loose=SteppeHorseMath::TurnVelocityTowardFacing(Initial,Facing,1000.f,3.5f,1.f/60);
+    const FVector Firm=SteppeHorseMath::TurnVelocityTowardFacing(Initial,Facing,1000.f,18.f,1.f/60);
+    TestTrue(TEXT("Higher grip aligns velocity faster"),Firm.Y>Loose.Y && Loose.X>Firm.X);
+    TestTrue(TEXT("Turning preserves speed"),FMath::IsNearlyEqual(Loose.Size2D(),1000.f,.1f));
+    TestTrue(TEXT("Zero grip preserves previous direction"),SteppeHorseMath::TurnVelocityTowardFacing(Initial,Facing,1000.f,0.f,1.f/60).Equals(Initial,.1f));
+    TestTrue(TEXT("Stopped horse has no residual lateral velocity"),SteppeHorseMath::TurnVelocityTowardFacing(Initial,Facing,0.f,3.5f,1.f/60).IsNearlyZero());
+    float YawAt30=0.f;
+    float YawAt120=0.f;
+    for (int32 Hz : {30,120})
+    {
+        FVector Velocity=Initial;
+        for (int32 I=0;I<Hz;++I) { Velocity=SteppeHorseMath::TurnVelocityTowardFacing(Velocity,Facing,1000.f,3.5f,1.f/Hz); }
+        if (Hz==30) { YawAt30=Velocity.Rotation().Yaw; } else { YawAt120=Velocity.Rotation().Yaw; }
+    }
+    TestTrue(TEXT("Grip response is nearly frame-rate independent"),FMath::Abs(YawAt30-YawAt120)<.1f);
+    return true;
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSteppeWorldTest,"Steppe.P1.WorldMovementAndRiding",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FSteppeWorldTest::RunTest(const FString& Parameters)
 {
@@ -65,6 +89,11 @@ bool FSteppeWorldTest::RunTest(const FString& Parameters)
     };
     Step(.5f);
     auto* Move=CastChecked<UHorseMovementComponent>(Horse->GetCharacterMovement());
+    Floor->GetStaticMeshComponent()->SetMaterial(0,LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Steppe/Debug/M_PrototypeGrass.M_PrototypeGrass")));
+    Step(.1f); const float GrassGrip=Move->EffectiveGripRate;
+    Floor->GetStaticMeshComponent()->SetMaterial(0,LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Steppe/Debug/M_PrototypeMarker.M_PrototypeMarker")));
+    Step(.1f); const float HardGrip=Move->EffectiveGripRate;
+    TestTrue(TEXT("Hard physical surface changes effective grip"),HardGrip>GrassGrip*1.04f);
     FRidingIntent Intent; Intent.Forward=1;
     Move->SetRiderIntent(Intent); Step(1);
     AddInfo(FString::Printf(TEXT("1s speed=%.1f desired=%.1f mode=%d location=%s begun=%d"),Move->CurrentSpeed,Move->DesiredSpeed,static_cast<int32>(Move->MovementMode),*Horse->GetActorLocation().ToString(),Horse->HasActorBegunPlay()));
@@ -85,7 +114,18 @@ bool FSteppeWorldTest::RunTest(const FString& Parameters)
     FHorseMovementIntent Direct; Direct.DesiredSpeed=180; Direct.DesiredTurn=1;
     Horse->Attributes->bInfiniteStamina=true;
     Move->SetHorseIntent(Direct); Step(3); const float LowTurnRate=Move->EffectiveTurnRate;
-    Direct.DesiredSpeed=1500; Move->SetHorseIntent(Direct); Step(10);
+    Direct.DesiredSpeed=1500; Move->SetHorseIntent(Direct); Step(.25f);
+    TestTrue(TEXT("Facing and velocity separate during a turn"),FMath::Abs(Move->SlipAngleDegrees)>.1f && FMath::Abs(Move->LateralSpeed)>1.f);
+    Direct.DesiredTurn=0.f; Move->SetHorseIntent(Direct); Step(1.f);
+    TestTrue(TEXT("Lateral slip settles after steering ends"),FMath::Abs(Move->SlipAngleDegrees)<1.f);
+    Move->SetExternalAcceleration(Horse->GetActorRightVector()*2000.f);
+    TestTrue(TEXT("External acceleration is bounded"),Move->ExternalAcceleration.Size2D()<=Move->MaximumExternalAcceleration+.1f);
+    const float BeforePull=Move->LateralSpeed;
+    Step(.2f);
+    TestTrue(TEXT("Lateral pull changes the horse trajectory"),Move->LateralSpeed>BeforePull+10.f);
+    Move->ClearExternalAcceleration();
+    TestTrue(TEXT("External pull clears completely"),Move->ExternalAcceleration.IsNearlyZero());
+    Direct.DesiredTurn=1.f; Move->SetHorseIntent(Direct); Step(10);
     TestTrue(TEXT("Actual high-speed turn rate is smaller"),Move->EffectiveTurnRate<LowTurnRate*.4f);
     TestTrue(TEXT("Turn stress warns at sprint"),Move->TurnStress>.8f);
     Direct.DesiredSpeed=0; Direct.BrakeStrength=1; Move->SetHorseIntent(Direct); Step(4);

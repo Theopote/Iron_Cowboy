@@ -66,6 +66,7 @@ public:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight|Shock", meta=(ClampMin="0.1")) float ShockDecayPerSecond = .75f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight|Shock", meta=(ClampMin="1.1")) float EmergencyBreakRangeMultiplier = 1.8f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight|Obstacle", meta=(ClampMin="0",ClampMax="1")) float ObstacleWrapTensionBonus = .25f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight", meta=(ClampMin="0")) float HorsePullAcceleration = 440.f;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight|Obstacle", meta=(ClampMin="0.05")) float RopeWrapClearSeconds = .35f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso") ELassoState State = ELassoState::Stored;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso") FVector RopeStart = FVector::ZeroVector;

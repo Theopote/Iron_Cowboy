@@ -2,6 +2,7 @@
 #include "AI/HorseBrainComponent.h"
 #include "AI/SteppeHerdManager.h"
 #include "Character/Horse/SteppeWildHorseCharacter.h"
+#include "Character/Horse/HorseMovementComponent.h"
 #include "Character/Rider/RidingComponent.h"
 #include "Character/Rider/SteppeRiderCharacter.h"
 #include "Game/SteppeGameMode.h"
@@ -105,7 +106,11 @@ bool ULassoComponent::ThrowFrom(FVector Origin, FVector Direction)
 
 void ULassoComponent::StartRecovery(const TCHAR* Message)
 {
-    if (auto* Horse=Target.Get()) { Horse->Brain->SetLassoed(false); }
+    if (auto* Horse=Target.Get())
+    {
+        Horse->Brain->SetLassoed(false);
+        CastChecked<UHorseMovementComponent>(Horse->GetCharacterMovement())->ClearExternalAcceleration();
+    }
     Target.Reset();
     bTargetIsolated=false;
     bBracing=false;
@@ -147,6 +152,7 @@ bool ULassoComponent::CaptureWithHerd(ASteppeHerdManager* Herd)
     if (State!=ELassoState::Subdued || !Horse || !Herd) { Feedback=TEXT("Subdue the target before capture"); return false; }
     if (!Herd->RegisterCapturedHorse(Horse)) { Feedback=TEXT("Capture registration failed"); return false; }
     Horse->Brain->SetCaptured(true);
+    CastChecked<UHorseMovementComponent>(Horse->GetCharacterMovement())->ClearExternalAcceleration();
     State=ELassoState::Captured;
     bBracing=false;
     Tension=0.f;
@@ -165,6 +171,7 @@ bool ULassoComponent::CompleteOnFootSurrender(ASteppeHerdManager* Herd)
         return false;
     }
     State=ELassoState::Captured;
+    CastChecked<UHorseMovementComponent>(Horse->GetCharacterMovement())->ClearExternalAcceleration();
     bBracing=false;
     Tension=0.f;
     ControlProgress=1.f;
@@ -351,12 +358,14 @@ void ULassoComponent::TickComponent(float Dt, ELevelTick TickType, FActorCompone
             if (State==ELassoState::Captured)
             {
                 Horse->Brain->SetCaptured(true);
+                CastChecked<UHorseMovementComponent>(Horse->GetCharacterMovement())->ClearExternalAcceleration();
                 Feedback=TEXT("CAPTURED | LMB stow lasso");
                 return;
             }
             if (State==ELassoState::Subdued)
             {
                 Horse->Brain->SetLassoConstraint(ConstraintAnchor,1.f,true,1.f,bRopeWrapped);
+                CastChecked<UHorseMovementComponent>(Horse->GetCharacterMovement())->ClearExternalAcceleration();
                 Feedback=FString::Printf(TEXT("%s LOOP | SUBDUED - press C"),*UEnum::GetDisplayValueAsText(HitZone).ToString().ToUpper());
                 return;
             }
@@ -376,6 +385,8 @@ void ULassoComponent::TickComponent(float Dt, ELevelTick TickType, FActorCompone
             bHadAnchorSample=true;
             Tension=FMath::Clamp(((Distance-RopeLength)/FMath::Max(10.f,TensionRange)+FMath::Max(0.f,SeparatingSpeed)/1200.f)*GetHitZoneTensionMultiplier()
                 +(bRopeWrapped?ObstacleWrapTensionBonus:0.f),0.f,1.5f);
+            CastChecked<UHorseMovementComponent>(Horse->GetCharacterMovement())->SetExternalAcceleration(
+                (ConstraintAnchor-Horse->GetActorLocation()).GetSafeNormal2D()*Tension*HorsePullAcceleration);
             const float NewShock=CalculateShockLoad(SeparatingSpeed,AnchorDeceleration,Tension);
             ShockLoad=FMath::Max(NewShock,FMath::Max(0.f,ShockLoad-ShockDecayPerSecond*Dt));
             auto* Rider=Cast<ASteppeRiderCharacter>(GetOwner());
@@ -458,7 +469,12 @@ void ULassoComponent::TickComponent(float Dt, ELevelTick TickType, FActorCompone
 
 void ULassoComponent::EndPlay(const EEndPlayReason::Type Reason)
 {
-    if (auto* Horse=Target.Get()) { Horse->Brain->SetCaptured(false); Horse->Brain->SetLassoed(false); }
+    if (auto* Horse=Target.Get())
+    {
+        Horse->Brain->SetCaptured(false);
+        Horse->Brain->SetLassoed(false);
+        CastChecked<UHorseMovementComponent>(Horse->GetCharacterMovement())->ClearExternalAcceleration();
+    }
     Target.Reset();
     Super::EndPlay(Reason);
 }

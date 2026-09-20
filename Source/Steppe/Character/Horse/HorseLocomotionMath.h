@@ -8,6 +8,18 @@ namespace SteppeHorseMath
         const float Rate = Target > Current ? Acceleration : Deceleration;
         return FMath::Max(0.f, Current + FMath::Clamp(Target - Current, -FMath::Max(0.f,Rate)*FMath::Max(0.f,Dt), FMath::Max(0.f,Rate)*FMath::Max(0.f,Dt)));
     }
+    inline FVector TurnVelocityTowardFacing(FVector CurrentVelocity, FVector Facing, float TargetSpeed, float GripRate, float Dt)
+    {
+        const FVector Desired=Facing.GetSafeNormal2D();
+        if (TargetSpeed<=KINDA_SMALL_NUMBER || Desired.IsNearlyZero()) { return FVector::ZeroVector; }
+        const FVector Previous=CurrentVelocity.GetSafeNormal2D();
+        if (Previous.IsNearlyZero()) { return Desired*TargetSpeed; }
+        const float PreviousYaw=Previous.Rotation().Yaw;
+        const float DesiredYaw=Desired.Rotation().Yaw;
+        const float Alpha=1.f-FMath::Exp(-FMath::Max(0.f,GripRate)*FMath::Max(0.f,Dt));
+        const float NewYaw=PreviousYaw+FMath::FindDeltaAngleDegrees(PreviousYaw,DesiredYaw)*Alpha;
+        return FRotator(0.f,NewYaw,0.f).Vector()*TargetSpeed;
+    }
     inline EHorseGait SelectGait(float Speed, EHorseGait Previous, const UHorseLocomotionConfig& Config)
     {
         int32 Index = FMath::Clamp(static_cast<int32>(Previous),0,5);
