@@ -67,6 +67,7 @@ void UHorseBrainComponent::ReceiveHerdAlarm(float Strength, float Duration)
 void UHorseBrainComponent::SetLassoed(bool bNewLassoed)
 {
     if (bNewLassoed && !bLassoed) { LassoSpeedLimitScale=FMath::Clamp(InitialLassoSpeedLimitScale,MinimumLassoSpeedLimitScale,1.f); }
+    if (bNewLassoed && !bLassoed) { RecoveryTurnRemaining=0.f; bRecoveringFromBlockage=false; }
     bLassoed=bNewLassoed;
     if (bLassoed) { ChangeState(EWildHorseState::Lassoed); }
     else if (State==EWildHorseState::Lassoed) { ChangeState(EWildHorseState::Recovering); }
@@ -85,6 +86,7 @@ void UHorseBrainComponent::SetLassoConstraint(FVector Anchor, float Tension, boo
 }
 void UHorseBrainComponent::SetCaptured(bool bNewCaptured)
 {
+    if (bNewCaptured && !bCaptured) { RecoveryTurnRemaining=0.f; bRecoveringFromBlockage=false; }
     bCaptured=bNewCaptured;
     if (bCaptured)
     {
@@ -102,6 +104,7 @@ void UHorseBrainComponent::RequestCapturedRetreat(FVector Direction, float Speed
 }
 void UHorseBrainComponent::SetLeadTarget(AActor* Target)
 {
+    if (Target && Target!=LeadTarget.Get()) { RecoveryTurnRemaining=0.f; bRecoveringFromBlockage=false; }
     LeadTarget=Target==GetOwner()?nullptr:Target;
     bLeading=LeadTarget.IsValid();
     LeadDistance=0.f;
@@ -201,7 +204,13 @@ bool UHorseBrainComponent::IsDirectionSupported(const ASteppeHorseCharacter& Hor
     Environment.AddObjectTypesToQuery(ECC_WorldStatic);
     Environment.AddObjectTypesToQuery(ECC_WorldDynamic);
     if (GetWorld()->SweepSingleByObjectType(Hit, Start, Start+Direction*Length, FQuat::Identity, Environment,
-        FCollisionShape::MakeSphere(FMath::Max(1.f,C.ProbeRadius)), Params)) { return false; }
+        FCollisionShape::MakeSphere(FMath::Max(1.f,C.ProbeRadius)), Params))
+    {
+        const FVector Away=Hit.GetActor()?(Start-Hit.GetActor()->GetActorLocation()).GetSafeNormal2D():Hit.ImpactNormal.GetSafeNormal2D();
+        // A horse already touching another horse or a wall must be allowed to move outward.
+        // The actual character capsule still resolves the collision during movement.
+        if (!Hit.bStartPenetrating || FVector::DotProduct(Direction,Away)<.35f) { return false; }
+    }
     const int32 Samples = FMath::Clamp(FMath::CeilToInt(Length/FMath::Max(10.f,C.GroundSampleSpacing)),1,32);
     float PreviousGroundZ = Start.Z-Horse.GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
     for (int32 Index=1; Index<=Samples; ++Index)
@@ -232,12 +241,69 @@ FVector UHorseBrainComponent::FindSafeDirection(const ASteppeHorseCharacter& Hor
     bPathBlocked = Best.IsNearlyZero();
     return Best;
 }
+FVector UHorseBrainComponent::ChooseRecoveryDirection(const ASteppeHorseCharacter& Horse, FVector Desired) const
+{
+    const auto& C=GetConfig();
+    FCollisionQueryParams Params(SCENE_QUERY_STAT(SteppeWildRecover),false,&Horse);
+    FCollisionObjectQueryParams Objects;
+    Objects.AddObjectTypesToQuery(ECC_WorldStatic);
+    Objects.AddObjectTypesToQuery(ECC_WorldDynamic);
+    FHitResult Hit;
+    FVector Away=-Desired.GetSafeNormal2D();
+    if (GetWorld()->SweepSingleByObjectType(Hit,Horse.GetActorLocation(),Horse.GetActorLocation()+Desired*C.ProbeDistance,
+        FQuat::Identity,Objects,FCollisionShape::MakeSphere(FMath::Max(1.f,C.ProbeRadius)),Params))
+    {
+        Away=Hit.bStartPenetrating && Hit.GetActor()
+            ?(Horse.GetActorLocation()-Hit.GetActor()->GetActorLocation()).GetSafeNormal2D()
+            :Hit.ImpactNormal.GetSafeNormal2D();
+    }
+    if (Away.IsNearlyZero()) { Away=-Horse.GetActorForwardVector(); }
+    FVector Best=FVector::ZeroVector;
+    float BestScore=-BIG_NUMBER;
+    const float Side=IndividualSteeringBias>=0.f?1.f:-1.f;
+    for (float Angle : {0.f,45.f,-45.f,90.f,-90.f,135.f,-135.f,180.f})
+    {
+        const FVector Candidate=Away.RotateAngleAxis(Angle,FVector::UpVector);
+        const float Score=FVector::DotProduct(Candidate,Away)+.05f*Side*FMath::Sign(Angle);
+        if (Score>BestScore && IsDirectionSupported(Horse,Candidate,150.f)) { Best=Candidate; BestScore=Score; }
+    }
+    return Best.IsNearlyZero()?Away:Best;
+}
+void UHorseBrainComponent::ApplyBlockageRecovery(const ASteppeHorseCharacter& Horse, FHorseMovementIntent& Intent, FVector Desired, float Dt)
+{
+    if (bPathBlocked && RecoveryTurnRemaining<=0.f)
+    {
+        RecoveryDirection=ChooseRecoveryDirection(Horse,Desired);
+        RecoveryStartLocation=Horse.GetActorLocation();
+        RecoveryTurnRemaining=GetConfig().BlockedTurnSeconds+1.5f;
+    }
+    if (RecoveryTurnRemaining>0.f)
+    {
+        RecoveryTurnRemaining=FMath::Max(0.f,RecoveryTurnRemaining-Dt);
+        if (FVector::Dist2D(Horse.GetActorLocation(),RecoveryStartLocation)>200.f) { RecoveryTurnRemaining=0.f; }
+        if (RecoveryTurnRemaining>0.f)
+        {
+            const FVector Direction=RecoveryDirection;
+            const float HeadingError=FMath::FindDeltaAngleDegrees(Horse.GetActorRotation().Yaw,Direction.Rotation().Yaw);
+            Intent.DesiredTurn=FMath::Clamp(HeadingError/35.f,-1.f,1.f);
+            const bool bFacingEscape=FVector::DotProduct(Horse.GetActorForwardVector(),Direction)>.7f;
+            Intent.DesiredSpeed=bFacingEscape
+                && IsDirectionSupported(Horse,Direction,150.f)?180.f:0.f;
+            Intent.BrakeStrength=Intent.DesiredSpeed>0.f?0.f:1.f;
+            Intent.RequestedGait=EHorseGait::Walk;
+            SteeringDirection=Direction;
+        }
+    }
+    bRecoveringFromBlockage=RecoveryTurnRemaining>0.f;
+}
 void UHorseBrainComponent::TickComponent(float Dt, ELevelTick TickType, FActorComponentTickFunction* TickFunction)
 {
     Super::TickComponent(Dt, TickType, TickFunction);
     auto* Horse = Cast<ASteppeHorseCharacter>(GetOwner());
     auto* Movement = Horse ? Cast<UHorseMovementComponent>(Horse->GetCharacterMovement()) : nullptr;
     if (!Movement || Horse->MountedRider.IsValid() || Dt <= 0.f) { return; }
+    StallSeconds=Movement->HorseIntent.DesiredSpeed>80.f && Movement->CurrentSpeed<15.f
+        ?StallSeconds+Dt:0.f;
     if (bCaptured)
     {
         FHorseMovementIntent CapturedIntent;
@@ -265,6 +331,8 @@ void UHorseBrainComponent::TickComponent(float Dt, ELevelTick TickType, FActorCo
                     SteeringDirection=SafeDirection;
                 }
                 else { CapturedIntent.BrakeStrength=1.f; }
+                if (StallSeconds>1.2f) { bPathBlocked=true; }
+                ApplyBlockageRecovery(*Horse,CapturedIntent,ToAnchor.GetSafeNormal2D(),Dt);
             }
             else
             {
@@ -309,6 +377,8 @@ void UHorseBrainComponent::TickComponent(float Dt, ELevelTick TickType, FActorCo
             StruggleIntent.BrakeStrength=1.f;
             SteeringDirection=FVector::ZeroVector;
         }
+        if (StallSeconds>1.2f) { bPathBlocked=true; }
+        ApplyBlockageRecovery(*Horse,StruggleIntent,Away,Dt);
         Movement->SetHorseIntent(StruggleIntent);
         return;
     }
@@ -405,17 +475,10 @@ void UHorseBrainComponent::TickComponent(float Dt, ELevelTick TickType, FActorCo
         }
         // Turn before charging away when the safe direction is behind us. Existing momentum still brakes through CMC.
         Intent.DesiredSpeed *= FMath::Clamp(FVector::DotProduct(Horse->GetActorForwardVector(), SteeringDirection), 0.f, 1.f);
-        if (bPathBlocked && RecoveryTurnRemaining<=0.f) { RecoveryTurnRemaining=C.BlockedTurnSeconds; }
     }
     else { SteeringDirection = FVector::ZeroVector; }
-    RecoveryTurnRemaining=FMath::Max(0.f,RecoveryTurnRemaining-Dt);
-    bRecoveringFromBlockage=RecoveryTurnRemaining>0.f;
-    if (bRecoveringFromBlockage)
-    {
-        Intent.DesiredSpeed=0.f;
-        Intent.DesiredTurn=IndividualSteeringBias>=0.f?1.f:-1.f;
-        Intent.BrakeStrength=1.f;
-    }
+    if (StallSeconds>1.2f && Intent.DesiredSpeed>0.f) { bPathBlocked=true; }
+    ApplyBlockageRecovery(*Horse,Intent,(Goal-Horse->GetActorLocation()).GetSafeNormal2D(),Dt);
     if (bBrakingForHazard) { Intent.DesiredSpeed=0.f; Intent.BrakeStrength=1.f; }
     Movement->SetHorseIntent(Intent);
 }

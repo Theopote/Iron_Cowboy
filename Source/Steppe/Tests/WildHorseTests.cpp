@@ -135,6 +135,51 @@ bool FWildMovementTest::RunTest(const FString& Parameters)
         Wild->Brain->bRecoveringFromBlockage && FMath::Abs(Move->HorseIntent.DesiredTurn)>.9f);
     return true;
 }
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FWildUnstuckTest,"Steppe.P2.ObstacleAndMountUnstuck",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FWildUnstuckTest::RunTest(const FString& Parameters)
+{
+    {
+        FWildTestWorld Fixture;
+        auto* Wild=Fixture.World->SpawnActor<ASteppeWildHorseCharacter>(FVector(0,0,100),FRotator::ZeroRotator);
+        Fixture.Block(FVector(250,0,150),FVector(.5f,8.f,3.f));
+        Fixture.Block(FVector(-450,0,150),FVector(.5f,8.f,3.f));
+        Fixture.Block(FVector(0,250,150),FVector(8.f,.5f,3.f));
+        Fixture.Block(FVector(0,-250,150),FVector(8.f,.5f,3.f));
+        Fixture.Begin();
+        Wild->Brain->Goal=FVector(1000,0,100);
+        Fixture.Step(6.f);
+        TestTrue(TEXT("Blocked horse backs away instead of only spinning"),Wild->GetActorLocation().X < -30.f);
+    }
+    {
+        FWildTestWorld Fixture;
+        auto* Wild=Fixture.World->SpawnActor<ASteppeWildHorseCharacter>(FVector(0,0,100),FRotator::ZeroRotator);
+        auto* Mount=Fixture.World->SpawnActor<ASteppeHorseCharacter>(FVector(120,0,100),FRotator(0,180,0));
+        auto* Rider=Fixture.World->SpawnActor<ASteppeRiderCharacter>(FVector(120,150,100),FRotator::ZeroRotator);
+        Fixture.Begin();
+        TestTrue(TEXT("Rider mounts stationary horse beside wild horse"),Rider->Riding->TryMount(Mount));
+        Wild->Brain->SetCaptured(true);
+        Wild->Brain->SetLeadTarget(Rider);
+        const FVector Start=Wild->GetActorLocation();
+        Fixture.Step(4.f);
+        TestTrue(TEXT("Led wild horse navigates around a stationary mount"),
+            FVector::Dist2D(Start,Wild->GetActorLocation())>80.f);
+    }
+    {
+        FWildTestWorld Fixture;
+        auto* Wild=Fixture.World->SpawnActor<ASteppeWildHorseCharacter>(FVector(0,0,100),FRotator::ZeroRotator);
+        auto* Mount=Fixture.World->SpawnActor<ASteppeHorseCharacter>(FVector(120,0,100),FRotator::ZeroRotator);
+        auto* Rider=Fixture.World->SpawnActor<ASteppeRiderCharacter>(FVector(120,150,100),FRotator::ZeroRotator);
+        Fixture.Begin();
+        TestTrue(TEXT("Rider mounts beside free wild horse"),Rider->Riding->TryMount(Mount));
+        Wild->Brain->SetThreatTarget(Rider);
+        const float InitialDistance=FVector::Dist2D(Wild->GetActorLocation(),Mount->GetActorLocation());
+        Fixture.Step(4.f);
+        TestTrue(TEXT("Free wild horse separates from stationary player mount"),
+            FVector::Dist2D(Wild->GetActorLocation(),Mount->GetActorLocation())>InitialDistance+100.f);
+    }
+    return true;
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FWildHazardTest,"Steppe.P2.StoppingDistanceAndGaps",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FWildHazardTest::RunTest(const FString& Parameters)
 {

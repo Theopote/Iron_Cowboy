@@ -5,6 +5,7 @@
 #include "HorseBrainComponent.generated.h"
 class UWildHorseConfig;
 class ASteppeHorseCharacter;
+struct FHorseMovementIntent;
 
 UENUM(BlueprintType)
 enum class EWildHorseState : uint8 { Roaming, Alert, Fleeing, Recovering, Yielding, Lassoed, Captured };
@@ -73,6 +74,8 @@ private:
     void ChangeState(EWildHorseState NewState);
     FVector FindSafeDirection(const ASteppeHorseCharacter& Horse, FVector Desired);
     bool IsDirectionSupported(const ASteppeHorseCharacter& Horse, FVector Direction, float Distance) const;
+    void ApplyBlockageRecovery(const ASteppeHorseCharacter& Horse, FHorseMovementIntent& Intent, FVector Desired, float Dt);
+    FVector ChooseRecoveryDirection(const ASteppeHorseCharacter& Horse, FVector Desired) const;
     void ChooseRoamGoal();
     UPROPERTY() TWeakObjectPtr<AActor> ThreatTarget;
     FVector Home = FVector::ZeroVector;
@@ -84,6 +87,9 @@ private:
     float PauseRemaining = 0.f;
     float RoamGoalSeconds = 0.f;
     float RecoveryTurnRemaining = 0.f;
+    FVector RecoveryDirection = FVector::ZeroVector;
+    FVector RecoveryStartLocation = FVector::ZeroVector;
+    float StallSeconds = 0.f;
     float IndividualPauseScale = 1.f;
     int32 IdentitySeed = 0;
     float HerdAlarmStrength = 0.f;
