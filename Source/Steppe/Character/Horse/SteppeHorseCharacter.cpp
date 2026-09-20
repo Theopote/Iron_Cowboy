@@ -12,6 +12,7 @@
 #include "UObject/ConstructorHelpers.h"
 #include "Core/SteppeGameplayTags.h"
 #include "Presentation/HorsePresentationComponent.h"
+#include "Presentation/HorseAnimInstance.h"
 ASteppeHorseCharacter::ASteppeHorseCharacter(const FObjectInitializer& ObjectInitializer)
     : Super(ObjectInitializer.SetDefaultSubobjectClass<UHorseMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
@@ -30,6 +31,9 @@ ASteppeHorseCharacter::ASteppeHorseCharacter(const FObjectInitializer& ObjectIni
         GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
         GetMesh()->SetGenerateOverlapEvents(false);
         GetMesh()->VisibilityBasedAnimTickOption=EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
+        static ConstructorHelpers::FClassFinder<UHorseAnimInstance> HorseAnimBP(
+            TEXT("/Game/Steppe/Presentation/ABP_Horse"));
+        if (HorseAnimBP.Succeeded()) { GetMesh()->SetAnimInstanceClass(HorseAnimBP.Class); }
         Presentation->bAnimatePlaceholder=false;
     }
     PlaceholderRoot = CreateDefaultSubobject<USceneComponent>(TEXT("PlaceholderHorseRoot"));

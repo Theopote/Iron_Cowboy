@@ -27,7 +27,8 @@
 #include "Playtest/SteppePlaytestMetrics.h"
 #include "Camera/CameraActor.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "Animation/AnimSingleNodeInstance.h"
+#include "Presentation/HorseAnimInstance.h"
+#include "Animation/AnimSequence.h"
 ASteppeGameMode::ASteppeGameMode()
 {
     PrimaryActorTick.bCanEverTick=true;
@@ -367,11 +368,11 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
             GetWorldTimerManager().SetTimer(SecondLegHandle,FTimerDelegate::CreateWeakLambda(this,[this,FirstLegPose,ReadFrontLeg]()
             {
                 const auto* Mesh=PlaygroundHorse?PlaygroundHorse->GetMesh():nullptr;
-                const auto* Instance=Mesh?Mesh->GetSingleNodeInstance():nullptr;
+                const auto* Instance=Mesh?Cast<UHorseAnimInstance>(Mesh->GetAnimInstance()):nullptr;
                 UE_LOG(LogSteppe,Display,TEXT("STEPPE_P16_HORSE_ANIM: BoneDelta=%.3f Speed=%.1f Clip=%s"),
                     FMath::RadiansToDegrees(FirstLegPose->AngularDistance(ReadFrontLeg())),
                     PlaygroundHorse?PlaygroundHorse->AnimationData.Speed:0.f,
-                    Instance && Instance->GetAnimationAsset()?*Instance->GetAnimationAsset()->GetName():TEXT("None"));
+                    Instance && Instance->GetActiveSequence()?*Instance->GetActiveSequence()->GetName():TEXT("None"));
             }),4.45f,false);
             GetWorldTimerManager().SetTimer(StartHandle,FTimerDelegate::CreateWeakLambda(Rider,[Rider]()
             {

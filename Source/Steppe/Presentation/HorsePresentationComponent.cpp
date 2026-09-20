@@ -3,7 +3,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Animation/AnimSequence.h"
-#include "Animation/AnimSingleNodeInstance.h"
+#include "Presentation/HorseAnimInstance.h"
 #include "UObject/ConstructorHelpers.h"
 
 UHorsePresentationComponent::UHorsePresentationComponent()
@@ -27,10 +27,6 @@ void UHorsePresentationComponent::BeginPlay()
         {
             BaseLocation=Mesh->GetRelativeLocation();
             BaseRotation=Mesh->GetRelativeRotation();
-        }
-        if (auto* AnimatedMesh=Horse->GetMesh(); AnimatedMesh && AnimatedMesh->GetSkeletalMeshAsset() && TemporaryIdleAnimation)
-        {
-            AnimatedMesh->PlayAnimation(TemporaryIdleAnimation,true);
         }
     }
 }
@@ -69,30 +65,9 @@ void UHorsePresentationComponent::TickComponent(float Dt,ELevelTick TickType,FAc
     Data.BodyPitch=FMath::FInterpTo(Data.BodyPitch,TargetPitch,Dt,PoseResponse);
     Data.BodyRoll=FMath::FInterpTo(Data.BodyRoll,TargetRoll,Dt,PoseResponse);
 
-    if (auto* AnimatedMesh=Horse->GetMesh(); AnimatedMesh && AnimatedMesh->GetSkeletalMeshAsset())
+    if (auto* Anim=Cast<UHorseAnimInstance>(Horse->GetMesh()->GetAnimInstance()))
     {
-        UAnimSequence* DesiredAnimation=TemporaryIdleAnimation;
-        float PlayRate=1.f;
-        if (Data.Gait==EHorseGait::Walk || Data.Gait==EHorseGait::Trot)
-        {
-            DesiredAnimation=TemporaryWalkAnimation;
-            PlayRate=FMath::Clamp(Data.Speed/260.f,.65f,1.6f);
-        }
-        else if (Data.Gait!=EHorseGait::Idle)
-        {
-            DesiredAnimation=TemporaryGallopAnimation;
-            PlayRate=FMath::Clamp(Data.Speed/1100.f,.7f,1.5f);
-        }
-        if (DesiredAnimation)
-        {
-            auto* Instance=AnimatedMesh->GetSingleNodeInstance();
-            if (!Instance || Instance->GetAnimationAsset()!=DesiredAnimation)
-            {
-                AnimatedMesh->PlayAnimation(DesiredAnimation,true);
-                Instance=AnimatedMesh->GetSingleNodeInstance();
-            }
-            if (Instance) { Instance->SetPlayRate(PlayRate); }
-        }
+        Anim->ApplyHorseData(Data,TemporaryIdleAnimation,TemporaryWalkAnimation,TemporaryGallopAnimation);
     }
 
     if (auto* Mesh=Horse->GetPlaceholderRoot())
