@@ -266,7 +266,11 @@ if ($PresentationSmoke) {
     if ($presentationLog -notmatch 'STEPPE_P13_PRESENTATION: Gait=EHorseGait::(Gallop|Sprint) Phase=0\.[0-9]+ Stride=0\.[1-9][0-9]* Bob=-?[0-9]+\.[0-9]+ Roll=-?[0-9]+\.[0-9]+ RiderRoll=-?[0-9]+\.[0-9]+ Mounted=1') {
         throw "P13 presentation smoke did not produce a mounted moving pose; see $logPath"
     }
-    Write-Output 'P13 presentation smoke: gait phase, stride, horse lean and rider pose rendered.'
+    $legMotion=[regex]::Match($presentationLog,'STEPPE_P16_HORSE_ANIM: BoneDelta=([0-9]+\.[0-9]+) Speed=([0-9]+\.[0-9]+) Clip=HorseGallop')
+    if (!$legMotion.Success -or [double]$legMotion.Groups[1].Value -lt 2 -or [double]$legMotion.Groups[2].Value -lt 300) {
+        throw "Horse presentation smoke did not confirm skeletal gallop motion on the mounted Blueprint horse; see $logPath"
+    }
+    Write-Output 'Presentation smoke: mounted gallop rotated the skeletal front leg and rendered rider/horse feedback.'
 }
 if ($MetricsSmoke -or $MetricsFailureSmoke) {
     $metricsLog = Get-Content $logPath -Raw

@@ -2,7 +2,7 @@
 #include "Character/Horse/SteppeHorseCharacter.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "Animation/BlendSpace1D.h"
+#include "Animation/AnimSequence.h"
 #include "Animation/AnimSingleNodeInstance.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -10,9 +10,12 @@ UHorsePresentationComponent::UHorsePresentationComponent()
 {
     PrimaryComponentTick.bCanEverTick=true;
     PrimaryComponentTick.TickGroup=TG_PostUpdateWork;
-    static ConstructorHelpers::FObjectFinder<UBlendSpace1D> HorseBlend(
-        TEXT("/Game/Steppe/Animation/Horses/BS_TemporaryHorseSpeed.BS_TemporaryHorseSpeed"));
-    TemporarySpeedBlend=HorseBlend.Object;
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> Idle(TEXT("/Game/Steppe/ThirdParty/Quaternius/AnimatedAnimals/Horse/Horse/SkeletalMeshes/HorseIdle.HorseIdle"));
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> Walk(TEXT("/Game/Steppe/ThirdParty/Quaternius/AnimatedAnimals/Horse/Horse/SkeletalMeshes/HorseWalk.HorseWalk"));
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> Gallop(TEXT("/Game/Steppe/ThirdParty/Quaternius/AnimatedAnimals/Horse/Horse/SkeletalMeshes/HorseGallop.HorseGallop"));
+    TemporaryIdleAnimation=Idle.Object;
+    TemporaryWalkAnimation=Walk.Object;
+    TemporaryGallopAnimation=Gallop.Object;
 }
 
 void UHorsePresentationComponent::BeginPlay()
@@ -25,9 +28,9 @@ void UHorsePresentationComponent::BeginPlay()
             BaseLocation=Mesh->GetRelativeLocation();
             BaseRotation=Mesh->GetRelativeRotation();
         }
-        if (auto* AnimatedMesh=Horse->GetMesh(); AnimatedMesh && AnimatedMesh->GetSkeletalMeshAsset() && TemporarySpeedBlend)
+        if (auto* AnimatedMesh=Horse->GetMesh(); AnimatedMesh && AnimatedMesh->GetSkeletalMeshAsset() && TemporaryIdleAnimation)
         {
-            AnimatedMesh->PlayAnimation(TemporarySpeedBlend,true);
+            AnimatedMesh->PlayAnimation(TemporaryIdleAnimation,true);
         }
     }
 }
@@ -68,9 +71,27 @@ void UHorsePresentationComponent::TickComponent(float Dt,ELevelTick TickType,FAc
 
     if (auto* AnimatedMesh=Horse->GetMesh(); AnimatedMesh && AnimatedMesh->GetSkeletalMeshAsset())
     {
-        if (auto* Instance=AnimatedMesh->GetSingleNodeInstance())
+        UAnimSequence* DesiredAnimation=TemporaryIdleAnimation;
+        float PlayRate=1.f;
+        if (Data.Gait==EHorseGait::Walk || Data.Gait==EHorseGait::Trot)
         {
-            Instance->SetBlendSpacePosition(FVector(Data.NormalizedSpeed*100.f,0,0));
+            DesiredAnimation=TemporaryWalkAnimation;
+            PlayRate=FMath::Clamp(Data.Speed/260.f,.65f,1.6f);
+        }
+        else if (Data.Gait!=EHorseGait::Idle)
+        {
+            DesiredAnimation=TemporaryGallopAnimation;
+            PlayRate=FMath::Clamp(Data.Speed/1100.f,.7f,1.5f);
+        }
+        if (DesiredAnimation)
+        {
+            auto* Instance=AnimatedMesh->GetSingleNodeInstance();
+            if (!Instance || Instance->GetAnimationAsset()!=DesiredAnimation)
+            {
+                AnimatedMesh->PlayAnimation(DesiredAnimation,true);
+                Instance=AnimatedMesh->GetSingleNodeInstance();
+            }
+            if (Instance) { Instance->SetPlayRate(PlayRate); }
         }
     }
 

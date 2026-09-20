@@ -17,14 +17,16 @@ for slot in mesh.get_editor_property('materials'):
             material.get_name(), [(entry.get_editor_property('parameter_info').get_editor_property('name'),
                                    entry.get_editor_property('parameter_value'))
                                   for entry in material.get_editor_property('vector_parameter_values')]))
-blend = unreal.EditorAssetLibrary.load_asset('/Game/Steppe/Animation/Horses/BS_TemporaryHorseSpeed')
-if blend:
-    unreal.log('STEPPE_TEMP_HORSE_BLEND_CHECK: {}'.format([
-        (sample.get_editor_property('animation').get_name(),sample.get_editor_property('sample_value').x)
-        for sample in blend.get_editor_property('sample_data')]))
 for name in ('HorseIdle', 'HorseWalk', 'HorseGallop', 'HorseIdle_2'):
     asset = unreal.EditorAssetLibrary.load_asset(base + name + '.' + name)
     if not asset:
         raise RuntimeError('Missing temporary animation: ' + name)
     unreal.log('STEPPE_TEMP_HORSE_ANIM: {} length={}'.format(name, asset.get_play_length()))
+    if name in ('HorseWalk', 'HorseGallop'):
+        first = unreal.AnimationLibrary.get_bone_pose_for_time(asset, 'frontupperleg_l', 0.0, False).rotation
+        second = unreal.AnimationLibrary.get_bone_pose_for_time(asset, 'frontupperleg_l', 0.25, False).rotation
+        dot = abs(first.x * second.x + first.y * second.y + first.z * second.z + first.w * second.w)
+        unreal.log('STEPPE_TEMP_HORSE_BONE_CHANGE: {} dot={:.6f}'.format(name, dot))
+        if dot > 0.9999:
+            raise RuntimeError('{} imported front leg has no meaningful bone rotation'.format(name))
 unreal.SystemLibrary.quit_editor()

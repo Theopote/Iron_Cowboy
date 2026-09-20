@@ -26,6 +26,8 @@
 #include "Feedback/SteppeFeedbackComponent.h"
 #include "Playtest/SteppePlaytestMetrics.h"
 #include "Camera/CameraActor.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Animation/AnimSingleNodeInstance.h"
 ASteppeGameMode::ASteppeGameMode()
 {
     PrimaryActorTick.bCanEverTick=true;
@@ -351,6 +353,26 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
         }
         if (bPresentationSmoke)
         {
+            const TSharedRef<FQuat> FirstLegPose=MakeShared<FQuat>(FQuat::Identity);
+            FTimerHandle FirstLegHandle,SecondLegHandle;
+            auto ReadFrontLeg=[this]() -> FQuat
+            {
+                if (!PlaygroundHorse || !PlaygroundHorse->GetMesh()) { return FQuat::Identity; }
+                const auto* Mesh=PlaygroundHorse->GetMesh();
+                const int32 Bone=Mesh->GetBoneIndex(TEXT("frontupperleg_l"));
+                return Bone==INDEX_NONE?FQuat::Identity:Mesh->GetComponentQuat().Inverse()*Mesh->GetBoneTransform(Bone).GetRotation();
+            };
+            GetWorldTimerManager().SetTimer(FirstLegHandle,FTimerDelegate::CreateWeakLambda(this,[FirstLegPose,ReadFrontLeg]()
+            { *FirstLegPose=ReadFrontLeg(); }),4.2f,false);
+            GetWorldTimerManager().SetTimer(SecondLegHandle,FTimerDelegate::CreateWeakLambda(this,[this,FirstLegPose,ReadFrontLeg]()
+            {
+                const auto* Mesh=PlaygroundHorse?PlaygroundHorse->GetMesh():nullptr;
+                const auto* Instance=Mesh?Mesh->GetSingleNodeInstance():nullptr;
+                UE_LOG(LogSteppe,Display,TEXT("STEPPE_P16_HORSE_ANIM: BoneDelta=%.3f Speed=%.1f Clip=%s"),
+                    FMath::RadiansToDegrees(FirstLegPose->AngularDistance(ReadFrontLeg())),
+                    PlaygroundHorse?PlaygroundHorse->AnimationData.Speed:0.f,
+                    Instance && Instance->GetAnimationAsset()?*Instance->GetAnimationAsset()->GetName():TEXT("None"));
+            }),4.45f,false);
             GetWorldTimerManager().SetTimer(StartHandle,FTimerDelegate::CreateWeakLambda(Rider,[Rider]()
             {
                 FRidingIntent Intent; Intent.Forward=1.f; Intent.Turn=.72f; Intent.bSprint=true; Rider->Riding->SetIntent(Intent);

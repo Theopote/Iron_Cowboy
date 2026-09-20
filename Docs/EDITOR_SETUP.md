@@ -50,7 +50,7 @@ BP_SteppeHorse 的 Attributes：速度上限、敏捷、BaseTurnRate、体力、
 
 ## 临时骨骼马与正式动画
 
-P16.5 已把 Quaternius CC0 的临时 Skeletal Mesh 接入所有 Horse，速度驱动 Idle/Walk/Gallop Blend Space，并自动隐藏旧灰盒表现；资源位置、许可、重建与限制见 [P16.5 临时骨骼马素材](P16.5_TEMPORARY_HORSE.md)。没有 `RiderSeat` Socket 时仍使用 FallbackSeat，日志 Warning 为预期行为。角色 Capsule 保留，用于玩法碰撞。
+P16.5 已把 Quaternius CC0 的临时 Skeletal Mesh 接入所有 Horse，按实际步态播放 Idle/Walk/Gallop，并自动隐藏旧灰盒表现；资源位置、许可、重建与限制见 [P16.5 临时骨骼马素材](P16.5_TEMPORARY_HORSE.md)。没有 `RiderSeat` Socket 时仍使用 FallbackSeat，日志 Warning 为预期行为。角色 Capsule 保留，用于玩法碰撞。
 
 正式阶段可在 `/Game/Steppe/Animation/Horses/ABP_Horse` 创建与模型骨架一致的 AnimBP，读取 Horse 的 AnimationData。使用 Speed、Gait、GaitPhase、StrideBlend、BodyBob/Pitch/Roll、FootContactPulse、Acceleration、Turn、Lean 和 Stamina 驱动表现，不能用动画直接替代运动计算。临时网格接入时已关闭 HorsePresentationComponent 的 `bAnimatePlaceholder`。骑手 AnimBP 读取 Rider.PresentationData 中的 Mounted、Bracing、Falling、Dragged、BalanceRisk、PullSide、BodyPitch/Roll 与 SeatOffsetZ。
 

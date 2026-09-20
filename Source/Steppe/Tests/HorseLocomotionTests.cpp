@@ -14,7 +14,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Animation/AnimSingleNodeInstance.h"
-#include "Animation/BlendSpace1D.h"
+#include "Animation/AnimSequence.h"
 #include "Materials/MaterialInterface.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -94,8 +94,8 @@ bool FSteppeWorldTest::RunTest(const FString& Parameters)
     Step(.5f);
     TestTrue(TEXT("Temporary skeletal horse replaces visible placeholder"),Horse->GetMesh()->GetSkeletalMeshAsset()
         && !Horse->GetPlaceholderRoot()->IsVisible());
-    TestTrue(TEXT("Horse animation uses the imported speed blend"),Horse->GetMesh()->GetSingleNodeInstance()
-        && Horse->GetMesh()->GetSingleNodeInstance()->GetAnimationAsset()==Horse->Presentation->TemporarySpeedBlend.Get());
+    TestTrue(TEXT("Horse animation begins with imported idle"),Horse->GetMesh()->GetSingleNodeInstance()
+        && Horse->GetMesh()->GetSingleNodeInstance()->GetAnimationAsset()==Horse->Presentation->TemporaryIdleAnimation.Get());
     auto* Move=CastChecked<UHorseMovementComponent>(Horse->GetCharacterMovement());
     Floor->GetStaticMeshComponent()->SetMaterial(0,LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Steppe/Debug/M_PrototypeGrass.M_PrototypeGrass")));
     Step(.1f); const float GrassGrip=Move->EffectiveGripRate;
@@ -106,9 +106,22 @@ bool FSteppeWorldTest::RunTest(const FString& Parameters)
     Move->SetRiderIntent(Intent); Step(1);
     AddInfo(FString::Printf(TEXT("1s speed=%.1f desired=%.1f mode=%d location=%s begun=%d"),Move->CurrentSpeed,Move->DesiredSpeed,static_cast<int32>(Move->MovementMode),*Horse->GetActorLocation().ToString(),Horse->HasActorBegunPlay()));
     TestTrue(TEXT("Progressive acceleration, grounded"),Move->CurrentSpeed>50 && Move->CurrentSpeed<500 && Move->IsMovingOnGround());
+    TestTrue(TEXT("Walking selects the imported walk animation"),Horse->GetMesh()->GetSingleNodeInstance()
+        && Horse->GetMesh()->GetSingleNodeInstance()->GetAnimationAsset()==Horse->Presentation->TemporaryWalkAnimation.Get());
+    const int32 FrontLegBone=Horse->GetMesh()->GetBoneIndex(TEXT("frontupperleg_l"));
+    TestTrue(TEXT("Imported front leg bone exists"),FrontLegBone!=INDEX_NONE);
+    if (FrontLegBone!=INDEX_NONE)
+    {
+        const FQuat FirstPose=Horse->GetMesh()->GetBoneTransform(FrontLegBone).GetRotation();
+        Step(.2f);
+        const FQuat SecondPose=Horse->GetMesh()->GetBoneTransform(FrontLegBone).GetRotation();
+        TestTrue(TEXT("Walking visibly rotates the skeletal front leg"),FirstPose.AngularDistance(SecondPose)>.03f);
+    }
     Step(7); const float Gallop=Move->CurrentSpeed;
     AddInfo(FString::Printf(TEXT("8s speed=%.1f desired=%.1f location=%s"),Gallop,Move->DesiredSpeed,*Horse->GetActorLocation().ToString()));
     TestTrue(TEXT("Reaches gallop"),Gallop>1100);
+    TestTrue(TEXT("Galloping selects the imported gallop animation"),Horse->GetMesh()->GetSingleNodeInstance()
+        && Horse->GetMesh()->GetSingleNodeInstance()->GetAnimationAsset()==Horse->Presentation->TemporaryGallopAnimation.Get());
     Move->ClearIntent(); Step(1); const float Released=Move->CurrentSpeed;
     TestTrue(TEXT("Release preserves momentum"),Released>500 && Released<Gallop);
     Intent.bBrake=true; Move->SetRiderIntent(Intent); Step(1);

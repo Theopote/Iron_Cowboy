@@ -4,7 +4,7 @@
 #include "Components/ActorComponent.h"
 #include "Character/Horse/HorseMovementTypes.h"
 #include "HorsePresentationComponent.generated.h"
-class UBlendSpace1D;
+class UAnimSequence;
 
 UCLASS(ClassGroup=(Steppe),meta=(BlueprintSpawnableComponent))
 class STEPPE_API UHorsePresentationComponent : public UActorComponent
@@ -18,7 +18,9 @@ public:
     float GetCycleFrequency(EHorseGait Gait) const;
 
     UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Presentation") bool bAnimatePlaceholder = true;
-    UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Presentation|Temporary Horse") TObjectPtr<UBlendSpace1D> TemporarySpeedBlend;
+    UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Presentation|Temporary Horse") TObjectPtr<UAnimSequence> TemporaryIdleAnimation;
+    UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Presentation|Temporary Horse") TObjectPtr<UAnimSequence> TemporaryWalkAnimation;
+    UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Presentation|Temporary Horse") TObjectPtr<UAnimSequence> TemporaryGallopAnimation;
     UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Presentation",meta=(ClampMin="0")) float MaximumBob = 10.f;
     UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Presentation",meta=(ClampMin="0")) float MaximumLeanDegrees = 9.f;
     UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Presentation",meta=(ClampMin="0")) float AccelerationPitchDegrees = 5.f;

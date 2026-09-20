@@ -16,13 +16,13 @@
 
 P15.2 已把 Head、Neck、Chest、Torso 命中几何移入野马的 `ULassoTargetComponent`。体积随马的变换进入世界空间，可在 Blueprint 上调节或替换；投索组件只处理轨迹、障碍和跨马匹的最早命中。Chest 仍沿用 Torso 的 Gameplay 风险倍率。P16 第一轮已让朝向和速度短暂分离，Grass/Hard 缩放抓地响应，套索以有界侧向加速度拉动被套野马；正式马与骑手动画安排在动力学体验复核之后。
 
-P16.5 使用 Quaternius CC0 临时马替换所有马匹的灰盒显示。骨骼网格和 13 段源动画已导入，当前以 Idle/Walk/Gallop Blend Space 响应现有运动数据；三类野马通过动态材质区分毛色。旧 16 部件模型仍作回退，Gameplay 碰撞、马匹运动、AI、套索和骑乘逻辑未变。详见 `Docs/P16.5_TEMPORARY_HORSE.md`。
+P16.5 使用 Quaternius CC0 临时马替换所有马匹的灰盒显示。骨骼网格和 13 段源动画已导入。玩家发现首轮马体只平移、没有骨骼动画；现已弃用未经姿态验证的 Blend Space，改为按步态直接播放 Idle/Walk/Gallop，随速度调整播放速率，并在世界测试中检查前腿实际旋转。三类野马通过动态材质区分毛色。旧 16 部件模型仍作回退，Gameplay 碰撞、马匹运动、AI、套索和骑乘逻辑未变。详见 `Docs/P16.5_TEMPORARY_HORSE.md`。
 
 P16 验证：UE 5.8.2 Editor 与 Shipping 编译成功，24 项自动化测试全部通过，实际渲染的完整捕获到命名 Smoke 通过；新 Windows 包完成 Smoke 启动检查。
 
 验证状态：UE 5.8.2 Editor 编译成功；24 项 Steppe 自动化测试通过，0 项失败；P16 测试覆盖抓地、侧滑、地表差异、有界绳索拉力及释放清理；带渲染的完整捕获、牵回和命名继续成功。Shipping Cook 506 个包、0 error/0 warning，打包后 Smoke 退出码 0。正式玩家研究安排在动力学与表现切片后，日常试玩仍可继续发现回归。
 
-P16.5 验证：24 项自动化测试通过；三类马专用渲染与完整捕获闭环通过；Win64 Shipping Build/Cook/Stage/Archive 成功，新包的 Shipping 二进制 Smoke 退出码为 0。分发 ZIP 为 `Packages/ProjectSTEPPE-Windows-20260920-1914.zip`（SHA-256 `CFC43D0FFC851E51E85629A72E2B6D546E061458D752F26D1FC35792607EFCA8`）。
+骨骼动画修复验证：明确重编 `SteppeEditor` 后，P1 世界测试检查前腿骨骼跨帧旋转；实际 `BP_SteppeHorse` 骑乘烟测在 706.3 cm/s 疾驰时记录 `HorseGallop` 与 48.772° 前腿旋转。新的 Shipping Build/Cook/Stage/Archive 成功，Cook 527 包；分发 ZIP 为 `Packages/ProjectSTEPPE-Windows-20260920-1933.zip`（SHA-256 `DF6056F3564551A4A71C99BEE6A24994377011F4E46FD3DCCA26406730C3E6FD`），Shipping 二进制启动 Smoke 退出码 0。旧 `1914` ZIP 不含动画修复。
 
 项目使用 UE 5.8.2。完整玩法闭环继续可玩；Sound、Niagara 和 AnimBP 所需的数据边界已经建立。马匹现在使用临时骨骼网格及基础步态动画，骑手仍是灰盒表现。
 
@@ -65,7 +65,7 @@ P16.5 验证：24 项自动化测试通过；三类马专用渲染与完整捕�
 - `.idea/`、`.vscode/` 已加入忽略；6 个 `.idea` 文件停止 Git 跟踪，本机副本保留。
 - P14.3 玩家教程覆盖启动、完整操作、三轮流程、卡住恢复和数据说明；组织者指南规定教程协助标记、逐轮口述和 JSON 对应方法。
 - `PackageWindows.ps1` 提供 UE 5.8.2 Win64 Shipping 的 Build/Cook/Stage/Pak/Archive 与可选 ZIP；分发包自动附带 PlaytestKit 和本地结果收集脚本。
-- Win64 Shipping 已实际完成打包和启动验证：P16.5 最新 ZIP 315,189,298 bytes，Shipping Smoke 退出码 0。
+- Win64 Shipping 已实际完成打包和启动验证：最新动画修复 ZIP 为 `ProjectSTEPPE-Windows-20260920-1933.zip`，Shipping Smoke 退出码 0。
 
 # Build Result
 
@@ -138,4 +138,4 @@ P14.3 准备证据：`Validation/P14.3-Audit-Results.json`、`P14.3-Automated-Me
 - 2026-09-15 P15.1：实现抛物线 Loop Center、动态 Swing Plane/Radius/Angular Phase、实际马体几何命中、非 Q 目标附着和随张力变化的分段绳线；22 项回归与两条渲染路线通过。
 - 2026-09-20 P15.2：用野马上的可编辑套索目标体积替代投索组件中的硬编码马体坐标；23 项自动化测试和完整渲染闭环通过，路线图插入 P16.5–P16.7 表现阶段与第二轮试玩门。
 - 2026-09-20 P16 第一轮：朝向与水平速度分离，Grass/Hard 抓地参数接入，套索张力改为有界侧向加速度；24 项自动化、渲染完整闭环和新 Shipping 包启动验证通过。
-- 2026-09-20 P16.5 临时马表现：Quaternius CC0 骨骼网格、13 段源动画和三步态 Blend Space 接入所有马匹；24 项自动化与三马渲染、完整捕获闭环通过。
+- 2026-09-20 P16.5 临时马表现：Quaternius CC0 骨骼网格与 13 段源动画接入所有马匹；首轮 Blend Space 仅检查资源引用，漏掉实际骨骼静止。修复后按步态播放动画，并以游戏世界内前腿旋转作为回归断言。

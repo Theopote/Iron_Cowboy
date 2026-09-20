@@ -29,6 +29,7 @@ ASteppeHorseCharacter::ASteppeHorseCharacter(const FObjectInitializer& ObjectIni
         GetMesh()->SetRelativeScale3D(FVector(.45f));
         GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
         GetMesh()->SetGenerateOverlapEvents(false);
+        GetMesh()->VisibilityBasedAnimTickOption=EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
         Presentation->bAnimatePlaceholder=false;
     }
     PlaceholderRoot = CreateDefaultSubobject<USceneComponent>(TEXT("PlaceholderHorseRoot"));
