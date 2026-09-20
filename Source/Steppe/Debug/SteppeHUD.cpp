@@ -131,13 +131,13 @@ void ASteppeHUD::DrawHUD()
             };
             if (Lasso->bRopeWrapped)
             {
-                DrawRopeSpan(Lasso->RopeStart,Lasso->RopeBendPoint,RopeSag*.5f);
+                DrawRopeSpan(Lasso->VisualRopeStart,Lasso->RopeBendPoint,RopeSag*.5f);
                 DrawRopeSpan(Lasso->RopeBendPoint,Lasso->LoopLocation,RopeSag*.5f);
                 DrawDebugSphere(GetWorld(),Lasso->RopeBendPoint,18.f,10,FColor(255,128,20),false,0,0,4.f);
             }
             else
             {
-                DrawRopeSpan(Lasso->RopeStart,Lasso->LoopLocation,RopeSag);
+                DrawRopeSpan(Lasso->VisualRopeStart,Lasso->LoopLocation,RopeSag);
             }
             if (Lasso->State!=ELassoState::Captured)
             {

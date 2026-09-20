@@ -3,6 +3,7 @@ param(
     [string]$Commands = 'QUIT_EDITOR',
     [string]$LogName = 'Editor-Smoke',
     [string]$PythonScript = '',
+    [string[]]$ExtraArgs = @(),
     [switch]$Game,
     [switch]$Render,
     [switch]$Tests,
@@ -100,6 +101,7 @@ if ($RetrySmoke) { if (!$Smoke -or !$Game) { throw 'RetrySmoke requires Game and
 if ($Tests) { $editorArgs += '-TestExit=Automation Test Queue Empty'; $editorArgs += "-ReportExportPath=$PSScriptRoot\..\Saved\Automation" }
 if ($PythonScript) { $editorArgs += "-ExecutePythonScript=$PythonScript" }
 elseif (!$Smoke -or $Commands -ne 'QUIT_EDITOR') { $editorArgs += "-ExecCmds=$Commands" }
+$editorArgs += $ExtraArgs
 $runStarted = Get-Date
 & $editorPath @editorArgs
 if ($LASTEXITCODE -ne 0) { throw "Editor exited with $LASTEXITCODE; see $logPath" }

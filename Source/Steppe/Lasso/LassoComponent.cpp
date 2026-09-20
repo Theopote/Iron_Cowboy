@@ -61,7 +61,9 @@ bool ULassoComponent::Throw()
     if (!Controller) { return false; }
     FVector Origin; FRotator Rotation;
     Controller->GetPlayerViewPoint(Origin,Rotation);
-    return ThrowFrom(Origin,Rotation.Vector());
+    const FVector Hand=Rider->GetLassoHandLocation();
+    const FVector AimPoint=Origin+Rotation.Vector()*MaximumRange;
+    return ThrowFrom(Hand,(AimPoint-Hand).GetSafeNormal());
 }
 
 bool ULassoComponent::ThrowFrom(FVector Origin, FVector Direction)
@@ -74,6 +76,7 @@ bool ULassoComponent::ThrowFrom(FVector Origin, FVector Direction)
         return false;
     }
     RopeStart=Origin;
+    VisualRopeStart=Origin;
     LoopLocation=Origin;
     ThrowDirection=Direction.GetSafeNormal();
     LastThrowStability=FMath::Clamp(SwingStability,0.f,1.f);
@@ -337,7 +340,11 @@ void ULassoComponent::TickComponent(float Dt, ELevelTick TickType, FActorCompone
     }
     if (State==ELassoState::Thrown || State==ELassoState::Attached || State==ELassoState::Subdued || State==ELassoState::Captured)
     {
-        RopeStart=GetOwner()->GetActorLocation()+GetOwner()->GetActorForwardVector()*55.f+GetOwner()->GetActorRightVector()*40.f+FVector(0,0,115);
+        const auto* Rider=Cast<ASteppeRiderCharacter>(GetOwner());
+        // Gameplay tension uses a stable holder anchor; animated hands only move the drawn rope.
+        RopeStart=GetOwner()->GetActorLocation()+GetOwner()->GetActorForwardVector()*55.f
+            +GetOwner()->GetActorRightVector()*40.f+FVector(0,0,115.f);
+        VisualRopeStart=Rider?Rider->GetLassoHandLocation():RopeStart;
     }
     if (State==ELassoState::Recovering)
     {

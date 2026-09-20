@@ -11,7 +11,11 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/SkeletalMesh.h"
+#include "Animation/AnimSequence.h"
+#include "Animation/AnimSingleNodeInstance.h"
 #include "Engine/LocalPlayer.h"
 #include "EngineUtils.h"
 #include "UObject/ConstructorHelpers.h"
@@ -46,15 +50,50 @@ ASteppeRiderCharacter::ASteppeRiderCharacter()
     PlaceholderRider->SetCollisionEnabled(ECollisionEnabled::NoCollision); PlaceholderRider->SetRelativeScale3D(FVector(.4f,.4f,1.2f));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Shape(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
     if (Shape.Succeeded()) { PlaceholderRider->SetStaticMesh(Shape.Object); }
+    static ConstructorHelpers::FObjectFinder<USkeletalMesh> TemporaryRider(
+        TEXT("/Game/Mannequin/Character/Mesh/SK_Mannequin.SK_Mannequin"));
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> Idle(
+        TEXT("/Game/Mannequin/Animations/ThirdPersonIdle.ThirdPersonIdle"));
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> Walk(
+        TEXT("/Game/Mannequin/Animations/ThirdPersonWalk.ThirdPersonWalk"));
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> Run(
+        TEXT("/Game/Mannequin/Animations/ThirdPersonRun.ThirdPersonRun"));
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> Mounted(
+        TEXT("/Game/Mannequin/Animations/ThirdPersonJump_Loop.ThirdPersonJump_Loop"));
+    TemporaryIdleAnimation=Idle.Object;
+    TemporaryWalkAnimation=Walk.Object;
+    TemporaryRunAnimation=Run.Object;
+    TemporaryMountedAnimation=Mounted.Object;
+    if (TemporaryRider.Succeeded())
+    {
+        GetMesh()->SetSkeletalMeshAsset(TemporaryRider.Object);
+        GetMesh()->SetRelativeLocation(FVector(0,0,-90.f));
+        GetMesh()->SetRelativeRotation(FRotator(0,-90.f,0));
+        GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        GetMesh()->SetGenerateOverlapEvents(false);
+        GetMesh()->VisibilityBasedAnimTickOption=EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
+        PlaceholderRider->SetVisibility(false);
+    }
 }
 void ASteppeRiderCharacter::Tick(float Dt)
 {
     Super::Tick(Dt);
     const auto* Horse=Riding?Riding->GetHorse():nullptr;
+    if (Horse)
+    {
+        // The imported Body bone carries a tilted local frame. The socket supplies
+        // the seat position while the gameplay rider stays upright with the horse.
+        SetActorRotation(FRotator(0.f,Horse->GetActorRotation().Yaw,0.f));
+    }
     PresentationData.bMounted=Horse!=nullptr;
     PresentationData.bBracing=Lasso && Lasso->bBracing;
     PresentationData.bFalling=Balance && Balance->State==ERiderBalanceState::Falling;
     PresentationData.bDragged=Balance && Balance->State==ERiderBalanceState::Dragged;
+    PresentationData.bLeadingHorse=Riding && Riding->GetLeadingHorse()!=nullptr;
+    PresentationData.bAimingLasso=Lasso && Lasso->State==ELassoState::Aiming;
+    PresentationData.SwingPhase=Lasso?Lasso->SwingPhase:0.f;
+    PresentationData.SwingStability=Lasso?Lasso->SwingStability:0.f;
+    PresentationData.Speed=Horse?Horse->GetVelocity().Size2D():GetVelocity().Size2D();
     PresentationData.BalanceRisk=Balance?FMath::Clamp(Balance->Balance/FMath::Max(.01f,Balance->FallThreshold),0.f,1.f):0.f;
     PresentationData.PullSide=Balance?Balance->LateralPull:0.f;
     float TargetPitch=Horse?-Horse->AnimationData.NormalizedAcceleration*4.f:0.f;
@@ -70,6 +109,55 @@ void ASteppeRiderCharacter::Tick(float Dt)
         PlaceholderRider->SetRelativeLocation(FVector(0,0,PresentationData.SeatOffsetZ));
         PlaceholderRider->SetRelativeRotation(FRotator(PresentationData.BodyPitch,0,PresentationData.BodyRoll));
     }
+    if (auto* RiderMesh=GetMesh(); RiderMesh && RiderMesh->GetSkeletalMeshAsset())
+    {
+        UAnimSequence* Desired=TemporaryIdleAnimation;
+        float PlayRate=1.f;
+        if (PresentationData.bFalling || PresentationData.bDragged)
+        {
+            Desired=TemporaryMountedAnimation;
+            PlayRate=FMath::Clamp(PresentationData.Speed/800.f,.65f,1.35f);
+        }
+        else if (PresentationData.bMounted)
+        {
+            // The template jump loop rotates the entire mannequin onto its back.
+            // Keep an upright placeholder until the seated rider pose is authored.
+            Desired=TemporaryIdleAnimation;
+        }
+        else if (PresentationData.Speed>300.f)
+        {
+            Desired=TemporaryRunAnimation;
+            PlayRate=FMath::Clamp(PresentationData.Speed/450.f,.7f,1.3f);
+        }
+        else if (PresentationData.Speed>20.f)
+        {
+            Desired=TemporaryWalkAnimation;
+            PlayRate=FMath::Clamp(PresentationData.Speed/220.f,.65f,1.3f);
+        }
+        if (Desired)
+        {
+            auto* Instance=RiderMesh->GetSingleNodeInstance();
+            if (!Instance || Instance->GetAnimationAsset()!=Desired)
+            {
+                RiderMesh->PlayAnimation(Desired,true);
+                Instance=RiderMesh->GetSingleNodeInstance();
+            }
+            if (Instance) { Instance->SetPlayRate(PlayRate); }
+        }
+        RiderMesh->SetRelativeLocation(FVector(0,0,-90.f+PresentationData.SeatOffsetZ));
+        RiderMesh->SetRelativeRotation(FRotator(PresentationData.BodyPitch,
+            -90.f+(PresentationData.bAimingLasso?FMath::Sin(PresentationData.SwingPhase*2.f*PI)*5.f:0.f),
+            PresentationData.BodyRoll));
+    }
+}
+FVector ASteppeRiderCharacter::GetLassoHandLocation() const
+{
+    const auto* RiderMesh=GetMesh();
+    if (RiderMesh && RiderMesh->GetSkeletalMeshAsset() && RiderMesh->DoesSocketExist(TEXT("LassoHand_R")))
+    {
+        return RiderMesh->GetSocketLocation(TEXT("LassoHand_R"));
+    }
+    return GetActorLocation()+GetActorForwardVector()*55.f+GetActorRightVector()*40.f+FVector(0,0,115.f);
 }
 void ASteppeRiderCharacter::EndPlay(const EEndPlayReason::Type Reason)
 {

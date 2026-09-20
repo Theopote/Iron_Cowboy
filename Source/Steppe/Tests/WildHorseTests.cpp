@@ -24,6 +24,9 @@
 #include "Engine/StaticMeshActor.h"
 #include "Engine/StaticMesh.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Engine/SkeletalMesh.h"
+#include "Engine/SkeletalMeshSocket.h"
 #include "GameFramework/WorldSettings.h"
 
 namespace
@@ -1028,6 +1031,33 @@ bool FPlaytestMetricsTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Dragged entry is counted"),Round.DraggedCount,1);
     TestTrue(TEXT("Peak rope tension is retained"),FMath::IsNearlyEqual(Round.PeakTension,.97f));
     TestTrue(TEXT("Peak normalized balance risk is retained"),FMath::IsNearlyEqual(Round.PeakBalanceRisk,1.f));
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FRiderPresentationSocketsTest,"Steppe.P16.RiderPresentationSockets",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FRiderPresentationSocketsTest::RunTest(const FString& Parameters)
+{
+    FWildTestWorld Fixture;
+    auto* Rider=Fixture.World->SpawnActor<ASteppeRiderCharacter>(FVector(0,0,100),FRotator::ZeroRotator);
+    auto* Horse=Fixture.World->SpawnActor<ASteppeHorseCharacter>(FVector(150,0,100),FRotator::ZeroRotator);
+    Fixture.Begin();
+    auto* RiderMesh=Rider->GetMesh()->GetSkeletalMeshAsset();
+    auto* HorseMesh=Horse->GetMesh()->GetSkeletalMeshAsset();
+    if (!TestNotNull(TEXT("Rider has a skeletal mannequin"),RiderMesh)
+        || !TestNotNull(TEXT("Horse has a skeletal mesh"),HorseMesh)) { return false; }
+    const USkeletalMeshSocket* Hand=RiderMesh->FindSocket(TEXT("LassoHand_R"));
+    const USkeletalMeshSocket* Seat=HorseMesh->FindSocket(TEXT("RiderSeat"));
+    if (!TestNotNull(TEXT("Rider has a lasso hand socket"),Hand)
+        || !TestNotNull(TEXT("Horse has a rider seat socket"),Seat)) { return false; }
+    TestEqual(TEXT("Lasso hand follows the right hand bone"),Hand->BoneName,FName(TEXT("hand_r")));
+    TestEqual(TEXT("Rider seat follows the horse body bone"),Seat->BoneName,FName(TEXT("Body")));
+    TestTrue(TEXT("Gameplay hand query uses the animated socket"),
+        FVector::Dist(Rider->GetLassoHandLocation(),Rider->GetMesh()->GetSocketLocation(TEXT("LassoHand_R")))<1.f);
+    TestTrue(TEXT("Rider mounts via the horse seat"),Rider->Riding->TryMount(Horse));
+    Fixture.Step(.1f);
+    TestEqual(TEXT("Mounted rider is attached to RiderSeat"),Rider->GetRootComponent()->GetAttachSocketName(),FName(TEXT("RiderSeat")));
+    TestTrue(TEXT("Mounted rider remains upright despite imported bone frame"),
+        FVector::DotProduct(Rider->GetActorUpVector(),FVector::UpVector)>.98f);
     return true;
 }
 #endif

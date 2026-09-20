@@ -70,6 +70,7 @@ public:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Rope Fight|Obstacle", meta=(ClampMin="0.05")) float RopeWrapClearSeconds = .35f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso") ELassoState State = ELassoState::Stored;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso") FVector RopeStart = FVector::ZeroVector;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso") FVector VisualRopeStart = FVector::ZeroVector;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso") FVector LoopLocation = FVector::ZeroVector;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso") float TravelDistance = 0.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Lasso|Swing") float AimSeconds = 0.f;

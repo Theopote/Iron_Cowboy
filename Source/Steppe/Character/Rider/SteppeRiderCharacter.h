@@ -12,6 +12,7 @@ class USteppeInputConfig;
 class ULassoComponent;
 class URiderBalanceComponent;
 class USteppeFeedbackComponent;
+class UAnimSequence;
 struct FInputActionValue;
 
 USTRUCT(BlueprintType)
@@ -27,6 +28,11 @@ struct STEPPE_API FRiderPresentationData
     UPROPERTY(VisibleAnywhere,BlueprintReadOnly) float BodyPitch = 0.f;
     UPROPERTY(VisibleAnywhere,BlueprintReadOnly) float BodyRoll = 0.f;
     UPROPERTY(VisibleAnywhere,BlueprintReadOnly) float SeatOffsetZ = 0.f;
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly) float Speed = 0.f;
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly) float SwingPhase = 0.f;
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly) float SwingStability = 0.f;
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly) bool bAimingLasso = false;
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly) bool bLeadingHorse = false;
 };
 
 UCLASS()
@@ -52,6 +58,7 @@ public:
     void RefreshInputContext();
     void ResetRidingInput();
     UFUNCTION(BlueprintPure, Category="Riding") FGameplayTag GetRiderStateTag() const;
+    UFUNCTION(BlueprintPure, Category="Rider|Presentation") FVector GetLassoHandLocation() const;
 private:
     void Move(const FInputActionValue& Value);
     void Look(const FInputActionValue& Value);
@@ -68,5 +75,9 @@ private:
     void RestartTrial();
     void EnsureInputConfig();
     UPROPERTY() TObjectPtr<class UStaticMeshComponent> PlaceholderRider;
+    UPROPERTY() TObjectPtr<UAnimSequence> TemporaryIdleAnimation;
+    UPROPERTY() TObjectPtr<UAnimSequence> TemporaryWalkAnimation;
+    UPROPERTY() TObjectPtr<UAnimSequence> TemporaryRunAnimation;
+    UPROPERTY() TObjectPtr<UAnimSequence> TemporaryMountedAnimation;
     FRidingIntent Intent;
 };

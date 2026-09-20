@@ -44,7 +44,9 @@ bool URidingComponent::TryMount(ASteppeHorseCharacter* Horse)
     Rider->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     if (Horse->GetMesh()->DoesSocketExist(Horse->RiderSocket))
     {
-        Rider->AttachToComponent(Horse->GetMesh(),FAttachmentTransformRules::SnapToTargetNotIncludingScale,Horse->RiderSocket);
+        Rider->AttachToComponent(Horse->GetMesh(),
+            FAttachmentTransformRules(EAttachmentRule::SnapToTarget,EAttachmentRule::KeepWorld,EAttachmentRule::KeepWorld,false),
+            Horse->RiderSocket);
     }
     else
     {
