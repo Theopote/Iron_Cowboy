@@ -1086,8 +1086,17 @@ bool FRiderPresentationSocketsTest::RunTest(const FString& Parameters)
     Rider->Lasso->State=ELassoState::Attached;
     Rider->Lasso->Target=LassoTarget;
     Rider->Lasso->bBracing=true;
-    Fixture.Step(.02f);
+    Rider->Lasso->Tension=.8f;
+    LassoTarget->SetActorLocation(FVector(900,700,100));
+    Fixture.Step(.25f);
     TestEqual(TEXT("Mounted rope control uses the seated brace pose"),CurrentRiderAnimation(),FString(TEXT("RiderMountedBrace_Pose")));
+    TestTrue(TEXT("Rider turns toward a rope pulling from the right"),Rider->PresentationData.BodyYaw>8.f);
+    TestTrue(TEXT("Rider leans back more under useful rope tension"),Rider->PresentationData.BodyPitch<-7.f);
+    Rider->Lasso->bRopeWrapped=true;
+    Rider->Lasso->RopeBendPoint=Rider->GetActorLocation()+Rider->GetActorForwardVector()*400.f-Rider->GetActorRightVector()*500.f;
+    Fixture.Step(.35f);
+    TestTrue(TEXT("Wrapped rope pose follows the first span around the obstacle"),Rider->PresentationData.BodyYaw<-8.f);
+    Rider->Lasso->bRopeWrapped=false;
     Rider->Riding->Dismount();
     Fixture.Step(.02f);
     TestEqual(TEXT("On-foot rope control keeps a standing brace pose"),CurrentRiderAnimation(),FString(TEXT("RiderOnFootBrace_Pose")));

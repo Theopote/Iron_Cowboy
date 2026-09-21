@@ -25,6 +25,9 @@ struct STEPPE_API FRiderPresentationData
     UPROPERTY(VisibleAnywhere,BlueprintReadOnly) bool bDragged = false;
     UPROPERTY(VisibleAnywhere,BlueprintReadOnly) float BalanceRisk = 0.f;
     UPROPERTY(VisibleAnywhere,BlueprintReadOnly) float PullSide = 0.f;
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly) float RopeTension = 0.f;
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly) float RopeYaw = 0.f;
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly) float BodyYaw = 0.f;
     UPROPERTY(VisibleAnywhere,BlueprintReadOnly) float BodyPitch = 0.f;
     UPROPERTY(VisibleAnywhere,BlueprintReadOnly) float BodyRoll = 0.f;
     UPROPERTY(VisibleAnywhere,BlueprintReadOnly) float SeatOffsetZ = 0.f;

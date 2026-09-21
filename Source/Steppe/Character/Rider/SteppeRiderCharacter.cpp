@@ -2,6 +2,7 @@
 #include "Character/Rider/RidingComponent.h"
 #include "Character/Rider/RidingCameraComponent.h"
 #include "Character/Horse/SteppeHorseCharacter.h"
+#include "Character/Horse/SteppeWildHorseCharacter.h"
 #include "Input/SteppeInputConfig.h"
 #include "Player/SteppePlayerController.h"
 #include "EnhancedInputComponent.h"
@@ -119,18 +120,38 @@ void ASteppeRiderCharacter::Tick(float Dt)
     PresentationData.Speed=Horse?Horse->GetVelocity().Size2D():GetVelocity().Size2D();
     PresentationData.BalanceRisk=Balance?FMath::Clamp(Balance->Balance/FMath::Max(.01f,Balance->FallThreshold),0.f,1.f):0.f;
     PresentationData.PullSide=Balance?Balance->LateralPull:0.f;
+    PresentationData.RopeTension=Lasso?FMath::Clamp(Lasso->Tension,0.f,1.5f):0.f;
+    float TargetRopeYaw=0.f;
+    if (PresentationData.bRopeAttached && Lasso && Lasso->Target.IsValid())
+    {
+        const FVector PullPoint=Lasso->bRopeWrapped?Lasso->RopeBendPoint:Lasso->Target->GetActorLocation();
+        const FVector LocalPull=GetActorTransform().InverseTransformVectorNoScale(PullPoint-GetActorLocation());
+        TargetRopeYaw=FMath::Clamp(FMath::RadiansToDegrees(FMath::Atan2(LocalPull.Y,LocalPull.X)),-28.f,28.f);
+    }
+    PresentationData.RopeYaw=TargetRopeYaw;
     float TargetPitch=Horse?-Horse->AnimationData.NormalizedAcceleration*4.f:0.f;
     float TargetRoll=Horse?-Horse->AnimationData.LeanAmount*7.f:0.f;
-    if (PresentationData.bBracing) { TargetPitch-=7.f; TargetRoll-=PresentationData.PullSide*5.f; }
+    float TargetBodyYaw=0.f;
+    if (PresentationData.bRopeAttached)
+    {
+        TargetBodyYaw=TargetRopeYaw*.65f;
+        TargetRoll-=FMath::Sin(FMath::DegreesToRadians(TargetRopeYaw))*PresentationData.RopeTension*8.f;
+    }
+    if (PresentationData.bBracing)
+    {
+        TargetPitch-=FMath::Lerp(4.f,12.f,FMath::Clamp(PresentationData.RopeTension,0.f,1.f));
+        TargetRoll-=PresentationData.PullSide*4.f;
+    }
     if (PresentationData.bFalling || PresentationData.bDragged) { TargetRoll=65.f; TargetPitch=-18.f; }
     const float Response=PresentationData.bFalling?14.f:8.f;
+    PresentationData.BodyYaw=FMath::FInterpTo(PresentationData.BodyYaw,TargetBodyYaw,Dt,Response);
     PresentationData.BodyPitch=FMath::FInterpTo(PresentationData.BodyPitch,TargetPitch,Dt,Response);
     PresentationData.BodyRoll=FMath::FInterpTo(PresentationData.BodyRoll,TargetRoll,Dt,Response);
     PresentationData.SeatOffsetZ=Horse?Horse->AnimationData.BodyBob*.45f:0.f;
     if (PlaceholderRider)
     {
         PlaceholderRider->SetRelativeLocation(FVector(0,0,PresentationData.SeatOffsetZ));
-        PlaceholderRider->SetRelativeRotation(FRotator(PresentationData.BodyPitch,0,PresentationData.BodyRoll));
+        PlaceholderRider->SetRelativeRotation(FRotator(PresentationData.BodyPitch,PresentationData.BodyYaw,PresentationData.BodyRoll));
     }
     if (auto* RiderMesh=GetMesh(); RiderMesh && RiderMesh->GetSkeletalMeshAsset())
     {
@@ -181,7 +202,7 @@ void ASteppeRiderCharacter::Tick(float Dt)
         const float PoseHeight=PresentationData.bMounted?-125.f:-90.f;
         RiderMesh->SetRelativeLocation(FVector(0,0,PoseHeight+PresentationData.SeatOffsetZ));
         RiderMesh->SetRelativeRotation(FRotator(PresentationData.BodyPitch,
-            -90.f+(PresentationData.bAimingLasso?FMath::Sin(PresentationData.SwingPhase*2.f*PI)*5.f:0.f),
+            -90.f+PresentationData.BodyYaw+(PresentationData.bAimingLasso?FMath::Sin(PresentationData.SwingPhase*2.f*PI)*5.f:0.f),
             PresentationData.BodyRoll));
     }
 }
