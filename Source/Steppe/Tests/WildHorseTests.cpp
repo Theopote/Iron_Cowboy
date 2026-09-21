@@ -653,6 +653,7 @@ bool FFeedbackSignalsTest::RunTest(const FString& Parameters)
     Mount->AnimationData.NormalizedSpeed=.8f;
     Mount->AnimationData.NormalizedAcceleration=.3f;
     Mount->AnimationData.LeanAmount=.5f;
+    Mount->AnimationData.SlipAmount=.4f;
     Mount->Attributes->CurrentStamina=30.f;
     Fixture.Step(.65f);
     TestTrue(TEXT("Mounted gallop emits multiple hoofbeats"),Rider->Feedback->HoofbeatCount>=2);
@@ -663,6 +664,9 @@ bool FFeedbackSignalsTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Presentation advances a continuous gait phase"),Mount->AnimationData.GaitPhase>0.f);
     TestTrue(TEXT("Presentation blends into the moving stride"),Mount->AnimationData.StrideBlend>.5f);
     TestTrue(TEXT("Horse lean becomes a readable body roll"),Mount->AnimationData.BodyRoll<0.f);
+    TestTrue(TEXT("Skeletal horse mesh receives body dynamics without rotating gameplay root"),
+        !Mount->GetMesh()->GetRelativeRotation().Equals(FRotator(0,-90.f,0),.1f)
+        && FVector::DotProduct(Mount->GetActorUpVector(),FVector::UpVector)>.99f);
     TestTrue(TEXT("Rider exposes mounted presentation state"),Rider->PresentationData.bMounted);
     TestTrue(TEXT("Rider follows the horse lean"),Rider->PresentationData.BodyRoll<0.f);
 

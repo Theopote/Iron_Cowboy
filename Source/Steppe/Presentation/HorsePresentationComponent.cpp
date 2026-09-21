@@ -28,6 +28,11 @@ void UHorsePresentationComponent::BeginPlay()
             BaseLocation=Mesh->GetRelativeLocation();
             BaseRotation=Mesh->GetRelativeRotation();
         }
+        if (const auto* Skeletal=Horse->GetMesh())
+        {
+            SkeletalBaseLocation=Skeletal->GetRelativeLocation();
+            SkeletalBaseRotation=Skeletal->GetRelativeRotation();
+        }
     }
 }
 
@@ -60,7 +65,7 @@ void UHorsePresentationComponent::TickComponent(float Dt,ELevelTick TickType,FAc
     const float IdleBreath=Data.Gait==EHorseGait::Idle?FMath::Sin(Cycle)*1.2f:0.f;
     const float TargetBob=IdleBreath+FMath::Sin(Cycle*2.f)*MaximumBob*Data.StrideBlend;
     const float TargetPitch=-Data.NormalizedAcceleration*AccelerationPitchDegrees+FMath::Cos(Cycle*2.f)*1.5f*Data.StrideBlend;
-    const float TargetRoll=-Data.LeanAmount*MaximumLeanDegrees;
+    const float TargetRoll=-Data.LeanAmount*MaximumLeanDegrees-Data.SlipAmount*SlipLeanDegrees;
     Data.BodyBob=FMath::FInterpTo(Data.BodyBob,TargetBob,Dt,PoseResponse);
     Data.BodyPitch=FMath::FInterpTo(Data.BodyPitch,TargetPitch,Dt,PoseResponse);
     Data.BodyRoll=FMath::FInterpTo(Data.BodyRoll,TargetRoll,Dt,PoseResponse);
@@ -68,6 +73,12 @@ void UHorsePresentationComponent::TickComponent(float Dt,ELevelTick TickType,FAc
     if (auto* Anim=Cast<UHorseAnimInstance>(Horse->GetMesh()->GetAnimInstance()))
     {
         Anim->ApplyHorseData(Data,TemporaryIdleAnimation,TemporaryWalkAnimation,TemporaryGallopAnimation);
+    }
+    if (auto* Skeletal=Horse->GetMesh(); Skeletal && Skeletal->GetSkeletalMeshAsset())
+    {
+        // Visual mesh only: capsule, actor heading and movement simulation remain authoritative.
+        Skeletal->SetRelativeLocationAndRotation(SkeletalBaseLocation+FVector(0,0,Data.BodyBob),
+            SkeletalBaseRotation+FRotator(Data.BodyPitch,0,Data.BodyRoll));
     }
 
     if (auto* Mesh=Horse->GetPlaceholderRoot())

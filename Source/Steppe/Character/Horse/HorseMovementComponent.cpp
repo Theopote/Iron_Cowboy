@@ -151,6 +151,7 @@ void UHorseMovementComponent::TickComponent(float Dt, ELevelTick TickType, FActo
     Data.DecelerationAmount=FMath::Max(0.f,-Data.NormalizedAcceleration);
     Data.TurnAmount=HorseIntent.DesiredTurn;
     Data.LeanAmount=FMath::Clamp(HorseIntent.DesiredTurn*Data.NormalizedSpeed,-1.f,1.f);
+    Data.SlipAmount=FMath::Clamp(SlipAngleDegrees/25.f,-1.f,1.f);
     Data.IsGrounded=IsMovingOnGround();
     Data.IsStumbling=HorseState==EHorseMovementState::Stumbling;
     Data.StaminaNormalized=A.GetStaminaNormalized();

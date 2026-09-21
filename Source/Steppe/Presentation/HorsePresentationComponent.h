@@ -23,11 +23,14 @@ public:
     UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Presentation|Temporary Horse") TObjectPtr<UAnimSequence> TemporaryGallopAnimation;
     UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Presentation",meta=(ClampMin="0")) float MaximumBob = 10.f;
     UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Presentation",meta=(ClampMin="0")) float MaximumLeanDegrees = 9.f;
+    UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Presentation",meta=(ClampMin="0")) float SlipLeanDegrees = 4.f;
     UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Presentation",meta=(ClampMin="0")) float AccelerationPitchDegrees = 5.f;
     UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Presentation",meta=(ClampMin="0")) float PoseResponse = 8.f;
 
 private:
     FVector BaseLocation = FVector::ZeroVector;
     FRotator BaseRotation = FRotator::ZeroRotator;
+    FVector SkeletalBaseLocation = FVector::ZeroVector;
+    FRotator SkeletalBaseRotation = FRotator::ZeroRotator;
     float PreviousPhase = 0.f;
 };

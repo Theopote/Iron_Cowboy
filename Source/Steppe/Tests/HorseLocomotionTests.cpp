@@ -140,6 +140,7 @@ bool FSteppeWorldTest::RunTest(const FString& Parameters)
     Move->SetHorseIntent(Direct); Step(3); const float LowTurnRate=Move->EffectiveTurnRate;
     Direct.DesiredSpeed=1500; Move->SetHorseIntent(Direct); Step(.25f);
     TestTrue(TEXT("Facing and velocity separate during a turn"),FMath::Abs(Move->SlipAngleDegrees)>.1f && FMath::Abs(Move->LateralSpeed)>1.f);
+    TestTrue(TEXT("Slip angle reaches horse presentation data"),FMath::Abs(Horse->AnimationData.SlipAmount)>.001f);
     Direct.DesiredTurn=0.f; Move->SetHorseIntent(Direct); Step(1.f);
     TestTrue(TEXT("Lateral slip settles after steering ends"),FMath::Abs(Move->SlipAngleDegrees)<1.f);
     Move->SetExternalAcceleration(Horse->GetActorRightVector()*2000.f);

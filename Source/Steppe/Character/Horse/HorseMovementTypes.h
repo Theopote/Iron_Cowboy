@@ -29,6 +29,7 @@ struct STEPPE_API FHorseAnimationData
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) float DecelerationAmount = 0.f;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) float TurnAmount = 0.f;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) float LeanAmount = 0.f;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) float SlipAmount = 0.f;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) bool IsGrounded = true;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) bool IsStumbling = false;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) float StaminaNormalized = 1.f;
