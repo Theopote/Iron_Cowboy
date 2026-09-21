@@ -30,4 +30,21 @@ for bone in limbs:
 
 assets.save_asset(pose_path, only_if_is_dirty=False)
 unreal.log('STEPPE_RIDER_MOUNTED_POSE {} limbs={}'.format(pose.get_path_name(), len(limbs)))
+
+# Four coarse upper-body phases make gameplay SwingPhase readable before a
+# dedicated lasso animation is authored. Legs and torso remain in the seat.
+right_arm = ('clavicle_r','upperarm_r','lowerarm_r','hand_r')
+for index, sample_time in enumerate((0.0, 0.15, 0.30, 0.45)):
+    swing_path = '/Game/Steppe/Presentation/Rider/RiderLassoSwing_{}'.format(index)
+    swing = assets.load_asset(swing_path)
+    if swing is None:
+        if not assets.duplicate_asset(pose_path, swing_path):
+            raise RuntimeError('Could not duplicate lasso swing phase {}'.format(index))
+        swing = assets.load_asset(swing_path)
+    swing_controller = swing.get_editor_property('controller')
+    for bone in right_arm:
+        sample = unreal.AnimationLibrary.get_bone_pose_for_time(jump, bone, sample_time, False)
+        swing_controller.set_bone_track_keys(bone, [sample.translation], [sample.rotation], [sample.scale3d], False)
+    assets.save_asset(swing_path, only_if_is_dirty=False)
+    unreal.log('STEPPE_RIDER_LASSO_POSE {} time={}'.format(index, sample_time))
 unreal.SystemLibrary.quit_editor()

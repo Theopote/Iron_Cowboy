@@ -62,11 +62,16 @@ ASteppeRiderCharacter::ASteppeRiderCharacter()
         TEXT("/Game/Steppe/Presentation/Rider/RiderMounted_Pose.RiderMounted_Pose"));
     static ConstructorHelpers::FObjectFinder<UAnimSequence> Fall(
         TEXT("/Game/Mannequin/Animations/ThirdPersonJump_Loop.ThirdPersonJump_Loop"));
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> Swing0(TEXT("/Game/Steppe/Presentation/Rider/RiderLassoSwing_0.RiderLassoSwing_0"));
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> Swing1(TEXT("/Game/Steppe/Presentation/Rider/RiderLassoSwing_1.RiderLassoSwing_1"));
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> Swing2(TEXT("/Game/Steppe/Presentation/Rider/RiderLassoSwing_2.RiderLassoSwing_2"));
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> Swing3(TEXT("/Game/Steppe/Presentation/Rider/RiderLassoSwing_3.RiderLassoSwing_3"));
     TemporaryIdleAnimation=Idle.Object;
     TemporaryWalkAnimation=Walk.Object;
     TemporaryRunAnimation=Run.Object;
     TemporaryMountedAnimation=Mounted.Object;
     TemporaryFallAnimation=Fall.Object;
+    TemporaryLassoSwingAnimations={Swing0.Object,Swing1.Object,Swing2.Object,Swing3.Object};
     if (TemporaryRider.Succeeded())
     {
         GetMesh()->SetSkeletalMeshAsset(TemporaryRider.Object);
@@ -123,7 +128,12 @@ void ASteppeRiderCharacter::Tick(float Dt)
         }
         else if (PresentationData.bMounted)
         {
-            Desired=TemporaryMountedAnimation;
+            if (PresentationData.bAimingLasso && TemporaryLassoSwingAnimations.Num()==4)
+            {
+                const int32 SwingIndex=FMath::FloorToInt(FMath::Fmod(PresentationData.SwingPhase,1.f)*4.f)%4;
+                Desired=TemporaryLassoSwingAnimations[SwingIndex];
+            }
+            else { Desired=TemporaryMountedAnimation; }
         }
         else if (PresentationData.Speed>300.f)
         {

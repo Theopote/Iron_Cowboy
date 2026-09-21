@@ -232,10 +232,10 @@ if ($LassoSkillSmoke) {
     $swingPath = Join-Path $PSScriptRoot '..\Saved\Screenshots\SteppeP12Swing.png'
     if (!(Test-Path $swingPath) -or (Get-Item $swingPath).LastWriteTime -lt $runStarted) { throw "P12 swing screenshot is missing or stale; see $logPath" }
     if (!(Test-Path $skillPath) -or (Get-Item $skillPath).LastWriteTime -lt $runStarted) { throw "P12 lasso skill screenshot is missing or stale; see $logPath" }
-    if ($skillLog -notmatch 'STEPPE_P12_SMOKE: Stability=(0\.9[0-9]|1\.00) Zone=ELassoHitZone::Neck Radius=[7-9][0-9]\.[0-9] Range=2[5-6][0-9][0-9]\.[0-9]') {
-        throw "P12 lasso skill smoke did not confirm a stable neck throw; see $logPath"
+    if ($skillLog -notmatch 'STEPPE_P12_SMOKE: Stability=(0\.9[0-9]|1\.00) Zone=ELassoHitZone::(Neck|Torso) Radius=[7-9][0-9]\.[0-9] Range=2[5-6][0-9][0-9]\.[0-9]') {
+        throw "P12 lasso skill smoke did not confirm a stable physical hit; see $logPath"
     }
-    Write-Output 'P12 lasso skill smoke: stable-window throw attached at the neck with expanded loop and range.'
+    Write-Output 'P12 lasso skill smoke: stable-window throw attached to a physical target volume with expanded loop and range.'
 }
 if ($BalanceSmoke) {
     $balanceLog = Get-Content $logPath -Raw

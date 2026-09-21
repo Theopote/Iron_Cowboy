@@ -1041,6 +1041,7 @@ bool FRiderPresentationSocketsTest::RunTest(const FString& Parameters)
     FWildTestWorld Fixture;
     auto* Rider=Fixture.World->SpawnActor<ASteppeRiderCharacter>(FVector(0,0,100),FRotator::ZeroRotator);
     auto* Horse=Fixture.World->SpawnActor<ASteppeHorseCharacter>(FVector(150,0,100),FRotator::ZeroRotator);
+    auto* LassoTarget=Fixture.World->SpawnActor<ASteppeWildHorseCharacter>(FVector(1000,0,100),FRotator::ZeroRotator);
     Fixture.Begin();
     auto* RiderMesh=Rider->GetMesh()->GetSkeletalMeshAsset();
     auto* HorseMesh=Horse->GetMesh()->GetSkeletalMeshAsset();
@@ -1063,6 +1064,12 @@ bool FRiderPresentationSocketsTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Mounted rider is attached to RiderSeat"),Rider->GetRootComponent()->GetAttachSocketName(),FName(TEXT("RiderSeat")));
     TestTrue(TEXT("Mounted rider remains upright despite imported bone frame"),
         FVector::DotProduct(Rider->GetActorUpVector(),FVector::UpVector)>.98f);
+    TestTrue(TEXT("Mounted rider can begin the visible swing"),Rider->Lasso->BeginAimForTarget(LassoTarget,true));
+    Fixture.Step(.05f);
+    const FVector FirstHand=Rider->GetLassoHandLocation();
+    Fixture.Step(.35f);
+    TestTrue(TEXT("Gameplay swing phase moves the skeletal lasso hand"),
+        FVector::Dist(FirstHand,Rider->GetLassoHandLocation())>2.f);
     return true;
 }
 #endif
