@@ -21,6 +21,8 @@ public:
     UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Presentation|Temporary Horse") TObjectPtr<UAnimSequence> TemporaryIdleAnimation;
     UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Presentation|Temporary Horse") TObjectPtr<UAnimSequence> TemporaryWalkAnimation;
     UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Presentation|Temporary Horse") TObjectPtr<UAnimSequence> TemporaryGallopAnimation;
+    UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Presentation|Temporary Horse") TObjectPtr<UAnimSequence> TemporaryStopAnimation;
+    UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Presentation|Temporary Horse") TObjectPtr<UAnimSequence> TemporaryStruggleAnimation;
     UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Presentation",meta=(ClampMin="0")) float MaximumBob = 10.f;
     UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Presentation",meta=(ClampMin="0")) float MaximumLeanDegrees = 9.f;
     UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Presentation",meta=(ClampMin="0")) float SlipLeanDegrees = 4.f;

@@ -30,6 +30,7 @@
 #include "Animation/AnimSingleNodeInstance.h"
 #include "Animation/AnimSequence.h"
 #include "Presentation/RiderAnimInstance.h"
+#include "Presentation/HorseAnimInstance.h"
 #include "GameFramework/WorldSettings.h"
 
 namespace
@@ -667,6 +668,18 @@ bool FFeedbackSignalsTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Skeletal horse mesh receives body dynamics without rotating gameplay root"),
         !Mount->GetMesh()->GetRelativeRotation().Equals(FRotator(0,-90.f,0),.1f)
         && FVector::DotProduct(Mount->GetActorUpVector(),FVector::UpVector)>.99f);
+    auto* HorseAnim=CastChecked<UHorseAnimInstance>(Mount->GetMesh()->GetAnimInstance());
+    Mount->AnimationData.bStruggling=true;
+    Mount->AnimationData.ExternalForceAmount=.7f;
+    Fixture.Step(.2f);
+    TestEqual(TEXT("External rope load selects the temporary struggle animation"),
+        HorseAnim->GetActiveSequence(),Mount->Presentation->TemporaryStruggleAnimation.Get());
+    Mount->AnimationData.bStruggling=false;
+    Mount->AnimationData.bStopping=true;
+    Fixture.Step(.2f);
+    TestEqual(TEXT("Low-speed braking selects the temporary settle animation"),
+        HorseAnim->GetActiveSequence(),Mount->Presentation->TemporaryStopAnimation.Get());
+    Mount->AnimationData.bStopping=false;
     TestTrue(TEXT("Rider exposes mounted presentation state"),Rider->PresentationData.bMounted);
     TestTrue(TEXT("Rider follows the horse lean"),Rider->PresentationData.BodyRoll<0.f);
 

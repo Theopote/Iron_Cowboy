@@ -13,9 +13,13 @@ UHorsePresentationComponent::UHorsePresentationComponent()
     static ConstructorHelpers::FObjectFinder<UAnimSequence> Idle(TEXT("/Game/Steppe/ThirdParty/Quaternius/AnimatedAnimals/Horse/Horse/SkeletalMeshes/HorseIdle.HorseIdle"));
     static ConstructorHelpers::FObjectFinder<UAnimSequence> Walk(TEXT("/Game/Steppe/ThirdParty/Quaternius/AnimatedAnimals/Horse/Horse/SkeletalMeshes/HorseWalk.HorseWalk"));
     static ConstructorHelpers::FObjectFinder<UAnimSequence> Gallop(TEXT("/Game/Steppe/ThirdParty/Quaternius/AnimatedAnimals/Horse/Horse/SkeletalMeshes/HorseGallop.HorseGallop"));
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> Stop(TEXT("/Game/Steppe/ThirdParty/Quaternius/AnimatedAnimals/Horse/Horse/SkeletalMeshes/HorseIdle_2.HorseIdle_2"));
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> Struggle(TEXT("/Game/Steppe/ThirdParty/Quaternius/AnimatedAnimals/Horse/Horse/SkeletalMeshes/HorseIdle_HitReact1.HorseIdle_HitReact1"));
     TemporaryIdleAnimation=Idle.Object;
     TemporaryWalkAnimation=Walk.Object;
     TemporaryGallopAnimation=Gallop.Object;
+    TemporaryStopAnimation=Stop.Object;
+    TemporaryStruggleAnimation=Struggle.Object;
 }
 
 void UHorsePresentationComponent::BeginPlay()
@@ -72,7 +76,8 @@ void UHorsePresentationComponent::TickComponent(float Dt,ELevelTick TickType,FAc
 
     if (auto* Anim=Cast<UHorseAnimInstance>(Horse->GetMesh()->GetAnimInstance()))
     {
-        Anim->ApplyHorseData(Data,TemporaryIdleAnimation,TemporaryWalkAnimation,TemporaryGallopAnimation);
+        Anim->ApplyHorseData(Data,TemporaryIdleAnimation,TemporaryWalkAnimation,TemporaryGallopAnimation,
+            TemporaryStopAnimation,TemporaryStruggleAnimation);
     }
     if (auto* Skeletal=Horse->GetMesh(); Skeletal && Skeletal->GetSkeletalMeshAsset())
     {
