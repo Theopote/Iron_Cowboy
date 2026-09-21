@@ -16,6 +16,7 @@
 #include "Engine/SkeletalMesh.h"
 #include "Animation/AnimSequence.h"
 #include "Animation/AnimSingleNodeInstance.h"
+#include "Presentation/RiderAnimInstance.h"
 #include "Engine/LocalPlayer.h"
 #include "EngineUtils.h"
 #include "UObject/ConstructorHelpers.h"
@@ -88,6 +89,9 @@ ASteppeRiderCharacter::ASteppeRiderCharacter()
         GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
         GetMesh()->SetGenerateOverlapEvents(false);
         GetMesh()->VisibilityBasedAnimTickOption=EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
+        static ConstructorHelpers::FClassFinder<URiderAnimInstance> RiderAnimBP(
+            TEXT("/Game/Steppe/Presentation/ABP_Rider"));
+        if (RiderAnimBP.Succeeded()) { GetMesh()->SetAnimInstanceClass(RiderAnimBP.Class); }
         PlaceholderRider->SetVisibility(false);
     }
 }
@@ -160,7 +164,11 @@ void ASteppeRiderCharacter::Tick(float Dt)
             Desired=TemporaryWalkAnimation;
             PlayRate=FMath::Clamp(PresentationData.Speed/220.f,.65f,1.3f);
         }
-        if (Desired)
+        if (auto* Anim=Cast<URiderAnimInstance>(RiderMesh->GetAnimInstance()))
+        {
+            Anim->ApplyRiderPose(Desired,PlayRate);
+        }
+        else if (Desired)
         {
             auto* Instance=RiderMesh->GetSingleNodeInstance();
             if (!Instance || Instance->GetAnimationAsset()!=Desired)

@@ -25,6 +25,63 @@ class FSteppeModule final : public FDefaultGameModuleImpl
     {
         FDefaultGameModuleImpl::StartupModule();
 #if WITH_EDITOR
+        if (FParse::Param(FCommandLine::Get(),TEXT("SteppeBuildRiderAnimGraph")))
+        {
+            UAnimBlueprint* Blueprint=LoadObject<UAnimBlueprint>(nullptr,
+                TEXT("/Game/Steppe/Presentation/ABP_Rider.ABP_Rider"));
+            UAnimSequence* Idle=LoadObject<UAnimSequence>(nullptr,
+                TEXT("/Game/Mannequin/Animations/ThirdPersonIdle.ThirdPersonIdle"));
+            if (!Blueprint || !Idle) { UE_LOG(LogSteppe,Error,TEXT("Rider AnimBlueprint or idle animation missing")); return; }
+            TArray<UEdGraph*> Graphs;
+            Blueprint->GetAllGraphs(Graphs);
+            UAnimationGraph* AnimGraph=nullptr;
+            for (UEdGraph* Graph : Graphs)
+            {
+                if (Graph->GetName()==TEXT("AnimGraph")) { AnimGraph=Cast<UAnimationGraph>(Graph); break; }
+            }
+            if (!AnimGraph) { UE_LOG(LogSteppe,Error,TEXT("Rider AnimGraph missing")); return; }
+            UAnimGraphNode_Root* Root=nullptr;
+            for (UEdGraphNode* Node : AnimGraph->Nodes)
+            {
+                if (auto* Candidate=Cast<UAnimGraphNode_Root>(Node)) { Root=Candidate; break; }
+            }
+            if (!Root) { UE_LOG(LogSteppe,Error,TEXT("Rider AnimGraph root missing")); return; }
+            bool bAlreadyBuilt=false;
+            for (UEdGraphNode* Node : AnimGraph->Nodes) { bAlreadyBuilt|=Node->IsA<UAnimGraphNode_Slot>(); }
+            if (!bAlreadyBuilt)
+            {
+                FGraphNodeCreator<UAnimGraphNode_SequencePlayer> IdleCreator(*AnimGraph);
+                UAnimGraphNode_SequencePlayer* IdleNode=IdleCreator.CreateNode();
+                IdleNode->NodePosX=-500; IdleNode->NodePosY=0;
+                IdleCreator.Finalize();
+                IdleNode->SetAnimationAsset(Idle);
+                IdleNode->ReconstructNode();
+                FGraphNodeCreator<UAnimGraphNode_Slot> SlotCreator(*AnimGraph);
+                UAnimGraphNode_Slot* SlotNode=SlotCreator.CreateNode();
+                SlotNode->NodePosX=-250; SlotNode->NodePosY=0;
+                SlotNode->Node.SlotName=TEXT("DefaultSlot");
+                SlotCreator.Finalize();
+                auto FindPosePin=[](UEdGraphNode* Node,EEdGraphPinDirection Direction)
+                {
+                    for (UEdGraphPin* Pin : Node->Pins)
+                    {
+                        if (Pin && Pin->Direction==Direction && Pin->PinType.PinCategory==TEXT("struct")) { return Pin; }
+                    }
+                    return static_cast<UEdGraphPin*>(nullptr);
+                };
+                const UEdGraphSchema* Schema=AnimGraph->GetSchema();
+                const bool bSource=Schema->TryCreateConnection(FindPosePin(IdleNode,EGPD_Output),FindPosePin(SlotNode,EGPD_Input));
+                const bool bResult=Schema->TryCreateConnection(FindPosePin(SlotNode,EGPD_Output),FindPosePin(Root,EGPD_Input));
+                UE_LOG(LogSteppe,Display,TEXT("Rider AnimGraph links idle-to-slot=%d slot-to-root=%d"),bSource,bResult);
+                if (!bSource || !bResult) { return; }
+                AnimGraph->NotifyGraphChanged();
+                FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
+                FKismetEditorUtilities::CompileBlueprint(Blueprint);
+                Blueprint->MarkPackageDirty();
+            }
+            UE_LOG(LogSteppe,Display,TEXT("Rider AnimGraph ready nodes=%d"),AnimGraph->Nodes.Num());
+            return;
+        }
         if (FParse::Param(FCommandLine::Get(),TEXT("SteppeBuildHorseAnimGraph")))
         {
             UAnimBlueprint* Blueprint=LoadObject<UAnimBlueprint>(nullptr,

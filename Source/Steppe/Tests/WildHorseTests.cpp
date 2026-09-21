@@ -28,6 +28,8 @@
 #include "Engine/SkeletalMesh.h"
 #include "Engine/SkeletalMeshSocket.h"
 #include "Animation/AnimSingleNodeInstance.h"
+#include "Animation/AnimSequence.h"
+#include "Presentation/RiderAnimInstance.h"
 #include "GameFramework/WorldSettings.h"
 
 namespace
@@ -1057,10 +1059,18 @@ bool FRiderPresentationSocketsTest::RunTest(const FString& Parameters)
         FVector::Dist(Rider->GetLassoHandLocation(),Rider->GetMesh()->GetSocketLocation(TEXT("LassoHand_R")))<1.f);
     TestTrue(TEXT("Rider mounts via the horse seat"),Rider->Riding->TryMount(Horse));
     Fixture.Step(.1f);
-    auto* RiderAnimation=Rider->GetMesh()->GetSingleNodeInstance();
-    TestTrue(TEXT("Mounted rider uses the upright seated pose"),RiderAnimation
-        && RiderAnimation->GetAnimationAsset()
-        && RiderAnimation->GetAnimationAsset()->GetName()==TEXT("RiderMounted_Pose"));
+    TestNotNull(TEXT("Rider uses the blending animation instance"),
+        Cast<URiderAnimInstance>(Rider->GetMesh()->GetAnimInstance()));
+    auto CurrentRiderAnimation=[Rider]() -> FString
+    {
+        if (const auto* Anim=Cast<URiderAnimInstance>(Rider->GetMesh()->GetAnimInstance()))
+        {
+            return Anim->GetActiveSequence()?Anim->GetActiveSequence()->GetName():FString();
+        }
+        const auto* Instance=Rider->GetMesh()->GetSingleNodeInstance();
+        return Instance && Instance->GetAnimationAsset()?Instance->GetAnimationAsset()->GetName():FString();
+    };
+    TestEqual(TEXT("Mounted rider uses the upright seated pose"),CurrentRiderAnimation(),FString(TEXT("RiderMounted_Pose")));
     TestEqual(TEXT("Mounted rider is attached to RiderSeat"),Rider->GetRootComponent()->GetAttachSocketName(),FName(TEXT("RiderSeat")));
     TestTrue(TEXT("Mounted rider remains upright despite imported bone frame"),
         FVector::DotProduct(Rider->GetActorUpVector(),FVector::UpVector)>.98f);
@@ -1070,11 +1080,6 @@ bool FRiderPresentationSocketsTest::RunTest(const FString& Parameters)
     Fixture.Step(.35f);
     TestTrue(TEXT("Gameplay swing phase moves the skeletal lasso hand"),
         FVector::Dist(FirstHand,Rider->GetLassoHandLocation())>2.f);
-    auto CurrentRiderAnimation=[Rider]() -> FString
-    {
-        const auto* Instance=Rider->GetMesh()->GetSingleNodeInstance();
-        return Instance && Instance->GetAnimationAsset()?Instance->GetAnimationAsset()->GetName():FString();
-    };
     Rider->Lasso->State=ELassoState::Thrown;
     Fixture.Step(.02f);
     TestEqual(TEXT("In-flight loop uses the mounted throw pose"),CurrentRiderAnimation(),FString(TEXT("RiderMountedThrow_Pose")));
