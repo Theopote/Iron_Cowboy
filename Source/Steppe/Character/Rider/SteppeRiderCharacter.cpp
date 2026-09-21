@@ -66,12 +66,20 @@ ASteppeRiderCharacter::ASteppeRiderCharacter()
     static ConstructorHelpers::FObjectFinder<UAnimSequence> Swing1(TEXT("/Game/Steppe/Presentation/Rider/RiderLassoSwing_1.RiderLassoSwing_1"));
     static ConstructorHelpers::FObjectFinder<UAnimSequence> Swing2(TEXT("/Game/Steppe/Presentation/Rider/RiderLassoSwing_2.RiderLassoSwing_2"));
     static ConstructorHelpers::FObjectFinder<UAnimSequence> Swing3(TEXT("/Game/Steppe/Presentation/Rider/RiderLassoSwing_3.RiderLassoSwing_3"));
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> MountedThrow(TEXT("/Game/Steppe/Presentation/Rider/RiderMountedThrow_Pose.RiderMountedThrow_Pose"));
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> MountedBrace(TEXT("/Game/Steppe/Presentation/Rider/RiderMountedBrace_Pose.RiderMountedBrace_Pose"));
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> OnFootThrow(TEXT("/Game/Steppe/Presentation/Rider/RiderOnFootThrow_Pose.RiderOnFootThrow_Pose"));
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> OnFootBrace(TEXT("/Game/Steppe/Presentation/Rider/RiderOnFootBrace_Pose.RiderOnFootBrace_Pose"));
     TemporaryIdleAnimation=Idle.Object;
     TemporaryWalkAnimation=Walk.Object;
     TemporaryRunAnimation=Run.Object;
     TemporaryMountedAnimation=Mounted.Object;
     TemporaryFallAnimation=Fall.Object;
     TemporaryLassoSwingAnimations={Swing0.Object,Swing1.Object,Swing2.Object,Swing3.Object};
+    TemporaryMountedThrowAnimation=MountedThrow.Object;
+    TemporaryMountedBraceAnimation=MountedBrace.Object;
+    TemporaryOnFootThrowAnimation=OnFootThrow.Object;
+    TemporaryOnFootBraceAnimation=OnFootBrace.Object;
     if (TemporaryRider.Succeeded())
     {
         GetMesh()->SetSkeletalMeshAsset(TemporaryRider.Object);
@@ -99,6 +107,9 @@ void ASteppeRiderCharacter::Tick(float Dt)
     PresentationData.bDragged=Balance && Balance->State==ERiderBalanceState::Dragged;
     PresentationData.bLeadingHorse=Riding && Riding->GetLeadingHorse()!=nullptr;
     PresentationData.bAimingLasso=Lasso && Lasso->State==ELassoState::Aiming;
+    PresentationData.bLassoThrown=Lasso && Lasso->State==ELassoState::Thrown;
+    PresentationData.bRopeAttached=Lasso && (Lasso->State==ELassoState::Attached
+        || Lasso->State==ELassoState::Subdued || Lasso->State==ELassoState::Captured);
     PresentationData.SwingPhase=Lasso?Lasso->SwingPhase:0.f;
     PresentationData.SwingStability=Lasso?Lasso->SwingStability:0.f;
     PresentationData.Speed=Horse?Horse->GetVelocity().Size2D():GetVelocity().Size2D();
@@ -133,8 +144,12 @@ void ASteppeRiderCharacter::Tick(float Dt)
                 const int32 SwingIndex=FMath::FloorToInt(FMath::Fmod(PresentationData.SwingPhase,1.f)*4.f)%4;
                 Desired=TemporaryLassoSwingAnimations[SwingIndex];
             }
+            else if (PresentationData.bLassoThrown) { Desired=TemporaryMountedThrowAnimation; }
+            else if (PresentationData.bRopeAttached && PresentationData.bBracing) { Desired=TemporaryMountedBraceAnimation; }
             else { Desired=TemporaryMountedAnimation; }
         }
+        else if (PresentationData.bLassoThrown) { Desired=TemporaryOnFootThrowAnimation; }
+        else if (PresentationData.bRopeAttached && PresentationData.bBracing) { Desired=TemporaryOnFootBraceAnimation; }
         else if (PresentationData.Speed>300.f)
         {
             Desired=TemporaryRunAnimation;

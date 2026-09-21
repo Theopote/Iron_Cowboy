@@ -1070,6 +1070,22 @@ bool FRiderPresentationSocketsTest::RunTest(const FString& Parameters)
     Fixture.Step(.35f);
     TestTrue(TEXT("Gameplay swing phase moves the skeletal lasso hand"),
         FVector::Dist(FirstHand,Rider->GetLassoHandLocation())>2.f);
+    auto CurrentRiderAnimation=[Rider]() -> FString
+    {
+        const auto* Instance=Rider->GetMesh()->GetSingleNodeInstance();
+        return Instance && Instance->GetAnimationAsset()?Instance->GetAnimationAsset()->GetName():FString();
+    };
+    Rider->Lasso->State=ELassoState::Thrown;
+    Fixture.Step(.02f);
+    TestEqual(TEXT("In-flight loop uses the mounted throw pose"),CurrentRiderAnimation(),FString(TEXT("RiderMountedThrow_Pose")));
+    Rider->Lasso->State=ELassoState::Attached;
+    Rider->Lasso->Target=LassoTarget;
+    Rider->Lasso->bBracing=true;
+    Fixture.Step(.02f);
+    TestEqual(TEXT("Mounted rope control uses the seated brace pose"),CurrentRiderAnimation(),FString(TEXT("RiderMountedBrace_Pose")));
+    Rider->Riding->Dismount();
+    Fixture.Step(.02f);
+    TestEqual(TEXT("On-foot rope control keeps a standing brace pose"),CurrentRiderAnimation(),FString(TEXT("RiderOnFootBrace_Pose")));
     return true;
 }
 #endif

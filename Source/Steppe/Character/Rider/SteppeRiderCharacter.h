@@ -32,6 +32,8 @@ struct STEPPE_API FRiderPresentationData
     UPROPERTY(VisibleAnywhere,BlueprintReadOnly) float SwingPhase = 0.f;
     UPROPERTY(VisibleAnywhere,BlueprintReadOnly) float SwingStability = 0.f;
     UPROPERTY(VisibleAnywhere,BlueprintReadOnly) bool bAimingLasso = false;
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly) bool bLassoThrown = false;
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly) bool bRopeAttached = false;
     UPROPERTY(VisibleAnywhere,BlueprintReadOnly) bool bLeadingHorse = false;
 };
 
@@ -81,5 +83,9 @@ private:
     UPROPERTY() TObjectPtr<UAnimSequence> TemporaryMountedAnimation;
     UPROPERTY() TObjectPtr<UAnimSequence> TemporaryFallAnimation;
     UPROPERTY() TArray<TObjectPtr<UAnimSequence>> TemporaryLassoSwingAnimations;
+    UPROPERTY() TObjectPtr<UAnimSequence> TemporaryMountedThrowAnimation;
+    UPROPERTY() TObjectPtr<UAnimSequence> TemporaryMountedBraceAnimation;
+    UPROPERTY() TObjectPtr<UAnimSequence> TemporaryOnFootThrowAnimation;
+    UPROPERTY() TObjectPtr<UAnimSequence> TemporaryOnFootBraceAnimation;
     FRidingIntent Intent;
 };
