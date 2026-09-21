@@ -20,18 +20,23 @@ if pose is None or jump is None or jump_start is None:
 
 # Keep root, pelvis and spine from Idle so the character remains upright. The
 # template jump loop contributes useful bent limbs without its airborne root.
-limbs = (
-    'thigh_l','calf_l','foot_l','thigh_r','calf_r','foot_r',
+legs = ('thigh_l','calf_l','foot_l','thigh_r','calf_r','foot_r')
+arms = (
     'clavicle_l','upperarm_l','lowerarm_l','hand_l',
     'clavicle_r','upperarm_r','lowerarm_r','hand_r',
 )
 controller = pose.get_editor_property('controller')
-for bone in limbs:
+for bone in legs:
+    # Jump Start begins with both knees bent by roughly 90 degrees. Jump Loop
+    # is deliberately asymmetric and made the mannequin look side-saddle.
+    sample = unreal.AnimationLibrary.get_bone_pose_for_time(jump_start, bone, 0.0, False)
+    controller.set_bone_track_keys(bone, [sample.translation], [sample.rotation], [sample.scale3d], False)
+for bone in arms:
     sample = unreal.AnimationLibrary.get_bone_pose_for_time(jump, bone, 0.20, False)
     controller.set_bone_track_keys(bone, [sample.translation], [sample.rotation], [sample.scale3d], False)
 
 assets.save_asset(pose_path, only_if_is_dirty=False)
-unreal.log('STEPPE_RIDER_MOUNTED_POSE {} limbs={}'.format(pose.get_path_name(), len(limbs)))
+unreal.log('STEPPE_RIDER_MOUNTED_POSE {} symmetric_legs={} arms={}'.format(pose.get_path_name(), len(legs), len(arms)))
 
 # Four coarse upper-body phases make gameplay SwingPhase readable before a
 # dedicated lasso animation is authored. Legs and torso remain in the seat.
@@ -44,6 +49,9 @@ for index, sample_time in enumerate((0.0, 0.15, 0.30, 0.45)):
             raise RuntimeError('Could not duplicate lasso swing phase {}'.format(index))
         swing = assets.load_asset(swing_path)
     swing_controller = swing.get_editor_property('controller')
+    for bone in legs:
+        sample = unreal.AnimationLibrary.get_bone_pose_for_time(jump_start, bone, 0.0, False)
+        swing_controller.set_bone_track_keys(bone, [sample.translation], [sample.rotation], [sample.scale3d], False)
     for bone in right_arm:
         sample = unreal.AnimationLibrary.get_bone_pose_for_time(jump, bone, sample_time, False)
         swing_controller.set_bone_track_keys(bone, [sample.translation], [sample.rotation], [sample.scale3d], False)
@@ -67,10 +75,17 @@ def replace_arms(target, source, sample_time, both_arms=True):
         sample = unreal.AnimationLibrary.get_bone_pose_for_time(source, bone, sample_time, False)
         target_controller.set_bone_track_keys(bone, [sample.translation], [sample.rotation], [sample.scale3d], False)
 
+def replace_mounted_legs(target):
+    target_controller = target.get_editor_property('controller')
+    for bone in legs:
+        sample = unreal.AnimationLibrary.get_bone_pose_for_time(jump_start, bone, 0.0, False)
+        target_controller.set_bone_track_keys(bone, [sample.translation], [sample.rotation], [sample.scale3d], False)
+
 # Throw retains the last overhead swing phase. Brace uses both arms from the
 # compact jump-start pose, while preserving seated or standing lower bodies.
 mounted_throw_path = '/Game/Steppe/Presentation/Rider/RiderMountedThrow_Pose'
 mounted_throw = copy_pose('/Game/Steppe/Presentation/Rider/RiderLassoSwing_3', mounted_throw_path)
+replace_mounted_legs(mounted_throw)
 assets.save_asset(mounted_throw_path, only_if_is_dirty=False)
 
 for target_path, base_path in (
@@ -78,6 +93,8 @@ for target_path, base_path in (
     ('/Game/Steppe/Presentation/Rider/RiderOnFootBrace_Pose', idle_path),
 ):
     target = copy_pose(base_path, target_path)
+    if target_path.endswith('MountedBrace_Pose'):
+        replace_mounted_legs(target)
     replace_arms(target, jump_start, 0.20, True)
     assets.save_asset(target_path, only_if_is_dirty=False)
 

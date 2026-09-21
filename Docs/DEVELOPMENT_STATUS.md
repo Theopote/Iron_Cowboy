@@ -2,6 +2,8 @@
 
 **P16 第一轮动力学完成；P16.5 临时骨骼马、骨骼骑手和挂点第一轮接入。马/骑手动画架构与正式骑乘姿态仍在制作。**
 
+2026-09-21 骑手侧坐修复：玩家截图暴露临时坐姿沿用了 `ThirdPersonJump_Loop` 的非对称腿部帧，左膝约 85°、右膝约 9°，导致一条腿嵌进马身。坐姿现改用 `ThirdPersonJump_Start` 起始帧的对称双膝弯曲轨道，并同步重生成基础骑乘、四相位摆索、骑乘投掷和骑乘稳绳资产；上半身动作保持原样。回归新增双脚必须跨在马体中心线两侧且高度差小于 25 cm。本轮没有打包。
+
 2026-09-21 P16.5E 起停与挣扎动作第一轮：`FHorseAnimationData` 新增 Starting、Stopping、Struggling 和 ExternalForceAmount。低速加速沿用 Walk 并提高播放响应，低速强减速使用 `HorseIdle_2` 收身，被套或其他有界外力达到阈值且速度低于 9 m/s 时使用 `HorseIdle_HitReact1` 表达挣扎；高速逃跑仍保持 Gallop，避免受力时原地播放受击动作。`UHorseAnimInstance` 继续负责 0.16 秒过渡，Gameplay 速度不由动画控制。自动测试验证外力进入表现数据并实际选择 Struggle/Stop 序列。本轮没有打包。
 
 2026-09-21 P16.5E 骨骼马动力学表现第一轮：骨骼马显示网格现在接收 `BodyBob`、`BodyPitch` 和 `BodyRoll`，加速时抬身、制动时前压、转向时侧倾；新增 `SlipAmount` 将真实速度方向与朝向的夹角传入表现层，外力侧拉或抓地恢复期间也能产生额外有界侧倾。所有变换只应用于 SkeletalMesh 相对变换，角色胶囊、Actor 朝向、速度和 Gameplay 碰撞保持权威。自动测试确认侧滑数据进入表现层、骨骼网格发生姿态变化且 Gameplay 根节点仍直立。本轮没有打包。

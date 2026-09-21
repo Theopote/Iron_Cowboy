@@ -1095,6 +1095,10 @@ bool FRiderPresentationSocketsTest::RunTest(const FString& Parameters)
     const FVector RightFoot=Rider->GetFootLocation(false);
     TestTrue(TEXT("Mounted feet remain separated on opposite sides of the horse"),FVector::Dist(LeftFoot,RightFoot)>35.f);
     TestTrue(TEXT("Mounted feet sit below the rider seat"),LeftFoot.Z<Rider->GetActorLocation().Z-25.f && RightFoot.Z<Rider->GetActorLocation().Z-25.f);
+    const float LeftSide=FVector::DotProduct(LeftFoot-Horse->GetActorLocation(),Horse->GetActorRightVector());
+    const float RightSide=FVector::DotProduct(RightFoot-Horse->GetActorLocation(),Horse->GetActorRightVector());
+    TestTrue(TEXT("Mounted feet straddle the horse centerline"),LeftSide*RightSide<0.f);
+    TestTrue(TEXT("Symmetric riding legs keep both feet at similar heights"),FMath::Abs(LeftFoot.Z-RightFoot.Z)<25.f);
     TestTrue(TEXT("Mounted rider remains upright despite imported bone frame"),
         FVector::DotProduct(Rider->GetActorUpVector(),FVector::UpVector)>.98f);
     TestTrue(TEXT("Mounted rider can begin the visible swing"),Rider->Lasso->BeginAimForTarget(LassoTarget,true));
