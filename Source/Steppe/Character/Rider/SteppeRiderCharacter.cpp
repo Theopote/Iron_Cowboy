@@ -215,6 +215,26 @@ FVector ASteppeRiderCharacter::GetLassoHandLocation() const
     }
     return GetActorLocation()+GetActorForwardVector()*55.f+GetActorRightVector()*40.f+FVector(0,0,115.f);
 }
+FVector ASteppeRiderCharacter::GetReinHandLocation(bool bLeftHand) const
+{
+    const auto* RiderMesh=GetMesh();
+    const FName Socket=bLeftHand?TEXT("Rein_L"):TEXT("Rein_R");
+    if (RiderMesh && RiderMesh->GetSkeletalMeshAsset() && RiderMesh->DoesSocketExist(Socket))
+    {
+        return RiderMesh->GetSocketLocation(Socket);
+    }
+    return GetActorLocation()+GetActorForwardVector()*35.f+GetActorRightVector()*(bLeftHand?-25.f:25.f)+FVector(0,0,105.f);
+}
+FVector ASteppeRiderCharacter::GetFootLocation(bool bLeftFoot) const
+{
+    const auto* RiderMesh=GetMesh();
+    const FName Bone=bLeftFoot?TEXT("foot_l"):TEXT("foot_r");
+    if (RiderMesh && RiderMesh->GetSkeletalMeshAsset() && RiderMesh->DoesSocketExist(Bone))
+    {
+        return RiderMesh->GetSocketLocation(Bone);
+    }
+    return GetActorLocation()+GetActorRightVector()*(bLeftFoot?-40.f:40.f)-FVector(0,0,55.f);
+}
 void ASteppeRiderCharacter::EndPlay(const EEndPlayReason::Type Reason)
 {
     auto* PC=Cast<APlayerController>(Controller);

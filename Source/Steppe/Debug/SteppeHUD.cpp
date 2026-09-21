@@ -18,6 +18,7 @@
 #include "Feedback/SteppeFeedbackComponent.h"
 #include "Capture/HorseTrustComponent.h"
 #include "Engine/Canvas.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Camp/SteppeDeliveryZone.h"
 void ASteppeHUD::DrawHUD()
 {
@@ -26,6 +27,29 @@ void ASteppeHUD::DrawHUD()
     auto* Rider=PlayerOwner?Cast<ASteppeRiderCharacter>(PlayerOwner->GetPawn()):nullptr;
     auto* Mode=GetWorld()->GetAuthGameMode<ASteppeGameMode>();
     auto* Lasso=Rider?Rider->Lasso.Get():nullptr;
+    if (Rider && Rider->Riding)
+    {
+        if (const auto* Mount=Rider->Riding->GetHorse(); Mount && Mount->GetMesh()->DoesSocketExist(TEXT("Head")))
+        {
+            const FVector Head=Mount->GetMesh()->GetSocketLocation(TEXT("Head"));
+            const FVector Side=Mount->GetActorRightVector()*9.f;
+            const auto DrawRein=[this](const FVector& Hand,const FVector& Bit)
+            {
+                constexpr int32 Segments=10;
+                FVector Previous=Hand;
+                for (int32 Segment=1;Segment<=Segments;++Segment)
+                {
+                    const float Alpha=static_cast<float>(Segment)/Segments;
+                    const FVector Current=FMath::Lerp(Hand,Bit,Alpha)-FVector::UpVector*(4.f*Alpha*(1.f-Alpha)*22.f);
+                    DrawDebugLine(GetWorld(),Previous,Current,FColor(92,48,24),false,0,0,2.5f);
+                    Previous=Current;
+                }
+            };
+            DrawRein(Rider->GetReinHandLocation(true),Head-Side);
+            const bool bRightHandOnLasso=Lasso && Lasso->State!=ELassoState::Stored && Lasso->State!=ELassoState::Recovering;
+            if (!bRightHandOnLasso) { DrawRein(Rider->GetReinHandLocation(false),Head+Side); }
+        }
+    }
     if (Lasso)
     {
         const FString LassoText=FString::Printf(TEXT("LASSO %s | %s"),*UEnum::GetDisplayValueAsText(Lasso->State).ToString(),*Lasso->Feedback);

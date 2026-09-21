@@ -64,6 +64,8 @@ public:
     void ResetRidingInput();
     UFUNCTION(BlueprintPure, Category="Riding") FGameplayTag GetRiderStateTag() const;
     UFUNCTION(BlueprintPure, Category="Rider|Presentation") FVector GetLassoHandLocation() const;
+    UFUNCTION(BlueprintPure, Category="Rider|Presentation") FVector GetReinHandLocation(bool bLeftHand) const;
+    UFUNCTION(BlueprintPure, Category="Rider|Presentation") FVector GetFootLocation(bool bLeftFoot) const;
 private:
     void Move(const FInputActionValue& Value);
     void Look(const FInputActionValue& Value);

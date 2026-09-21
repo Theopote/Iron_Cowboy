@@ -1057,6 +1057,8 @@ bool FRiderPresentationSocketsTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Rider seat follows the horse body bone"),Seat->BoneName,FName(TEXT("Body")));
     TestTrue(TEXT("Gameplay hand query uses the animated socket"),
         FVector::Dist(Rider->GetLassoHandLocation(),Rider->GetMesh()->GetSocketLocation(TEXT("LassoHand_R")))<1.f);
+    TestTrue(TEXT("Rein hands resolve to separate skeletal contact points"),
+        FVector::Dist(Rider->GetReinHandLocation(true),Rider->GetReinHandLocation(false))>8.f);
     TestTrue(TEXT("Rider mounts via the horse seat"),Rider->Riding->TryMount(Horse));
     Fixture.Step(.1f);
     TestNotNull(TEXT("Rider uses the blending animation instance"),
@@ -1072,6 +1074,10 @@ bool FRiderPresentationSocketsTest::RunTest(const FString& Parameters)
     };
     TestEqual(TEXT("Mounted rider uses the upright seated pose"),CurrentRiderAnimation(),FString(TEXT("RiderMounted_Pose")));
     TestEqual(TEXT("Mounted rider is attached to RiderSeat"),Rider->GetRootComponent()->GetAttachSocketName(),FName(TEXT("RiderSeat")));
+    const FVector LeftFoot=Rider->GetFootLocation(true);
+    const FVector RightFoot=Rider->GetFootLocation(false);
+    TestTrue(TEXT("Mounted feet remain separated on opposite sides of the horse"),FVector::Dist(LeftFoot,RightFoot)>35.f);
+    TestTrue(TEXT("Mounted feet sit below the rider seat"),LeftFoot.Z<Rider->GetActorLocation().Z-25.f && RightFoot.Z<Rider->GetActorLocation().Z-25.f);
     TestTrue(TEXT("Mounted rider remains upright despite imported bone frame"),
         FVector::DotProduct(Rider->GetActorUpVector(),FVector::UpVector)>.98f);
     TestTrue(TEXT("Mounted rider can begin the visible swing"),Rider->Lasso->BeginAimForTarget(LassoTarget,true));

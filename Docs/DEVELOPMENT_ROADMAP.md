@@ -139,7 +139,7 @@ Go 条件：多数测试者愿意立即重试；骑乘、切出、投索和控�
 1. **P16.5A Horse Animation Architecture：** `ABP_Horse` 与 `UHorseAnimInstance` 已接入：Idle 基础姿态，Walk/Gallop 通过 Slot 平滑切换，动画实例读取现有速度、步态、加速度、转向与倾斜数据。下一轮建立显式状态机及 Start/Stop/Struggle，再让侧滑和受力驱动可见姿态。
 2. **P16.5B Rider Skeletal Integration：** 临时 Mannequin、`RiderSeat` 和第一版直立骑乘坐姿已接入，Fall/Dragged 保留独立姿态。下一轮校准缰绳手、脚蹬，并让 Lean、Brace 和 Lead 有更明确的骨骼表现。
 3. **P16.5C Lasso Animation Integration：** `LassoHand_R`、手部绳索起点、四相位骑乘摆索，以及骑乘/徒步投掷与稳绳姿态已接入。`SwingPhase` 和 Lasso 状态只驱动显示，投掷与受力结果继续由 Gameplay 决定。下一轮用连续上半身动画层替代离散灰盒切换，并校准左右手、绳索和身体受力方向。
-4. **P16.5D Alignment：** `ABP_Rider`、短时姿态混合和绳索方向/张力驱动的扭身后仰已接入。下一轮校准骑手座位、双手、脚部与马背，并做最低限度的缰绳/蹄部 IK。
+4. **P16.5D Alignment：** `ABP_Rider`、短时姿态混合、绳索方向/张力驱动的扭身后仰，以及骨骼手部到马头的临时缰绳已接入；双脚接触位置已有回归。下一轮校准鞍位和脚蹬目标，再决定是否需要最低限度的脚部 IK。
 5. **P16.5E Dynamics Presentation：** 将 Slip Angle、侧拉、加减速和制动反映到马和骑手姿态。
 
 16 部件灰盒马保留为可关闭的调试回退；Fast、Strong、Nervous 暂时共用骨架。阶段退出时，骑乘、摆索、落马和牵马都应能通过角色姿态辨认，且骨骼/Socket 的实际跨帧位置经过验证。
