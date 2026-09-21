@@ -59,11 +59,14 @@ ASteppeRiderCharacter::ASteppeRiderCharacter()
     static ConstructorHelpers::FObjectFinder<UAnimSequence> Run(
         TEXT("/Game/Mannequin/Animations/ThirdPersonRun.ThirdPersonRun"));
     static ConstructorHelpers::FObjectFinder<UAnimSequence> Mounted(
+        TEXT("/Game/Steppe/Presentation/Rider/RiderMounted_Pose.RiderMounted_Pose"));
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> Fall(
         TEXT("/Game/Mannequin/Animations/ThirdPersonJump_Loop.ThirdPersonJump_Loop"));
     TemporaryIdleAnimation=Idle.Object;
     TemporaryWalkAnimation=Walk.Object;
     TemporaryRunAnimation=Run.Object;
     TemporaryMountedAnimation=Mounted.Object;
+    TemporaryFallAnimation=Fall.Object;
     if (TemporaryRider.Succeeded())
     {
         GetMesh()->SetSkeletalMeshAsset(TemporaryRider.Object);
@@ -115,14 +118,12 @@ void ASteppeRiderCharacter::Tick(float Dt)
         float PlayRate=1.f;
         if (PresentationData.bFalling || PresentationData.bDragged)
         {
-            Desired=TemporaryMountedAnimation;
+            Desired=TemporaryFallAnimation;
             PlayRate=FMath::Clamp(PresentationData.Speed/800.f,.65f,1.35f);
         }
         else if (PresentationData.bMounted)
         {
-            // The template jump loop rotates the entire mannequin onto its back.
-            // Keep an upright placeholder until the seated rider pose is authored.
-            Desired=TemporaryIdleAnimation;
+            Desired=TemporaryMountedAnimation;
         }
         else if (PresentationData.Speed>300.f)
         {
@@ -144,7 +145,8 @@ void ASteppeRiderCharacter::Tick(float Dt)
             }
             if (Instance) { Instance->SetPlayRate(PlayRate); }
         }
-        RiderMesh->SetRelativeLocation(FVector(0,0,-90.f+PresentationData.SeatOffsetZ));
+        const float PoseHeight=PresentationData.bMounted?-125.f:-90.f;
+        RiderMesh->SetRelativeLocation(FVector(0,0,PoseHeight+PresentationData.SeatOffsetZ));
         RiderMesh->SetRelativeRotation(FRotator(PresentationData.BodyPitch,
             -90.f+(PresentationData.bAimingLasso?FMath::Sin(PresentationData.SwingPhase*2.f*PI)*5.f:0.f),
             PresentationData.BodyRoll));

@@ -2,6 +2,8 @@
 
 **P16 第一轮动力学完成；P16.5 临时骨骼马、骨骼骑手和挂点第一轮接入。马/骑手动画架构与正式骑乘姿态仍在制作。**
 
+2026-09-21 P16.5B 临时骑乘姿态：新增 `RiderMounted_Pose`。它保留 Idle 的直立根骨和躯干，只从模板 Jump Loop 提取弯曲的腿和手臂局部姿态，避免旧方案把空中根骨带入后令骑手横躺。骑手网格在骑乘时下沉 35 cm，使髋部落在马背、双腿分居两侧；落马/拖行继续使用独立 Jump Loop。渲染 Smoke 已确认骑手呈坐姿并随疾驰马匹移动，`LassoHand_R` 仍跟随右手。正式缰绳手、脚蹬和摆索上半身动画仍待后续。本轮没有打包。
+
 2026-09-21 P16.5A 马动画架构第一轮：新增 `ABP_Horse` 与 `UHorseAnimInstance`，Idle 作为 AnimGraph 基础姿态，Walk/Gallop 在 `DefaultSlot` 以 0.16 秒过渡。动画实例接收现有 `FHorseAnimationData`，步态与播放速度仍由马匹 Gameplay 数据决定。`HorsePresentationComponent` 不再直接调用 `PlayAnimation`；灰盒马回退保持。UE 5.8.2 Editor 和 Win64 Shipping 均编译成功；P1 的真实前腿跨帧姿态测试和全部 26 项测试通过；渲染 Smoke 验证骑乘疾驰时 `HorseGallop` 前腿转动，完整捕获/牵回/命名仍成功。当前仍缺少起步、停步、挣扎和受力动画状态，骑手坐姿仍是临时站姿。本轮没有打包。
 
 2026-09-21 P16.5 骑手表现第一轮：从本机 UE 5.8 模板接入临时 Mannequin 骨骼与 Idle/Walk/Run 动画，马和骑手分别建立 `RiderSeat`、`LassoHand_R`、缰绳与头颈胸挂点。骑手的乘骑、受力、摆索等表现数据继续由 Gameplay 状态产生。投索从手部发出，画面中的绳索从手部跟随；受力和绕障碍继续使用稳定的 Gameplay 锚点，避免手臂动画改变绳长与控绳难度。实际渲染发现马身骨局部坐标会让骑手横躺，现已让骑手跟随座位位置但保持直立。当前骑乘仍是临时直立站姿，坐姿、上半身套索动画及 `ABP_Horse` 尚未完成。UE 5.8.2 Editor 编译、26 项自动化测试、骑乘表现及完整捕获/牵回/命名渲染 Smoke 通过。本轮没有打包。详见 `Docs/P16.5_RIDER_PRESENTATION.md`。

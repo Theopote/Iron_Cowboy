@@ -79,5 +79,6 @@ private:
     UPROPERTY() TObjectPtr<UAnimSequence> TemporaryWalkAnimation;
     UPROPERTY() TObjectPtr<UAnimSequence> TemporaryRunAnimation;
     UPROPERTY() TObjectPtr<UAnimSequence> TemporaryMountedAnimation;
+    UPROPERTY() TObjectPtr<UAnimSequence> TemporaryFallAnimation;
     FRidingIntent Intent;
 };

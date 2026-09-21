@@ -137,7 +137,7 @@ Go 条件：多数测试者愿意立即重试；骑乘、切出、投索和控�
 **状态：临时骨骼马和基础步态已接入，马与骑手表现架构进行中。** 按以下顺序推进，现有 Gameplay 状态和碰撞保持权威：
 
 1. **P16.5A Horse Animation Architecture：** `ABP_Horse` 与 `UHorseAnimInstance` 已接入：Idle 基础姿态，Walk/Gallop 通过 Slot 平滑切换，动画实例读取现有速度、步态、加速度、转向与倾斜数据。下一轮建立显式状态机及 Start/Stop/Struggle，再让侧滑和受力驱动可见姿态。
-2. **P16.5B Rider Skeletal Integration：** 接入来源与许可清晰的临时人形骨骼，建立 `RiderSeat`，支持徒步/骑乘基本姿态、Lean、Brace、Fall、Dragged 和 Lead。
+2. **P16.5B Rider Skeletal Integration：** 临时 Mannequin、`RiderSeat` 和第一版直立骑乘坐姿已接入，Fall/Dragged 保留独立姿态。下一轮校准缰绳手、脚蹬，并让 Lean、Brace 和 Lead 有更明确的骨骼表现。
 3. **P16.5C Lasso Animation Integration：** 骑手骨架加入 `LassoHand_R`，绳索起点来自手部 Socket；上半身摆索读取 Gameplay 的 `SwingPhase`，投掷结果继续由现有套索逻辑决定。
 4. **P16.5D Alignment：** 校准骑手座位、手脚与马背，再做最低限度的缰绳/蹄部 IK。
 5. **P16.5E Dynamics Presentation：** 将 Slip Angle、侧拉、加减速和制动反映到马和骑手姿态。

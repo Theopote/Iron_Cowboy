@@ -27,6 +27,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
 #include "Engine/SkeletalMeshSocket.h"
+#include "Animation/AnimSingleNodeInstance.h"
 #include "GameFramework/WorldSettings.h"
 
 namespace
@@ -1055,6 +1056,10 @@ bool FRiderPresentationSocketsTest::RunTest(const FString& Parameters)
         FVector::Dist(Rider->GetLassoHandLocation(),Rider->GetMesh()->GetSocketLocation(TEXT("LassoHand_R")))<1.f);
     TestTrue(TEXT("Rider mounts via the horse seat"),Rider->Riding->TryMount(Horse));
     Fixture.Step(.1f);
+    auto* RiderAnimation=Rider->GetMesh()->GetSingleNodeInstance();
+    TestTrue(TEXT("Mounted rider uses the upright seated pose"),RiderAnimation
+        && RiderAnimation->GetAnimationAsset()
+        && RiderAnimation->GetAnimationAsset()->GetName()==TEXT("RiderMounted_Pose"));
     TestEqual(TEXT("Mounted rider is attached to RiderSeat"),Rider->GetRootComponent()->GetAttachSocketName(),FName(TEXT("RiderSeat")));
     TestTrue(TEXT("Mounted rider remains upright despite imported bone frame"),
         FVector::DotProduct(Rider->GetActorUpVector(),FVector::UpVector)>.98f);
