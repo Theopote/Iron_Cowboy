@@ -11,3 +11,4 @@ PlaytestResults/
 *.sln
 *.suo
 ThirdParty/Quaternius/UltimateAnimatedAnimals/Source/
+.codegraph/
