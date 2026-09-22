@@ -13,12 +13,16 @@ class STEPPE_API URiderAnimInstance : public UAnimInstance
 {
     GENERATED_BODY()
 public:
-    void ApplyRiderPose(UAnimSequence* Desired, float PlayRate);
-    UAnimSequence* GetActiveSequence() const { return ActiveSequence; }
+    void ApplyRiderPose(UAnimSequence* Base, UAnimSequence* UpperBody, float PlayRate);
+    UAnimSequence* GetActiveSequence() const { return ActiveUpperBodySequence?ActiveUpperBodySequence.Get():ActiveBaseSequence.Get(); }
+    UAnimSequence* GetActiveBaseSequence() const { return ActiveBaseSequence.Get(); }
+    UAnimSequence* GetActiveUpperBodySequence() const { return ActiveUpperBodySequence.Get(); }
 
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Rider|Animation") float PosePlayRate = 1.f;
 
 private:
-    UPROPERTY(Transient) TObjectPtr<UAnimSequence> ActiveSequence;
-    UPROPERTY(Transient) TObjectPtr<UAnimMontage> ActiveMontage;
+    UPROPERTY(Transient) TObjectPtr<UAnimSequence> ActiveBaseSequence;
+    UPROPERTY(Transient) TObjectPtr<UAnimMontage> ActiveBaseMontage;
+    UPROPERTY(Transient) TObjectPtr<UAnimSequence> ActiveUpperBodySequence;
+    UPROPERTY(Transient) TObjectPtr<UAnimMontage> ActiveUpperBodyMontage;
 };

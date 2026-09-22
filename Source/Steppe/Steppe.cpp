@@ -7,10 +7,12 @@
 #if WITH_EDITOR
 #include "Animation/AnimBlueprint.h"
 #include "Animation/AnimSequence.h"
+#include "Animation/Skeleton.h"
 #include "AnimationGraph.h"
 #include "AnimGraphNode_Root.h"
 #include "AnimGraphNode_SequencePlayer.h"
 #include "AnimGraphNode_Slot.h"
+#include "AnimGraphNode_LayeredBoneBlend.h"
 #include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphSchema.h"
 #include "Kismet2/KismetEditorUtilities.h"
@@ -25,6 +27,92 @@ class FSteppeModule final : public FDefaultGameModuleImpl
     {
         FDefaultGameModuleImpl::StartupModule();
 #if WITH_EDITOR
+        if (FParse::Param(FCommandLine::Get(),TEXT("SteppeBuildRiderLayeredGraph")))
+        {
+            UAnimBlueprint* Blueprint=LoadObject<UAnimBlueprint>(nullptr,
+                TEXT("/Game/Steppe/Presentation/ABP_Rider.ABP_Rider"));
+            if (!Blueprint) { UE_LOG(LogSteppe,Error,TEXT("Rider AnimBlueprint missing")); return; }
+            TArray<UEdGraph*> Graphs;
+            Blueprint->GetAllGraphs(Graphs);
+            UAnimationGraph* Graph=nullptr;
+            for (UEdGraph* Candidate : Graphs)
+            {
+                if (Candidate->GetName()==TEXT("AnimGraph")) { Graph=Cast<UAnimationGraph>(Candidate); break; }
+            }
+            if (!Graph) { UE_LOG(LogSteppe,Error,TEXT("Rider AnimGraph missing")); return; }
+            UAnimGraphNode_Root* Root=nullptr;
+            UAnimGraphNode_Slot* BaseSlot=nullptr;
+            bool bAlreadyBuilt=false;
+            for (UEdGraphNode* Node : Graph->Nodes)
+            {
+                if (auto* Candidate=Cast<UAnimGraphNode_Root>(Node)) { Root=Candidate; }
+                if (auto* Candidate=Cast<UAnimGraphNode_Slot>(Node); Candidate && Candidate->Node.SlotName==TEXT("DefaultSlot")) { BaseSlot=Candidate; }
+                bAlreadyBuilt|=Node->IsA<UAnimGraphNode_LayeredBoneBlend>();
+            }
+            if (!Root || !BaseSlot) { UE_LOG(LogSteppe,Error,TEXT("Rider base slot or root missing")); return; }
+            if (USkeleton* Skeleton=Blueprint->TargetSkeleton)
+            {
+                Skeleton->RegisterSlotNode(TEXT("UpperBodySlot"));
+                Skeleton->AddSlotGroupName(TEXT("SteppeUpperBody"));
+                Skeleton->SetSlotGroupName(TEXT("UpperBodySlot"),TEXT("SteppeUpperBody"));
+                Skeleton->MarkPackageDirty();
+            }
+            if (!bAlreadyBuilt)
+            {
+                FGraphNodeCreator<UAnimGraphNode_Slot> SlotCreator(*Graph);
+                UAnimGraphNode_Slot* UpperSlot=SlotCreator.CreateNode();
+                UpperSlot->NodePosX=BaseSlot->NodePosX+230;
+                UpperSlot->NodePosY=BaseSlot->NodePosY+220;
+                UpperSlot->Node.SlotName=TEXT("UpperBodySlot");
+                SlotCreator.Finalize();
+                FGraphNodeCreator<UAnimGraphNode_LayeredBoneBlend> BlendCreator(*Graph);
+                UAnimGraphNode_LayeredBoneBlend* Blend=BlendCreator.CreateNode();
+                Blend->NodePosX=BaseSlot->NodePosX+480;
+                Blend->NodePosY=BaseSlot->NodePosY;
+                BlendCreator.Finalize();
+                if (!Blend->Node.LayerSetup.IsValidIndex(0)) { UE_LOG(LogSteppe,Error,TEXT("Layered blend has no pose")); return; }
+                FBranchFilter Filter;
+                Filter.BoneName=TEXT("spine_01");
+                Filter.BlendDepth=0;
+                Blend->Node.LayerSetup[0].BranchFilters.Add(Filter);
+                Blend->Node.BlendWeights[0]=1.f;
+                Blend->ReconstructNode();
+                auto PosePin=[](UEdGraphNode* Node,EEdGraphPinDirection Direction,const TCHAR* Name=nullptr) -> UEdGraphPin*
+                {
+                    for (UEdGraphPin* Pin : Node->Pins)
+                    {
+                        if (Pin && Pin->Direction==Direction && Pin->PinType.PinCategory==TEXT("struct")
+                            && (!Name || Pin->PinName.ToString().StartsWith(Name))) { return Pin; }
+                    }
+                    return nullptr;
+                };
+                UEdGraphPin* BaseOut=PosePin(BaseSlot,EGPD_Output);
+                UEdGraphPin* RootIn=PosePin(Root,EGPD_Input);
+                UEdGraphPin* BlendBase=PosePin(Blend,EGPD_Input,TEXT("BasePose"));
+                UEdGraphPin* BlendUpper=PosePin(Blend,EGPD_Input,TEXT("BlendPoses"));
+                UEdGraphPin* BlendOut=PosePin(Blend,EGPD_Output);
+                UEdGraphPin* UpperIn=PosePin(UpperSlot,EGPD_Input);
+                UEdGraphPin* UpperOut=PosePin(UpperSlot,EGPD_Output);
+                if (!BaseOut || !RootIn || !BlendBase || !BlendUpper || !BlendOut || !UpperIn || !UpperOut)
+                {
+                    UE_LOG(LogSteppe,Error,TEXT("Rider layered pose pins missing")); return;
+                }
+                RootIn->BreakAllPinLinks();
+                const UEdGraphSchema* Schema=Graph->GetSchema();
+                const bool bLinks=Schema->TryCreateConnection(BaseOut,BlendBase)
+                    && Schema->TryCreateConnection(BaseOut,UpperIn)
+                    && Schema->TryCreateConnection(UpperOut,BlendUpper)
+                    && Schema->TryCreateConnection(BlendOut,RootIn);
+                UE_LOG(LogSteppe,Display,TEXT("Rider layered graph links=%d"),bLinks);
+                if (!bLinks) { return; }
+                Graph->NotifyGraphChanged();
+                FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
+                FKismetEditorUtilities::CompileBlueprint(Blueprint);
+                Blueprint->MarkPackageDirty();
+            }
+            UE_LOG(LogSteppe,Display,TEXT("Rider layered graph ready nodes=%d"),Graph->Nodes.Num());
+            return;
+        }
         if (FParse::Param(FCommandLine::Get(),TEXT("SteppeBuildRiderAnimGraph")))
         {
             UAnimBlueprint* Blueprint=LoadObject<UAnimBlueprint>(nullptr,

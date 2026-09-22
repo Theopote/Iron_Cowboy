@@ -1078,7 +1078,8 @@ bool FRiderPresentationSocketsTest::RunTest(const FString& Parameters)
         FVector::Dist(Rider->GetReinHandLocation(true),Rider->GetReinHandLocation(false))>8.f);
     TestTrue(TEXT("Rider mounts via the horse seat"),Rider->Riding->TryMount(Horse));
     TestTrue(TEXT("Mount begins a short visual transition"),Rider->IsVisualTransitionActive());
-    Fixture.Step(.1f);
+    Fixture.Step(.5f);
+    TestFalse(TEXT("Mount visual transition reaches the seat"),Rider->IsVisualTransitionActive());
     TestNotNull(TEXT("Rider uses the blending animation instance"),
         Cast<URiderAnimInstance>(Rider->GetMesh()->GetAnimInstance()));
     auto CurrentRiderAnimation=[Rider]() -> FString
@@ -1094,7 +1095,9 @@ bool FRiderPresentationSocketsTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Mounted rider is attached to RiderSeat"),Rider->GetRootComponent()->GetAttachSocketName(),FName(TEXT("RiderSeat")));
     const FVector LeftFoot=Rider->GetFootLocation(true);
     const FVector RightFoot=Rider->GetFootLocation(false);
-    TestTrue(TEXT("Mounted feet remain separated on opposite sides of the horse"),FVector::Dist(LeftFoot,RightFoot)>35.f);
+    const FVector SeatedLeftLocal=Horse->GetActorTransform().InverseTransformPosition(LeftFoot);
+    const FVector SeatedRightLocal=Horse->GetActorTransform().InverseTransformPosition(RightFoot);
+    TestTrue(TEXT("Mounted feet remain separated on opposite sides of the horse"),FVector::Dist(LeftFoot,RightFoot)>30.f);
     TestTrue(TEXT("Mounted feet sit below the rider seat"),LeftFoot.Z<Rider->GetActorLocation().Z-25.f && RightFoot.Z<Rider->GetActorLocation().Z-25.f);
     const float LeftSide=FVector::DotProduct(LeftFoot-Horse->GetActorLocation(),Horse->GetActorRightVector());
     const float RightSide=FVector::DotProduct(RightFoot-Horse->GetActorLocation(),Horse->GetActorRightVector());
@@ -1108,6 +1111,15 @@ bool FRiderPresentationSocketsTest::RunTest(const FString& Parameters)
     Fixture.Step(.35f);
     TestTrue(TEXT("Gameplay swing phase moves the skeletal lasso hand"),
         FVector::Dist(FirstHand,Rider->GetLassoHandLocation())>2.f);
+    const auto* LayeredAnim=Cast<URiderAnimInstance>(Rider->GetMesh()->GetAnimInstance());
+    TestEqual(TEXT("Swing retains the mounted lower-body base"),
+        GetNameSafe(LayeredAnim->GetActiveBaseSequence()),FString(TEXT("RiderMounted_Pose")));
+    TestNotNull(TEXT("Swing uses the upper-body slot"),LayeredAnim->GetActiveUpperBodySequence());
+    TestTrue(TEXT("Swing keeps both feet separated across the horse"),
+        FVector::Dist(Rider->GetFootLocation(true),Rider->GetFootLocation(false))>30.f);
+    TestTrue(TEXT("Swing upper-body layer leaves seated feet close to their baseline"),
+        FVector::Dist(SeatedLeftLocal,Horse->GetActorTransform().InverseTransformPosition(Rider->GetFootLocation(true)))<30.f
+        && FVector::Dist(SeatedRightLocal,Horse->GetActorTransform().InverseTransformPosition(Rider->GetFootLocation(false)))<30.f);
     Rider->Lasso->State=ELassoState::Thrown;
     Fixture.Step(.02f);
     TestEqual(TEXT("In-flight loop uses the mounted throw pose"),CurrentRiderAnimation(),FString(TEXT("RiderMountedThrow_Pose")));

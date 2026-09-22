@@ -199,7 +199,23 @@ void ASteppeRiderCharacter::Tick(float Dt)
         }
         if (auto* Anim=Cast<URiderAnimInstance>(RiderMesh->GetAnimInstance()))
         {
-            Anim->ApplyRiderPose(Desired,PlayRate);
+            UAnimSequence* Base=Desired;
+            UAnimSequence* UpperBody=nullptr;
+            if (!PresentationData.bFalling && !PresentationData.bDragged)
+            {
+                if (PresentationData.bMounted)
+                {
+                    Base=TemporaryMountedAnimation;
+                    if (Desired!=Base) { UpperBody=Desired; }
+                }
+                else if (Desired==TemporaryOnFootThrowAnimation || Desired==TemporaryOnFootBraceAnimation)
+                {
+                    UpperBody=Desired;
+                    Base=PresentationData.Speed>300.f?TemporaryRunAnimation:
+                        PresentationData.Speed>20.f?TemporaryWalkAnimation:TemporaryIdleAnimation;
+                }
+            }
+            Anim->ApplyRiderPose(Base,UpperBody,PlayRate);
         }
         else if (Desired)
         {

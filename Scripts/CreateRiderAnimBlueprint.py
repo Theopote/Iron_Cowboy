@@ -17,5 +17,6 @@ if bp is None:
 if bp is None:
     raise RuntimeError('ABP_Rider creation failed')
 assets.save_asset(path, only_if_is_dirty=False)
+assets.save_asset(mesh.get_editor_property('skeleton').get_path_name().split('.')[0], only_if_is_dirty=False)
 unreal.log('STEPPE_RIDER_ABP {}'.format(bp.get_path_name()))
 unreal.SystemLibrary.quit_editor()
