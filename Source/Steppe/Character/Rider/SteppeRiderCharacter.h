@@ -66,6 +66,11 @@ public:
     UFUNCTION(BlueprintPure, Category="Rider|Presentation") FVector GetLassoHandLocation() const;
     UFUNCTION(BlueprintPure, Category="Rider|Presentation") FVector GetReinHandLocation(bool bLeftHand) const;
     UFUNCTION(BlueprintPure, Category="Rider|Presentation") FVector GetFootLocation(bool bLeftFoot) const;
+    // Keeps the rendered rider moving between a validated seat and landing point.
+    // Gameplay attachment, collision and input have already changed when this begins.
+    void BeginMountVisualTransition(const FVector& PreviousMeshLocation);
+    void BeginDismountVisualTransition(const FVector& PreviousMeshLocation);
+    UFUNCTION(BlueprintPure, Category="Rider|Presentation") bool IsVisualTransitionActive() const { return VisualTransitionRemaining>0.f; }
 private:
     void Move(const FInputActionValue& Value);
     void Look(const FInputActionValue& Value);
@@ -93,4 +98,7 @@ private:
     UPROPERTY() TObjectPtr<UAnimSequence> TemporaryOnFootThrowAnimation;
     UPROPERTY() TObjectPtr<UAnimSequence> TemporaryOnFootBraceAnimation;
     FRidingIntent Intent;
+    FVector VisualTransitionStart = FVector::ZeroVector;
+    float VisualTransitionRemaining = 0.f;
+    float VisualTransitionDuration = 0.f;
 };

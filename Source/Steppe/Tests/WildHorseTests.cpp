@@ -1077,6 +1077,7 @@ bool FRiderPresentationSocketsTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Rein hands resolve to separate skeletal contact points"),
         FVector::Dist(Rider->GetReinHandLocation(true),Rider->GetReinHandLocation(false))>8.f);
     TestTrue(TEXT("Rider mounts via the horse seat"),Rider->Riding->TryMount(Horse));
+    TestTrue(TEXT("Mount begins a short visual transition"),Rider->IsVisualTransitionActive());
     Fixture.Step(.1f);
     TestNotNull(TEXT("Rider uses the blending animation instance"),
         Cast<URiderAnimInstance>(Rider->GetMesh()->GetAnimInstance()));
@@ -1125,8 +1126,11 @@ bool FRiderPresentationSocketsTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Wrapped rope pose follows the first span around the obstacle"),Rider->PresentationData.BodyYaw<-8.f);
     Rider->Lasso->bRopeWrapped=false;
     Rider->Riding->Dismount();
+    TestTrue(TEXT("Safe dismount begins a visual transition"),Rider->IsVisualTransitionActive());
     Fixture.Step(.02f);
     TestEqual(TEXT("On-foot rope control keeps a standing brace pose"),CurrentRiderAnimation(),FString(TEXT("RiderOnFootBrace_Pose")));
+    Fixture.Step(.5f);
+    TestFalse(TEXT("Dismount visual transition settles without affecting gameplay"),Rider->IsVisualTransitionActive());
     return true;
 }
 #endif

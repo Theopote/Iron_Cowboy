@@ -37,6 +37,7 @@ bool URidingComponent::TryMount(ASteppeHorseCharacter* Horse)
     {
         UE_LOG(LogSteppeRiding,Display,TEXT("Mount refused: invalid/occupied target, distance or speed limit.")); return false;
     }
+    const FVector PreviousMeshLocation=Rider->GetMesh()->GetComponentLocation();
     MountedHorse=Horse; Horse->MountedRider=Rider;
     Rider->ResetRidingInput();
     Rider->GetCharacterMovement()->StopMovementImmediately();
@@ -56,6 +57,7 @@ bool URidingComponent::TryMount(ASteppeHorseCharacter* Horse)
     }
     Horse->GetCharacterMovement()->AddTickPrerequisiteComponent(this);
     Horse->OnDestroyed.AddDynamic(this,&URidingComponent::OnHorseDestroyed);
+    Rider->BeginMountVisualTransition(PreviousMeshLocation);
     Rider->RefreshInputContext();
     return true;
 }
@@ -79,6 +81,7 @@ void URidingComponent::Dismount()
         }
     }
     if (!Found) { UE_LOG(LogSteppeRiding,Display,TEXT("Dismount refused: no clear, walkable landing space.")); return; }
+    const FVector PreviousMeshLocation=Rider->GetMesh()->GetComponentLocation();
     Horse->OnDestroyed.RemoveDynamic(this,&URidingComponent::OnHorseDestroyed);
     Horse->GetCharacterMovement()->RemoveTickPrerequisiteComponent(this);
     CastChecked<UHorseMovementComponent>(Horse->GetCharacterMovement())->ClearIntent();
@@ -87,6 +90,7 @@ void URidingComponent::Dismount()
     Rider->SetActorLocationAndRotation(Exit,FRotator(0,Horse->GetActorRotation().Yaw,0),false,nullptr,ETeleportType::TeleportPhysics);
     Rider->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
     Rider->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+    Rider->BeginDismountVisualTransition(PreviousMeshLocation);
     Rider->ResetRidingInput(); Rider->RefreshInputContext();
 }
 bool URidingComponent::ForceDismount(FVector LaunchVelocity)

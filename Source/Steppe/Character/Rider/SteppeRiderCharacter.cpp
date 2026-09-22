@@ -96,6 +96,18 @@ ASteppeRiderCharacter::ASteppeRiderCharacter()
         PlaceholderRider->SetVisibility(false);
     }
 }
+void ASteppeRiderCharacter::BeginMountVisualTransition(const FVector& PreviousMeshLocation)
+{
+    VisualTransitionStart=PreviousMeshLocation;
+    VisualTransitionDuration=.45f;
+    VisualTransitionRemaining=VisualTransitionDuration;
+}
+void ASteppeRiderCharacter::BeginDismountVisualTransition(const FVector& PreviousMeshLocation)
+{
+    VisualTransitionStart=PreviousMeshLocation;
+    VisualTransitionDuration=.32f;
+    VisualTransitionRemaining=VisualTransitionDuration;
+}
 void ASteppeRiderCharacter::Tick(float Dt)
 {
     Super::Tick(Dt);
@@ -204,6 +216,15 @@ void ASteppeRiderCharacter::Tick(float Dt)
         RiderMesh->SetRelativeRotation(FRotator(PresentationData.BodyPitch,
             -90.f+PresentationData.BodyYaw+(PresentationData.bAimingLasso?FMath::Sin(PresentationData.SwingPhase*2.f*PI)*5.f:0.f),
             PresentationData.BodyRoll));
+        if (VisualTransitionRemaining>0.f)
+        {
+            const FVector SeatOrGround=RiderMesh->GetComponentLocation();
+            const FVector StartOffset=(VisualTransitionStart-SeatOrGround).GetClampedToMaxSize(180.f);
+            VisualTransitionRemaining=FMath::Max(0.f,VisualTransitionRemaining-Dt);
+            const float Alpha=VisualTransitionRemaining/FMath::Max(.01f,VisualTransitionDuration);
+            // Ease the visual mesh into the already-safe gameplay position.
+            RiderMesh->SetWorldLocation(SeatOrGround+StartOffset*Alpha*Alpha);
+        }
     }
 }
 FVector ASteppeRiderCharacter::GetLassoHandLocation() const
