@@ -149,6 +149,7 @@ bool FSteppeWorldTest::RunTest(const FString& Parameters)
     Step(.2f);
     TestTrue(TEXT("Lateral pull changes the horse trajectory"),Move->LateralSpeed>BeforePull+10.f);
     TestTrue(TEXT("External pull reaches horse animation data"),Horse->AnimationData.ExternalForceAmount>.1f);
+    TestTrue(TEXT("External pull direction reaches horse presentation data"),Horse->AnimationData.ExternalPullSide>.1f);
     Move->ClearExternalAcceleration();
     TestTrue(TEXT("External pull clears completely"),Move->ExternalAcceleration.IsNearlyZero());
     Direct.DesiredTurn=1.f; Move->SetHorseIntent(Direct); Step(10);

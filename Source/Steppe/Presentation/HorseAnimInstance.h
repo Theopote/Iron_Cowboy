@@ -15,7 +15,8 @@ class STEPPE_API UHorseAnimInstance : public UAnimInstance
     GENERATED_BODY()
 public:
     void ApplyHorseData(const FHorseAnimationData& Data, UAnimSequence* Idle,
-        UAnimSequence* Walk, UAnimSequence* Gallop, UAnimSequence* Stop, UAnimSequence* Struggle);
+        UAnimSequence* Walk, UAnimSequence* Gallop, UAnimSequence* Stop,
+        UAnimSequence* Struggle, UAnimSequence* StruggleAlternate);
     UAnimSequence* GetActiveSequence() const { return ActiveSequence; }
 
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Horse|Animation") FHorseAnimationData HorseData;

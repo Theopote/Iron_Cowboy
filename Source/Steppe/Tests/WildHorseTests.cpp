@@ -674,6 +674,14 @@ bool FFeedbackSignalsTest::RunTest(const FString& Parameters)
     Fixture.Step(.2f);
     TestEqual(TEXT("External rope load selects the temporary struggle animation"),
         HorseAnim->GetActiveSequence(),Mount->Presentation->TemporaryStruggleAnimation.Get());
+    Mount->AnimationData.ExternalPullSide=.7f;
+    Fixture.Step(.25f);
+    TestEqual(TEXT("Right-side low-speed pull selects a distinct neck struggle pose"),
+        HorseAnim->GetActiveSequence(),Mount->Presentation->TemporaryStruggleAlternateAnimation.Get());
+    TestTrue(TEXT("Directional pull visibly yaws the horse mesh while gameplay heading stays fixed"),
+        Mount->AnimationData.BodyYaw>1.f
+        && FMath::Abs(Mount->GetMesh()->GetRelativeRotation().Yaw+90.f)>1.f
+        && FMath::Abs(Mount->GetActorRotation().Yaw)<.1f);
     Mount->AnimationData.bStruggling=false;
     Mount->AnimationData.bStopping=true;
     Fixture.Step(.2f);

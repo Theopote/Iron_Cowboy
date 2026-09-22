@@ -153,6 +153,8 @@ void UHorseMovementComponent::TickComponent(float Dt, ELevelTick TickType, FActo
     Data.LeanAmount=FMath::Clamp(HorseIntent.DesiredTurn*Data.NormalizedSpeed,-1.f,1.f);
     Data.SlipAmount=FMath::Clamp(SlipAngleDegrees/25.f,-1.f,1.f);
     Data.ExternalForceAmount=FMath::Clamp(ExternalAcceleration.Size2D()/FMath::Max(1.f,MaximumExternalAcceleration),0.f,1.f);
+    Data.ExternalPullSide=FMath::Clamp(FVector::DotProduct(ExternalAcceleration,Right)/FMath::Max(1.f,MaximumExternalAcceleration),-1.f,1.f);
+    Data.ExternalPullForward=FMath::Clamp(FVector::DotProduct(ExternalAcceleration,Facing)/FMath::Max(1.f,MaximumExternalAcceleration),-1.f,1.f);
     Data.bStarting=Data.AccelerationAmount>.3f && CurrentSpeed>20.f && CurrentSpeed<400.f;
     Data.bStopping=Data.DecelerationAmount>.35f && CurrentSpeed<500.f;
     Data.bStruggling=Data.ExternalForceAmount>.15f && CurrentSpeed<900.f;

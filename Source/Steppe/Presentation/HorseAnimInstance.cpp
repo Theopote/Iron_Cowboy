@@ -3,14 +3,15 @@
 #include "Animation/AnimMontage.h"
 
 void UHorseAnimInstance::ApplyHorseData(const FHorseAnimationData& Data,
-    UAnimSequence* Idle, UAnimSequence* Walk, UAnimSequence* Gallop, UAnimSequence* Stop, UAnimSequence* Struggle)
+    UAnimSequence* Idle, UAnimSequence* Walk, UAnimSequence* Gallop, UAnimSequence* Stop,
+    UAnimSequence* Struggle, UAnimSequence* StruggleAlternate)
 {
     HorseData=Data;
     ActiveGait=Data.Gait;
     UAnimSequence* Desired=nullptr;
     if (Data.bStruggling && Struggle)
     {
-        Desired=Struggle;
+        Desired=Data.ExternalPullSide>.12f && StruggleAlternate?StruggleAlternate:Struggle;
         LocomotionPlayRate=FMath::Lerp(.72f,1.05f,Data.ExternalForceAmount);
     }
     else if (Data.bStopping && Stop)

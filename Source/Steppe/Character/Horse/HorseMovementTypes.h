@@ -31,6 +31,8 @@ struct STEPPE_API FHorseAnimationData
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) float LeanAmount = 0.f;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) float SlipAmount = 0.f;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) float ExternalForceAmount = 0.f;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) float ExternalPullSide = 0.f;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) float ExternalPullForward = 0.f;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) bool bStarting = false;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) bool bStopping = false;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) bool bStruggling = false;
@@ -42,6 +44,7 @@ struct STEPPE_API FHorseAnimationData
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) float BodyBob = 0.f;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) float BodyPitch = 0.f;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) float BodyRoll = 0.f;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) float BodyYaw = 0.f;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) float FootContactPulse = 0.f;
 };
 

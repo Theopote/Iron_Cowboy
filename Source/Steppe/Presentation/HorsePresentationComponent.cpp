@@ -15,11 +15,13 @@ UHorsePresentationComponent::UHorsePresentationComponent()
     static ConstructorHelpers::FObjectFinder<UAnimSequence> Gallop(TEXT("/Game/Steppe/ThirdParty/Quaternius/AnimatedAnimals/Horse/Horse/SkeletalMeshes/HorseGallop.HorseGallop"));
     static ConstructorHelpers::FObjectFinder<UAnimSequence> Stop(TEXT("/Game/Steppe/ThirdParty/Quaternius/AnimatedAnimals/Horse/Horse/SkeletalMeshes/HorseIdle_2.HorseIdle_2"));
     static ConstructorHelpers::FObjectFinder<UAnimSequence> Struggle(TEXT("/Game/Steppe/ThirdParty/Quaternius/AnimatedAnimals/Horse/Horse/SkeletalMeshes/HorseIdle_HitReact1.HorseIdle_HitReact1"));
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> StruggleAlternate(TEXT("/Game/Steppe/ThirdParty/Quaternius/AnimatedAnimals/Horse/Horse/SkeletalMeshes/HorseIdle_HitReact2.HorseIdle_HitReact2"));
     TemporaryIdleAnimation=Idle.Object;
     TemporaryWalkAnimation=Walk.Object;
     TemporaryGallopAnimation=Gallop.Object;
     TemporaryStopAnimation=Stop.Object;
     TemporaryStruggleAnimation=Struggle.Object;
+    TemporaryStruggleAlternateAnimation=StruggleAlternate.Object;
 }
 
 void UHorsePresentationComponent::BeginPlay()
@@ -68,22 +70,27 @@ void UHorsePresentationComponent::TickComponent(float Dt,ELevelTick TickType,FAc
     const float Cycle=Data.GaitPhase*2.f*PI;
     const float IdleBreath=Data.Gait==EHorseGait::Idle?FMath::Sin(Cycle)*1.2f:0.f;
     const float TargetBob=IdleBreath+FMath::Sin(Cycle*2.f)*MaximumBob*Data.StrideBlend;
-    const float TargetPitch=-Data.NormalizedAcceleration*AccelerationPitchDegrees+FMath::Cos(Cycle*2.f)*1.5f*Data.StrideBlend;
-    const float TargetRoll=-Data.LeanAmount*MaximumLeanDegrees-Data.SlipAmount*SlipLeanDegrees;
+    const float PullAlpha=Data.bStruggling?1.f:0.f;
+    const float TargetPitch=-Data.NormalizedAcceleration*AccelerationPitchDegrees+FMath::Cos(Cycle*2.f)*1.5f*Data.StrideBlend
+        -Data.ExternalPullForward*PullAlpha*3.f;
+    const float TargetRoll=-Data.LeanAmount*MaximumLeanDegrees-Data.SlipAmount*SlipLeanDegrees
+        +Data.ExternalPullSide*PullAlpha*PullLeanDegrees;
+    const float TargetYaw=Data.ExternalPullSide*PullAlpha*PullYawDegrees;
     Data.BodyBob=FMath::FInterpTo(Data.BodyBob,TargetBob,Dt,PoseResponse);
     Data.BodyPitch=FMath::FInterpTo(Data.BodyPitch,TargetPitch,Dt,PoseResponse);
     Data.BodyRoll=FMath::FInterpTo(Data.BodyRoll,TargetRoll,Dt,PoseResponse);
+    Data.BodyYaw=FMath::FInterpTo(Data.BodyYaw,TargetYaw,Dt,PoseResponse);
 
     if (auto* Anim=Cast<UHorseAnimInstance>(Horse->GetMesh()->GetAnimInstance()))
     {
         Anim->ApplyHorseData(Data,TemporaryIdleAnimation,TemporaryWalkAnimation,TemporaryGallopAnimation,
-            TemporaryStopAnimation,TemporaryStruggleAnimation);
+            TemporaryStopAnimation,TemporaryStruggleAnimation,TemporaryStruggleAlternateAnimation);
     }
     if (auto* Skeletal=Horse->GetMesh(); Skeletal && Skeletal->GetSkeletalMeshAsset())
     {
         // Visual mesh only: capsule, actor heading and movement simulation remain authoritative.
         Skeletal->SetRelativeLocationAndRotation(SkeletalBaseLocation+FVector(0,0,Data.BodyBob),
-            SkeletalBaseRotation+FRotator(Data.BodyPitch,0,Data.BodyRoll));
+            SkeletalBaseRotation+FRotator(Data.BodyPitch,Data.BodyYaw,Data.BodyRoll));
     }
 
     if (auto* Mesh=Horse->GetPlaceholderRoot())
@@ -91,7 +98,7 @@ void UHorsePresentationComponent::TickComponent(float Dt,ELevelTick TickType,FAc
         if (bAnimatePlaceholder)
         {
             Mesh->SetRelativeLocationAndRotation(BaseLocation+FVector(0,0,Data.BodyBob),
-                BaseRotation+FRotator(Data.BodyPitch,0,Data.BodyRoll));
+                BaseRotation+FRotator(Data.BodyPitch,Data.BodyYaw,Data.BodyRoll));
         }
         else
         {

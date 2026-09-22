@@ -140,7 +140,7 @@ Go 条件：多数测试者愿意立即重试；骑乘、切出、投索和控�
 2. **P16.5B Rider Skeletal Integration：** 临时 Mannequin、`RiderSeat` 和第一版直立骑乘坐姿已接入，Fall/Dragged 保留独立姿态。下一轮校准缰绳手、脚蹬，并让 Lean、Brace 和 Lead 有更明确的骨骼表现。
 3. **P16.5C Lasso Animation Integration：** `LassoHand_R`、手部绳索起点、四相位骑乘摆索，以及骑乘/徒步投掷与稳绳姿态已接入。骑乘/徒步基础姿态与上半身套索 Slot 已分层，双腿不随套索状态切换；相位动作仍是离散灰盒素材。`SwingPhase` 和 Lasso 状态只驱动显示，投掷与受力结果继续由 Gameplay 决定。
 4. **P16.5D Alignment：** `ABP_Rider`、短时姿态混合、主动上下马网格过渡、绳索方向/张力驱动的扭身后仰，以及骨骼手部到马头的临时缰绳已接入；双脚跨马和摆索时脚位稳定已有回归。下一轮校准鞍位、脚蹬和左手缰绳目标，加入最低限度约束。
-5. **P16.5E Dynamics Presentation：** 已将加减速、转向和 Slip Angle 反映到骨骼马网格，并接入低速起步、急停收身和外力挣扎动作；Gameplay 根节点保持不变。下一轮细化挣扎节奏和骑手同步，再评估 P16.5 阶段退出。
+5. **P16.5E Dynamics Presentation：** 已将加减速、转向、Slip Angle 和外力侧拉方向反映到骨骼马网格，并接入低速起步、急停收身及两种受力挣扎动作；Gameplay 根节点保持不变。后续只验证真实镜头中的可读性，不再扩展动作清单。
 
 16 部件灰盒马保留为可关闭的调试回退；Fast、Strong、Nervous 暂时共用骨架。阶段退出时，骑乘、摆索、落马和牵马都应能通过角色姿态辨认，且骨骼/Socket 的实际跨帧位置经过验证。
 
