@@ -241,6 +241,29 @@ void ASteppeRiderCharacter::Tick(float Dt)
             // Ease the visual mesh into the already-safe gameplay position.
             RiderMesh->SetWorldLocation(SeatOrGround+StartOffset*Alpha*Alpha);
         }
+        if (auto* Anim=Cast<URiderAnimInstance>(RiderMesh->GetAnimInstance()))
+        {
+            Anim->ContactAlpha=FMath::FInterpTo(Anim->ContactAlpha,Horse?1.f:0.f,Dt,8.f);
+            if (Horse)
+            {
+                // The rider capsule follows RiderSeat. Keep the two stirrup targets
+                // outside the horse body, in the same moving seat frame.
+                const FVector Seat=GetActorLocation();
+                const FVector Forward=GetActorForwardVector();
+                const FVector Right=GetActorRightVector();
+                const FTransform MeshWorld=RiderMesh->GetComponentTransform();
+                // Knees bow outside the horse while the lower legs settle closer
+                // to its flanks; do not spread the stirrup targets wider than the knees.
+                Anim->LeftFootTarget=MeshWorld.InverseTransformPosition(Seat+Forward*12.f-Right*42.f-FVector(0,0,65.f));
+                Anim->RightFootTarget=MeshWorld.InverseTransformPosition(Seat+Forward*12.f+Right*42.f-FVector(0,0,65.f));
+                const FVector Hand=GetReinHandLocation(true);
+                const FVector Neck=Horse->GetMesh()->DoesSocketExist(TEXT("Neck"))
+                    ?Horse->GetMesh()->GetSocketLocation(TEXT("Neck"))
+                    :Horse->GetActorLocation()+Forward*65.f+FVector(0,0,145.f);
+                const FVector ReinPoint=Hand+(Neck-Hand).GetClampedToMaxSize(18.f);
+                Anim->LeftReinTarget=MeshWorld.InverseTransformPosition(ReinPoint);
+            }
+        }
     }
 }
 FVector ASteppeRiderCharacter::GetLassoHandLocation() const

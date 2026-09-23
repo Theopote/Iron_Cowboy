@@ -29,6 +29,13 @@ public:
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Horse") float TurnStress = 0.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Horse") float ActualAcceleration = 0.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Horse") float GroundSlope = 0.f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Horse|Terrain") float SignedGroundSlope = 0.f;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Horse|Terrain", meta=(ClampMin="1")) float FullSlopeEffectDegrees = 18.f;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Horse|Terrain", meta=(ClampMin="0",ClampMax="1")) float UphillSpeedScale = .78f;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Horse|Terrain", meta=(ClampMin="1",ClampMax="1.2")) float DownhillSpeedScale = 1.05f;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Horse|Terrain", meta=(ClampMin="0",ClampMax="1")) float DownhillBrakeScale = .78f;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Horse|Terrain", meta=(ClampMin="0",ClampMax="1")) float DownhillTurnScale = .82f;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Horse|Terrain", meta=(ClampMin="1",ClampMax="3")) float UphillStaminaScale = 1.45f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Horse|Dynamics") float ForwardSpeed = 0.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Horse|Dynamics") float LateralSpeed = 0.f;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Horse|Dynamics") float SlipAngleDegrees = 0.f;

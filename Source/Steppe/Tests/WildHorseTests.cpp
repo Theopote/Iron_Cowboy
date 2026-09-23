@@ -1090,6 +1090,18 @@ bool FRiderPresentationSocketsTest::RunTest(const FString& Parameters)
     TestFalse(TEXT("Mount visual transition reaches the seat"),Rider->IsVisualTransitionActive());
     TestNotNull(TEXT("Rider uses the blending animation instance"),
         Cast<URiderAnimInstance>(Rider->GetMesh()->GetAnimInstance()));
+    const auto* ContactAnim=Cast<URiderAnimInstance>(Rider->GetMesh()->GetAnimInstance());
+    TestTrue(TEXT("Mounted contact constraints become active"),ContactAnim && ContactAnim->ContactAlpha>.9f);
+    if (ContactAnim)
+    {
+        const FTransform MeshWorld=Rider->GetMesh()->GetComponentTransform();
+        TestTrue(TEXT("Left foot IK reaches the moving stirrup target"),
+            FVector::Dist(Rider->GetFootLocation(true),MeshWorld.TransformPosition(ContactAnim->LeftFootTarget))<25.f);
+        TestTrue(TEXT("Right foot IK reaches the moving stirrup target"),
+            FVector::Dist(Rider->GetFootLocation(false),MeshWorld.TransformPosition(ContactAnim->RightFootTarget))<25.f);
+        TestTrue(TEXT("Left rein IK follows its presentation target"),
+            FVector::Dist(Rider->GetReinHandLocation(true),MeshWorld.TransformPosition(ContactAnim->LeftReinTarget))<25.f);
+    }
     auto CurrentRiderAnimation=[Rider]() -> FString
     {
         if (const auto* Anim=Cast<URiderAnimInstance>(Rider->GetMesh()->GetAnimInstance()))
@@ -1110,6 +1122,14 @@ bool FRiderPresentationSocketsTest::RunTest(const FString& Parameters)
     const float LeftSide=FVector::DotProduct(LeftFoot-Horse->GetActorLocation(),Horse->GetActorRightVector());
     const float RightSide=FVector::DotProduct(RightFoot-Horse->GetActorLocation(),Horse->GetActorRightVector());
     TestTrue(TEXT("Mounted feet straddle the horse centerline"),LeftSide*RightSide<0.f);
+    const FVector LeftKnee=Rider->GetMesh()->GetBoneLocation(TEXT("calf_l"));
+    const FVector RightKnee=Rider->GetMesh()->GetBoneLocation(TEXT("calf_r"));
+    const float LeftKneeSide=FVector::DotProduct(LeftKnee-Horse->GetActorLocation(),Horse->GetActorRightVector());
+    const float RightKneeSide=FVector::DotProduct(RightKnee-Horse->GetActorLocation(),Horse->GetActorRightVector());
+    TestTrue(TEXT("Mounted knees bow to the correct outside of the horse"),
+        LeftKneeSide<0.f && RightKneeSide>0.f);
+    TestTrue(TEXT("Mounted lower legs remain close to the horse flanks"),
+        FMath::Abs(LeftSide)<65.f && FMath::Abs(RightSide)<65.f);
     TestTrue(TEXT("Symmetric riding legs keep both feet at similar heights"),FMath::Abs(LeftFoot.Z-RightFoot.Z)<25.f);
     TestTrue(TEXT("Mounted rider remains upright despite imported bone frame"),
         FVector::DotProduct(Rider->GetActorUpVector(),FVector::UpVector)>.98f);

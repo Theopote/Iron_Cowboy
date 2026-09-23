@@ -13,6 +13,11 @@
 #include "AnimGraphNode_SequencePlayer.h"
 #include "AnimGraphNode_Slot.h"
 #include "AnimGraphNode_LayeredBoneBlend.h"
+#include "AnimGraphNode_TwoBoneIK.h"
+#include "AnimGraphNode_LocalToComponentSpace.h"
+#include "AnimGraphNode_ComponentToLocalSpace.h"
+#include "K2Node_VariableGet.h"
+#include "Presentation/RiderAnimInstance.h"
 #include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphSchema.h"
 #include "Kismet2/KismetEditorUtilities.h"
@@ -27,6 +32,130 @@ class FSteppeModule final : public FDefaultGameModuleImpl
     {
         FDefaultGameModuleImpl::StartupModule();
 #if WITH_EDITOR
+        if (FParse::Param(FCommandLine::Get(),TEXT("SteppeBuildRiderContactGraph")))
+        {
+            UAnimBlueprint* Blueprint=LoadObject<UAnimBlueprint>(nullptr,
+                TEXT("/Game/Steppe/Presentation/ABP_Rider.ABP_Rider"));
+            if (!Blueprint) { UE_LOG(LogSteppe,Error,TEXT("Rider AnimBlueprint missing")); return; }
+            TArray<UEdGraph*> Graphs;
+            Blueprint->GetAllGraphs(Graphs);
+            UAnimationGraph* Graph=nullptr;
+            for (UEdGraph* Candidate : Graphs)
+            {
+                if (Candidate->GetName()==TEXT("AnimGraph")) { Graph=Cast<UAnimationGraph>(Candidate); break; }
+            }
+            if (!Graph) { UE_LOG(LogSteppe,Error,TEXT("Rider AnimGraph missing")); return; }
+            UAnimGraphNode_Root* Root=nullptr;
+            UAnimGraphNode_LayeredBoneBlend* Blend=nullptr;
+            int32 ExistingIK=0;
+            TArray<UAnimGraphNode_TwoBoneIK*> ExistingIKNodes;
+            for (UEdGraphNode* Node : Graph->Nodes)
+            {
+                if (auto* Candidate=Cast<UAnimGraphNode_Root>(Node)) { Root=Candidate; }
+                if (auto* Candidate=Cast<UAnimGraphNode_LayeredBoneBlend>(Node)) { Blend=Candidate; }
+                if (auto* IK=Cast<UAnimGraphNode_TwoBoneIK>(Node)) { ++ExistingIK; ExistingIKNodes.Add(IK); }
+            }
+            if (!Root || !Blend) { UE_LOG(LogSteppe,Error,TEXT("Rider layered graph incomplete")); return; }
+            if (ExistingIK>0)
+            {
+                for (UAnimGraphNode_TwoBoneIK* IK : ExistingIKNodes)
+                {
+                    if (IK->Node.IKBone.BoneName==TEXT("foot_l"))
+                    {
+                        // The mannequin mesh is yawed -90 degrees on the rider. In
+                        // component space +X is the rider's left, so the old -X
+                        // target folded this knee inward across the horse.
+                        IK->Node.JointTargetLocation=FVector(62.f,22.f,-32.f);
+                    }
+                    else if (IK->Node.IKBone.BoneName==TEXT("foot_r"))
+                    {
+                        IK->Node.JointTargetLocation=FVector(-62.f,22.f,-32.f);
+                    }
+                }
+                Graph->NotifyGraphChanged();
+                FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
+                FKismetEditorUtilities::CompileBlueprint(Blueprint);
+                Blueprint->MarkPackageDirty();
+                UE_LOG(LogSteppe,Display,TEXT("Rider contact knee targets corrected nodes=%d"),ExistingIK);
+                return;
+            }
+            auto PosePin=[](UEdGraphNode* Node,EEdGraphPinDirection Direction) -> UEdGraphPin*
+            {
+                for (UEdGraphPin* Pin : Node->Pins)
+                {
+                    if (Pin && Pin->Direction==Direction && Pin->PinType.PinCategory==TEXT("struct")
+                        && (Pin->PinName==TEXT("Pose") || Pin->PinName==TEXT("ComponentPose"))) { return Pin; }
+                }
+                for (UEdGraphPin* Pin : Node->Pins)
+                {
+                    if (Pin && Pin->Direction==Direction && Pin->PinType.PinCategory==TEXT("struct")
+                        && Pin->PinType.PinSubCategoryObject.IsValid()
+                        && Pin->PinType.PinSubCategoryObject->GetName().Contains(TEXT("PoseLink"))) { return Pin; }
+                }
+                return nullptr;
+            };
+            auto NamedPin=[](UEdGraphNode* Node,EEdGraphPinDirection Direction,FName Name) -> UEdGraphPin*
+            {
+                for (UEdGraphPin* Pin : Node->Pins)
+                {
+                    if (Pin && Pin->Direction==Direction && Pin->PinName==Name) { return Pin; }
+                }
+                return nullptr;
+            };
+            FGraphNodeCreator<UAnimGraphNode_LocalToComponentSpace> ToComponentCreator(*Graph);
+            auto* ToComponent=ToComponentCreator.CreateNode();
+            ToComponent->NodePosX=Blend->NodePosX+240; ToComponent->NodePosY=Blend->NodePosY;
+            ToComponentCreator.Finalize();
+            FGraphNodeCreator<UAnimGraphNode_ComponentToLocalSpace> ToLocalCreator(*Graph);
+            auto* ToLocal=ToLocalCreator.CreateNode();
+            ToLocal->NodePosX=Blend->NodePosX+1250; ToLocal->NodePosY=Blend->NodePosY;
+            ToLocalCreator.Finalize();
+            const UEdGraphSchema* Schema=Graph->GetSchema();
+            UEdGraphPin* Previous=PosePin(ToComponent,EGPD_Output);
+            bool bLinks=Schema->TryCreateConnection(PosePin(Blend,EGPD_Output),PosePin(ToComponent,EGPD_Input));
+            const FName Bones[3]={TEXT("foot_l"),TEXT("foot_r"),TEXT("hand_l")};
+            const FName Targets[3]={TEXT("LeftFootTarget"),TEXT("RightFootTarget"),TEXT("LeftReinTarget")};
+            for (int32 Index=0;Index<3;Index++)
+            {
+                FGraphNodeCreator<UAnimGraphNode_TwoBoneIK> IKCreator(*Graph);
+                auto* IK=IKCreator.CreateNode();
+                IK->NodePosX=Blend->NodePosX+490+Index*250;
+                IK->NodePosY=Blend->NodePosY;
+                IK->Node.IKBone.BoneName=Bones[Index];
+                IK->Node.EffectorLocationSpace=BCS_ComponentSpace;
+                IK->Node.JointTargetLocationSpace=BCS_ComponentSpace;
+                IK->Node.JointTargetLocation=Index==0?FVector(62.f,22.f,-32.f):
+                    (Index==1?FVector(-62.f,22.f,-32.f):FVector(0.f,70.f,35.f));
+                IK->Node.bAllowStretching=false;
+                IKCreator.Finalize();
+                IK->ReconstructNode();
+                bLinks&=Previous && Schema->TryCreateConnection(Previous,PosePin(IK,EGPD_Input));
+                Previous=PosePin(IK,EGPD_Output);
+                for (FName Variable : {Targets[Index],FName(TEXT("ContactAlpha"))})
+                {
+                    FGraphNodeCreator<UK2Node_VariableGet> VariableCreator(*Graph);
+                    auto* Getter=VariableCreator.CreateNode();
+                    Getter->VariableReference.SetSelfMember(Variable);
+                    Getter->NodePosX=IK->NodePosX-100;
+                    Getter->NodePosY=IK->NodePosY+(Variable==Targets[Index]?230:340);
+                    VariableCreator.Finalize();
+                    UEdGraphPin* Source=NamedPin(Getter,EGPD_Output,Variable);
+                    UEdGraphPin* Target=NamedPin(IK,EGPD_Input,Variable==Targets[Index]?FName(TEXT("EffectorLocation")):FName(TEXT("Alpha")));
+                    bLinks&=Source && Target && Schema->TryCreateConnection(Source,Target);
+                }
+            }
+            bLinks&=Previous && Schema->TryCreateConnection(Previous,PosePin(ToLocal,EGPD_Input));
+            UEdGraphPin* RootIn=PosePin(Root,EGPD_Input);
+            if (RootIn) { RootIn->BreakAllPinLinks(); }
+            bLinks&=RootIn && Schema->TryCreateConnection(PosePin(ToLocal,EGPD_Output),RootIn);
+            UE_LOG(LogSteppe,Display,TEXT("Rider contact graph links=%d"),bLinks);
+            if (!bLinks) { return; }
+            Graph->NotifyGraphChanged();
+            FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
+            FKismetEditorUtilities::CompileBlueprint(Blueprint);
+            Blueprint->MarkPackageDirty();
+            return;
+        }
         if (FParse::Param(FCommandLine::Get(),TEXT("SteppeBuildRiderLayeredGraph")))
         {
             UAnimBlueprint* Blueprint=LoadObject<UAnimBlueprint>(nullptr,

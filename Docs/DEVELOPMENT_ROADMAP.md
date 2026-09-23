@@ -2,7 +2,7 @@
 
 ## 当前起点
 
-工程基线已通过 P14.3 人工阶段门，并完成 P14.4 Core Feel、P15 套索第一轮、P16 动力学第一轮。临时骨骼马与 Idle/Walk/Gallop 动画已进入项目；当前优先完成 P16.5 马与骑手的表现集成，再制作有限草原切片与组织第二轮真人试玩。
+工程基线已通过 P14.3 人工阶段门，并完成 P14.4 Core Feel。项目负责人于 2026-09-22 正式验收 P15 与 P16 第一轮；P16.5 条件通过，仅剩 Finalization，随后进入 P16.6 Grassland Gameplay Vertical Slice。
 
 里程碑编号从 **P9** 延续现有工程历史；它不等同于早期讨论稿的阶段编号。
 
@@ -126,27 +126,31 @@ Go 条件：多数测试者愿意立即重试；骑乘、切出、投索和控�
 
 ## P15 — Physical Lasso v2
 
-**状态：P15.1 和 P15.2 已完成，等待玩家体验调参。** 绳圈具有中心轨迹、平面、方向、半径和角相位；Q 只保留 Desired Target/HUD 关注语义。P15.2 将 Head、Neck、Chest、Torso 命中体积交给野马上的 `ULassoTargetComponent`，为骨骼马留出独立调参边界。范围和限制见 `P15_PHYSICAL_LASSO_V2.md`。
+**状态：正式通过。** 绳圈具有中心轨迹、平面、方向、半径和角相位；Q 只保留 Desired Target/HUD 关注语义。P15.2 将 Head、Neck、Chest、Torso 命中体积交给野马上的 `ULassoTargetComponent`，为骨骼马留出独立调参边界。范围和限制见 `P15_PHYSICAL_LASSO_V2.md`。
 
 ## P16 — Horse Dynamics v2
 
-**状态：第一轮已完成，待表现集成后的真人手感复核。** Heading 与 Velocity 已短时分离，前向/侧向速度、Slip Angle、Grass/Hard 抓地和有界绳索外力入口均已实现并自动验证。暂不继续扩大底层动力学或地表类型。实施边界见 `P16_HORSE_DYNAMICS_V2.md`。
+**状态：第一轮正式通过；后续真人手感复核仍按计划进行。** Heading 与 Velocity 已短时分离，前向/侧向速度、Slip Angle、Grass/Hard 抓地和有界绳索外力入口均已实现并自动验证。暂不继续扩大底层动力学或地表类型。实施边界见 `P16_HORSE_DYNAMICS_V2.md`。
 
 ## P16.5 — 马与骑手表现集成
 
-**状态：临时骨骼马和基础步态已接入，马与骑手表现架构进行中。** 按以下顺序推进，现有 Gameplay 状态和碰撞保持权威：
+**状态：Completed（2026-09-23）。** P16.5A 马动画、P16.5B 骑手骨骼、P16.5C 套索动画和 P16.5E 动力学表现已通过。现有 `ABP_Horse`、`ABP_Rider`、上半身分层、主动上下马视觉过渡及低速定向挣扎足够服务 Vertical Slice，不继续增加动作或重构动画架构。
 
-1. **P16.5A Horse Animation Architecture：** `ABP_Horse` 与 `UHorseAnimInstance` 已接入：Idle 基础姿态，Walk/Gallop 通过 Slot 平滑切换，动画实例读取现有速度、步态、加速度、转向与倾斜数据。下一轮建立显式状态机及 Start/Stop/Struggle，再让侧滑和受力驱动可见姿态。
-2. **P16.5B Rider Skeletal Integration：** 临时 Mannequin、`RiderSeat` 和第一版直立骑乘坐姿已接入，Fall/Dragged 保留独立姿态。下一轮校准缰绳手、脚蹬，并让 Lean、Brace 和 Lead 有更明确的骨骼表现。
-3. **P16.5C Lasso Animation Integration：** `LassoHand_R`、手部绳索起点、四相位骑乘摆索，以及骑乘/徒步投掷与稳绳姿态已接入。骑乘/徒步基础姿态与上半身套索 Slot 已分层，双腿不随套索状态切换；相位动作仍是离散灰盒素材。`SwingPhase` 和 Lasso 状态只驱动显示，投掷与受力结果继续由 Gameplay 决定。
-4. **P16.5D Alignment：** `ABP_Rider`、短时姿态混合、主动上下马网格过渡、绳索方向/张力驱动的扭身后仰，以及骨骼手部到马头的临时缰绳已接入；双脚跨马和摆索时脚位稳定已有回归。下一轮校准鞍位、脚蹬和左手缰绳目标，加入最低限度约束。
-5. **P16.5E Dynamics Presentation：** 已将加减速、转向、Slip Angle 和外力侧拉方向反映到骨骼马网格，并接入低速起步、急停收身及两种受力挣扎动作；Gameplay 根节点保持不变。后续只验证真实镜头中的可读性，不再扩展动作清单。
+P16.5D 仅补 RiderSeat、左右脚和左手缰绳的最低限度接触约束；右手套索动作保持自由。Gameplay 的座位、运动、碰撞、套索长度与张力继续保持权威。
 
-16 部件灰盒马保留为可关闭的调试回退；Fast、Strong、Nervous 暂时共用骨架。阶段退出时，骑乘、摆索、落马和牵马都应能通过角色姿态辨认，且骨骼/Socket 的实际跨帧位置经过验证。
+Finalization 退出条件：
 
-## P16.6 — 草原 Vertical Slice
+1. 完成最低限度接触约束，避免臀部漂浮、双脚穿马和左手明显离缰。
+2. 完整走通骑马出发→追逐→选马→摆索→投索→拉扯→落马→徒步控绳→归顺→牵马→再上自己的马→骑乘牵马→营地命名的表现 Smoke。
+3. 从玩家第三人称镜头检查 RiderSeat、马背遮挡、摆索手、绳索起点、缰绳与腿部穿插。
+4. 26 项自动化测试、Editor Gameplay Smoke、最新 Win64 Shipping Build/Cook/Stage/Archive 及可执行文件启动 Smoke 均通过。
+5. 在 `DEVELOPMENT_STATUS.md` 与本路线图标记 Completed。即使灰盒动作略僵也结束 P16.5；正式美术资产、Motion Matching 和高级 Horse IK 延后。
 
-**状态：等待 P16.5 可读表现。** 在约 600–1000 米的有限区域中建立营地、开阔追逐空间、小坡、稀疏树石、浅水和硬地测试带。所有元素必须服务骑乘、追逐、切出、投索、树木绕绳与牵马返回，不扩张为开放世界。
+## P16.6 — Grassland Gameplay Vertical Slice
+
+**状态：进行中。** 已接入第一轮坡度玩法：上坡减速并增加体力消耗；下坡略增速度，同时降低制动和转向能力。 在约 600–1000 米的有限区域中，以 Camp→Open Steppe→Herd Zone→Ridge/River/Trees→Camp/Pen 的路线构建第一块可玩的草原。先做平原、缓坡、小丘、浅谷、河床、硬地的 Landscape 玩法灰盒，保留约 300 米可读视距；再加入有风与距离变化的草、稀疏树石、浅河、营地与围栏，以及 12 匹马的 Habitat Zone。上坡减速及增耗、下坡制动与转向风险、浅水减速、硬地抓地差异应进入追逐决策。暂不启用 World Partition、PCG、HLOD、Mass 或完整生态。
+
+退出条件：玩家从营地上马，找到并切出马群目标，完成追逐、投索、拉扯、捕获、牵回与命名；草、坡、树、河、硬地中至少三项实际改变玩家的路线或操作决策。只具装饰作用不算通过。
 
 ## P16.7 — 动画、音频与 VFX 收尾
 

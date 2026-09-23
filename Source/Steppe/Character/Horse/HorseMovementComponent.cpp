@@ -141,7 +141,9 @@ void UHorseMovementComponent::TickComponent(float Dt, ELevelTick TickType, FActo
     Gait=SteppeHorseMath::SelectGait(CurrentSpeed,Gait,C);
     HorseState=MovementMode==MOVE_None?EHorseMovementState::Disabled:(IsFalling()?EHorseMovementState::Falling:EHorseMovementState::Grounded);
     GroundSlope=CurrentFloor.IsWalkableFloor()?FMath::RadiansToDegrees(FMath::Acos(FMath::Clamp(CurrentFloor.HitResult.ImpactNormal.Z,-1.f,1.f))):0.f;
-    A.UpdateStamina(Dt,C.GetGait(Gait).StaminaMultiplier);
+    const float UphillAlpha=FMath::Clamp(SignedGroundSlope/FMath::Max(1.f,FullSlopeEffectDegrees),0.f,1.f);
+    const float StaminaMultiplier=C.GetGait(Gait).StaminaMultiplier;
+    A.UpdateStamina(Dt,StaminaMultiplier>0.f?StaminaMultiplier*FMath::Lerp(1.f,UphillStaminaScale,UphillAlpha):StaminaMultiplier);
     auto& Data=Horse->AnimationData;
     Data.Speed=CurrentSpeed;
     Data.NormalizedSpeed=FMath::Clamp(CurrentSpeed/FMath::Max(1.f,A.MaxSpeed),0.f,1.f);
@@ -170,12 +172,20 @@ void UHorseMovementComponent::CalcVelocity(float Dt,float Friction,bool bFluid,f
     const auto& C=*Horse->GetLocomotionConfig();
     const auto& A=*Horse->Attributes;
     const auto& Settings=C.GetGait(Gait==EHorseGait::Idle?EHorseGait::Walk:Gait);
+    const FVector Facing=UpdatedComponent->GetForwardVector().GetSafeNormal2D();
+    const FVector FloorNormal=CurrentFloor.IsWalkableFloor()?CurrentFloor.HitResult.ImpactNormal.GetSafeNormal():FVector::UpVector;
+    SignedGroundSlope=FMath::RadiansToDegrees(FMath::Atan2(-FVector::DotProduct(FloorNormal,Facing),FMath::Max(.01f,FloorNormal.Z)));
+    const float UphillAlpha=FMath::Clamp(SignedGroundSlope/FMath::Max(1.f,FullSlopeEffectDegrees),0.f,1.f);
+    const float DownhillAlpha=FMath::Clamp(-SignedGroundSlope/FMath::Max(1.f,FullSlopeEffectDegrees),0.f,1.f);
+    const float TerrainSpeedScale=FMath::Lerp(1.f,UphillSpeedScale,UphillAlpha)*FMath::Lerp(1.f,DownhillSpeedScale,DownhillAlpha);
+    const float TerrainBrakeScale=FMath::Lerp(1.f,DownhillBrakeScale,DownhillAlpha);
     const float Accel=FMath::Max(1.f,FMath::Min(A.Acceleration,Settings.Acceleration));
     const float NaturalBrake=FMath::Max(1.f,FMath::Min(A.Deceleration,Settings.Deceleration));
-    const float Brake=FMath::Lerp(NaturalBrake,FMath::Max(NaturalBrake,C.EmergencyBrakeRate),HorseIntent.BrakeStrength);
-    const float Speed=SteppeHorseMath::ApproachSpeed(Velocity.Size2D(),DesiredSpeed,Accel,Brake,Dt);
+    const float Brake=FMath::Lerp(NaturalBrake,FMath::Max(NaturalBrake,C.EmergencyBrakeRate),HorseIntent.BrakeStrength)*TerrainBrakeScale;
+    const float Speed=SteppeHorseMath::ApproachSpeed(Velocity.Size2D(),DesiredSpeed*TerrainSpeedScale,Accel,Brake,Dt);
     const float Normalized=FMath::Clamp(Speed/FMath::Max(1.f,A.MaxSpeed),0.f,1.f);
-    EffectiveTurnRate=FMath::Max(0.f,A.BaseTurnRate*A.Agility*C.SpeedTurnCurve.GetRichCurveConst()->Eval(Normalized)*Settings.TurnMultiplier);
+    EffectiveTurnRate=FMath::Max(0.f,A.BaseTurnRate*A.Agility*C.SpeedTurnCurve.GetRichCurveConst()->Eval(Normalized)*Settings.TurnMultiplier
+        *FMath::Lerp(1.f,DownhillTurnScale,DownhillAlpha));
     CurrentHeading=UpdatedComponent->GetComponentRotation().Yaw;
     DesiredHeading=FRotator::NormalizeAxis(CurrentHeading+HorseIntent.DesiredTurn*C.HeadingLookAhead);
     const float Delta=FMath::Clamp(FMath::FindDeltaAngleDegrees(CurrentHeading,DesiredHeading),-EffectiveTurnRate*Dt*FMath::Abs(HorseIntent.DesiredTurn),EffectiveTurnRate*Dt*FMath::Abs(HorseIntent.DesiredTurn));

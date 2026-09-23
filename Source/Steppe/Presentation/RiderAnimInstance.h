@@ -20,6 +20,12 @@ public:
 
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Rider|Animation") float PosePlayRate = 1.f;
 
+    // Mesh-component-space targets. Only the mounted pose uses these presentation constraints.
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Rider|Contact") float ContactAlpha = 0.f;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Rider|Contact") FVector LeftFootTarget = FVector::ZeroVector;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Rider|Contact") FVector RightFootTarget = FVector::ZeroVector;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Rider|Contact") FVector LeftReinTarget = FVector::ZeroVector;
+
 private:
     UPROPERTY(Transient) TObjectPtr<UAnimSequence> ActiveBaseSequence;
     UPROPERTY(Transient) TObjectPtr<UAnimMontage> ActiveBaseMontage;
