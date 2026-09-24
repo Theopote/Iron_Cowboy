@@ -23,6 +23,7 @@ param(
     [switch]$BalanceSmoke,
     [switch]$FeedbackSmoke,
     [switch]$PresentationSmoke,
+    [switch]$GrasslandSmoke,
     [switch]$MetricsSmoke,
     [switch]$MetricsFailureSmoke,
     [switch]$HorseModelSmoke,
@@ -83,6 +84,10 @@ if ($FeedbackSmoke) {
 if ($PresentationSmoke) {
     if (!$Smoke -or !$Game) { throw 'PresentationSmoke requires Game and Smoke.' }
     $editorArgs += '-SteppePresentationSmoke'
+}
+if ($GrasslandSmoke) {
+    if (!$Smoke -or !$Game) { throw 'GrasslandSmoke requires Game and Smoke.' }
+    $editorArgs += '-SteppeGrasslandSmoke'
 }
 if ($MetricsSmoke) {
     if (!$Smoke -or !$Game) { throw 'MetricsSmoke requires Game and Smoke.' }
@@ -273,6 +278,20 @@ if ($PresentationSmoke) {
         throw "Horse presentation smoke did not confirm skeletal gallop motion on the mounted Blueprint horse; see $logPath"
     }
     Write-Output 'Presentation smoke: mounted gallop rotated the skeletal front leg and rendered rider/horse feedback.'
+}
+if ($GrasslandSmoke) {
+    $grasslandLog = Get-Content $logPath -Raw
+    $grasslandPath = Join-Path $PSScriptRoot '..\Saved\Screenshots\SteppeP166Grassland.png'
+    if (!(Test-Path $grasslandPath) -or (Get-Item $grasslandPath).LastWriteTime -lt $runStarted) { throw "P16.6 grassland screenshot is missing or stale; see $logPath" }
+    if ($grasslandLog -notmatch 'STEPPE_P16_6_GRASSLAND: Landscape=1 RouteActors=2[0-9] Trees=6 Rocks=5 Grass=[1-9][0-9]{3,} Herd=12 HabitatSpread=[1-9][0-9]{2,}') {
+        throw "P16.6 grassland smoke did not find the complete gameplay space; see $logPath"
+    }
+    if ($grasslandLog -notmatch 'STEPPE_P16_6_WATER: Enter=0\.62 Leave=1\.00') { throw "P16.6 shallow-water modifier did not enter and leave cleanly; see $logPath" }
+    $terrain = [regex]::Match($grasslandLog,'STEPPE_P16_6_TERRAIN: CampZ=(-?[0-9]+) RidgeZ=(-?[0-9]+) RiverZ=(-?[0-9]+) HardSurface=([0-9]+)')
+    if (!$terrain.Success -or [int]$terrain.Groups[2].Value -lt ([int]$terrain.Groups[1].Value + 250) -or [int]$terrain.Groups[3].Value -gt ([int]$terrain.Groups[1].Value - 70) -or [int]$terrain.Groups[4].Value -ne 2) {
+        throw "P16.6 ridge, riverbed or hard-ground route did not produce the expected gameplay terrain; see $logPath"
+    }
+    Write-Output 'P16.6 grassland smoke: Landscape route, habitat, obstacles, camp and shallow-water gameplay validated.'
 }
 if ($MetricsSmoke -or $MetricsFailureSmoke) {
     $metricsLog = Get-Content $logPath -Raw

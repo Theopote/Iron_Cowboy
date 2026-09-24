@@ -55,9 +55,13 @@ void ASteppeHerdManager::EnsureMembersSpawned()
         {-2.1f,-1.25f}, {-2.1f,1.25f}, {2.2f,0}
     };
     const int32 Count = FMath::Clamp(HerdSize, 1, UE_ARRAY_COUNT(Pattern));
+    FRandomStream HabitatRandom(HerdSeed);
     for (int32 Index=0; Index<Count; ++Index)
     {
-        const FVector LocalOffset(Pattern[Index].X*FormationSpacing,Pattern[Index].Y*FormationSpacing,0.f);
+        const FVector Formation(Pattern[Index].X*FormationSpacing,Pattern[Index].Y*FormationSpacing,0.f);
+        const FVector HabitatJitter(HabitatRandom.FRandRange(-HabitatExtents.X,HabitatExtents.X)*.32f,
+            HabitatRandom.FRandRange(-HabitatExtents.Y,HabitatExtents.Y)*.32f,0.f);
+        const FVector LocalOffset=Formation+HabitatJitter;
         const FTransform SpawnTransform(GetActorRotation(),GetActorLocation()+GetActorRotation().RotateVector(LocalOffset));
         auto* Horse=GetWorld()->SpawnActorDeferred<ASteppeWildHorseCharacter>(HorseClass,SpawnTransform,this,nullptr,
             ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);

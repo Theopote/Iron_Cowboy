@@ -14,7 +14,7 @@ class UNiagaraSystem;
 UENUM(BlueprintType)
 enum class ESteppeGroundSurface : uint8
 {
-    Grass, Hard
+    Grass, Hard, Water
 };
 
 UENUM(BlueprintType)
@@ -30,6 +30,7 @@ struct STEPPE_API FSteppeFeedbackAssets
     GENERATED_BODY()
     UPROPERTY(EditDefaultsOnly,BlueprintReadOnly) TObjectPtr<USoundBase> GrassHoof;
     UPROPERTY(EditDefaultsOnly,BlueprintReadOnly) TObjectPtr<USoundBase> HardHoof;
+    UPROPERTY(EditDefaultsOnly,BlueprintReadOnly) TObjectPtr<USoundBase> WaterHoof;
     UPROPERTY(EditDefaultsOnly,BlueprintReadOnly) TObjectPtr<USoundBase> Breath;
     UPROPERTY(EditDefaultsOnly,BlueprintReadOnly) TObjectPtr<USoundBase> LassoSwing;
     UPROPERTY(EditDefaultsOnly,BlueprintReadOnly) TObjectPtr<USoundBase> LassoThrow;
@@ -44,6 +45,7 @@ struct STEPPE_API FSteppeFeedbackAssets
     UPROPERTY(EditDefaultsOnly,BlueprintReadOnly) TObjectPtr<USoundBase> RiderDragged;
     UPROPERTY(EditDefaultsOnly,BlueprintReadOnly) TObjectPtr<UNiagaraSystem> GrassHoofDust;
     UPROPERTY(EditDefaultsOnly,BlueprintReadOnly) TObjectPtr<UNiagaraSystem> HardHoofDust;
+    UPROPERTY(EditDefaultsOnly,BlueprintReadOnly) TObjectPtr<UNiagaraSystem> WaterHoofSplash;
 };
 
 UCLASS(Transient)

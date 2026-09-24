@@ -39,6 +39,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Herd", meta=(ClampMin="0.1")) float AlarmHoldSeconds = 1.5f;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Herd", meta=(ClampMin="0", ClampMax="1")) float AlarmStrength = .85f;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Herd") int32 HerdSeed = 8347;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Habitat", meta=(ClampMin="0")) FVector2D HabitatExtents = FVector2D::ZeroVector;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Isolation", meta=(ClampMin="100")) float FocusSelectionDistance = 3500.f;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Isolation", meta=(ClampMin="100")) float FocusLostDistance = 4200.f;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Isolation", meta=(ClampMin="-1", ClampMax="1")) float FocusSelectionMinDot = .4f;

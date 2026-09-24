@@ -106,7 +106,7 @@ void USteppeFeedbackComponent::UpdateMovementSignals(float Dt)
         {
             HoofbeatRemaining=Interval;
             HoofbeatPulse=1.f;
-            DustPulse=FMath::Clamp((TargetSpeed-.15f)/.85f,0.f,1.f)*(GroundSurface==ESteppeGroundSurface::Grass?1.f:.3f);
+            DustPulse=GroundSurface==ESteppeGroundSurface::Water?0.f:FMath::Clamp((TargetSpeed-.15f)/.85f,0.f,1.f)*(GroundSurface==ESteppeGroundSurface::Grass?1.f:.3f);
             EmitEvent(ESteppeFeedbackEvent::Hoofbeat);
             SpawnConfiguredDust();
         }
@@ -126,6 +126,8 @@ void USteppeFeedbackComponent::DetectGroundSurface()
     const auto* Horse=Rider && Rider->Riding?Rider->Riding->GetHorse():nullptr;
     UWorld* World=GetWorld();
     if (!Horse || !World) { GroundSurface=ESteppeGroundSurface::Grass; return; }
+    if (const auto* Movement=Cast<UHorseMovementComponent>(Horse->GetCharacterMovement()); Movement && Movement->SurfaceMovementMultiplier<.99f)
+    { GroundSurface=ESteppeGroundSurface::Water; return; }
     FHitResult Hit;
     FCollisionQueryParams Params(SCENE_QUERY_STAT(SteppeFeedbackSurface),false,Horse);
     Params.bReturnPhysicalMaterial=true;
@@ -196,7 +198,7 @@ USoundBase* USteppeFeedbackComponent::ResolveConfiguredSound(ESteppeFeedbackEven
 {
     switch (Event)
     {
-    case ESteppeFeedbackEvent::Hoofbeat: return GroundSurface==ESteppeGroundSurface::Hard?Assets.HardHoof:Assets.GrassHoof;
+    case ESteppeFeedbackEvent::Hoofbeat: return GroundSurface==ESteppeGroundSurface::Water?Assets.WaterHoof:(GroundSurface==ESteppeGroundSurface::Hard?Assets.HardHoof:Assets.GrassHoof);
     case ESteppeFeedbackEvent::HorseBreath: return Assets.Breath;
     case ESteppeFeedbackEvent::LassoSwing: return Assets.LassoSwing;
     case ESteppeFeedbackEvent::LassoThrow: return Assets.LassoThrow;
@@ -217,7 +219,7 @@ void USteppeFeedbackComponent::SpawnConfiguredDust()
 {
     const auto* Rider=Cast<ASteppeRiderCharacter>(GetOwner());
     const auto* Horse=Rider && Rider->Riding?Rider->Riding->GetHorse():nullptr;
-    UNiagaraSystem* System=GroundSurface==ESteppeGroundSurface::Hard?Assets.HardHoofDust.Get():Assets.GrassHoofDust.Get();
+    UNiagaraSystem* System=GroundSurface==ESteppeGroundSurface::Water?Assets.WaterHoofSplash.Get():(GroundSurface==ESteppeGroundSurface::Hard?Assets.HardHoofDust.Get():Assets.GrassHoofDust.Get());
     if (!Horse || !System) { return; }
     const FVector Location=Horse->GetActorLocation()-Horse->GetActorForwardVector()*140.f+FVector(0,0,-75.f);
     UNiagaraFunctionLibrary::SpawnSystemAtLocation(this,System,Location,Horse->GetActorRotation());
@@ -237,6 +239,8 @@ void USteppeFeedbackComponent::PlayEventAudio(ESteppeFeedbackEvent Event)
     switch (Event)
     {
     case ESteppeFeedbackEvent::Hoofbeat:
+        if (GroundSurface==ESteppeGroundSurface::Water)
+        { Frequency=105.f; Seconds=.09f; Noise=.8f; Volume*=.8f; break; }
         Frequency=GroundSurface==ESteppeGroundSurface::Hard?135.f:85.f;
         Seconds=GroundSurface==ESteppeGroundSurface::Hard?.045f:.065f;
         Noise=GroundSurface==ESteppeGroundSurface::Hard?.18f:.5f;

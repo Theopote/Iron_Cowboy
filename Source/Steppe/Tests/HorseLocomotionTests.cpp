@@ -20,6 +20,21 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/WorldSettings.h"
+#include "World/SteppeTerrainZone.h"
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSteppeTerrainZoneTest,"Steppe.P16_6.ShallowWaterMovement",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FSteppeTerrainZoneTest::RunTest(const FString& Parameters)
+{
+    auto* Horse=NewObject<ASteppeHorseCharacter>();
+    auto* Zone=NewObject<ASteppeTerrainZone>();
+    auto* Movement=CastChecked<UHorseMovementComponent>(Horse->GetCharacterMovement());
+    Zone->MovementScale=.62f;
+    Zone->Enter(nullptr,Horse,nullptr,0,false,FHitResult());
+    TestEqual(TEXT("Shallow water slows the horse"),Movement->SurfaceMovementMultiplier,.62f);
+    Zone->Leave(nullptr,Horse,nullptr,0);
+    TestEqual(TEXT("Leaving water restores normal speed"),Movement->SurfaceMovementMultiplier,1.f);
+    return true;
+}
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSteppeMathTest,"Steppe.P1.MathAndStamina",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FSteppeMathTest::RunTest(const FString& Parameters)
