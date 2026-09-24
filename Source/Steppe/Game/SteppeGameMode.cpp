@@ -128,6 +128,7 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
         const bool bFeedbackSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeFeedbackSmoke"));
         const bool bPresentationSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppePresentationSmoke"));
         const bool bGrasslandSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeGrasslandSmoke"));
+        const bool bGrasslandTraversalSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeGrasslandTraversalSmoke"));
         const bool bMetricsSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeMetricsSmoke"));
         const bool bMetricsFailureSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeMetricsFailureSmoke"));
         const bool bHorseModelSmoke=FParse::Param(FCommandLine::Get(),TEXT("SteppeHorseModelSmoke"));
@@ -148,7 +149,35 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
                 { CastChecked<ASteppePlayerController>(NewPlayer)->SteppeRestartTrial(); }),3.f,false);
             }
         }
-        FTimerHandle StartHandle,PresentationCameraHandle,PresentationShotHandle,GrasslandCameraHandle,GrasslandWaterHandle,GrasslandLogHandle,HorseModelSetupHandle,FocusHandle,LassoSetupHandle,LassoAimHandle,LassoThrowHandle,LassoSwingShotHandle,LassoHitShotHandle,BalanceLoadHandle,BalanceShotHandle,BalanceLogHandle,BalanceReleaseHandle,BalanceRecoveryLogHandle,FeedbackReleaseHandle,FeedbackDriveHandle,FeedbackShotHandle,FeedbackHardSurfaceHandle,FeedbackHardShotHandle,BraceHandle,CaptureHandle,DismountHandle,ApproachHandle,ContactHandle,LeadHandle,LeadFinishHandle,LeadShotHandle,CardShotHandle,NameHandle,ArchetypeSetupHandle,ArchetypeShotHandle,GuidanceShotHandle,PostCaptureShotHandle,ShotHandle,ExitHandle;
+        FTimerHandle StartHandle,PresentationCameraHandle,PresentationShotHandle,GrasslandCameraHandle,GrasslandWaterHandle,GrasslandLogHandle,TraversalProbeHandle,TraversalLogHandle,HorseModelSetupHandle,FocusHandle,LassoSetupHandle,LassoAimHandle,LassoThrowHandle,LassoSwingShotHandle,LassoHitShotHandle,BalanceLoadHandle,BalanceShotHandle,BalanceLogHandle,BalanceReleaseHandle,BalanceRecoveryLogHandle,FeedbackReleaseHandle,FeedbackDriveHandle,FeedbackShotHandle,FeedbackHardSurfaceHandle,FeedbackHardShotHandle,BraceHandle,CaptureHandle,DismountHandle,ApproachHandle,ContactHandle,LeadHandle,LeadFinishHandle,LeadShotHandle,CardShotHandle,NameHandle,ArchetypeSetupHandle,ArchetypeShotHandle,GuidanceShotHandle,PostCaptureShotHandle,ShotHandle,ExitHandle;
+        if (bGrasslandTraversalSmoke && PlaygroundHorse)
+        {
+            PlaygroundHorse->SetActorRotation(FRotator(0,90,0));
+            NewPlayer->SetControlRotation(FRotator(-8,90,0));
+            const TSharedRef<float> Northernmost=MakeShared<float>(PlaygroundHorse->GetActorLocation().Y);
+            const TSharedRef<bool> WaterObserved=MakeShared<bool>(false);
+            GetWorldTimerManager().SetTimer(StartHandle,FTimerDelegate::CreateWeakLambda(Rider,[Rider]()
+            { FRidingIntent Intent; Intent.Forward=1.f; Intent.bSprint=true; Rider->Riding->SetIntent(Intent); }),.5f,false);
+            GetWorldTimerManager().SetTimer(TraversalProbeHandle,FTimerDelegate::CreateWeakLambda(this,[this,Northernmost,WaterObserved]()
+            {
+                if (!PlaygroundHorse) { return; }
+                *Northernmost=FMath::Max(*Northernmost,PlaygroundHorse->GetActorLocation().Y);
+                if (const auto* Movement=Cast<UHorseMovementComponent>(PlaygroundHorse->GetCharacterMovement()))
+                { *WaterObserved|=Movement->SurfaceMovementMultiplier<.9f; }
+            }),.25f,true);
+            GetWorldTimerManager().SetTimer(TraversalLogHandle,FTimerDelegate::CreateWeakLambda(this,[this,Rider,Northernmost,WaterObserved]()
+            {
+                const auto* Movement=PlaygroundHorse?Cast<UHorseMovementComponent>(PlaygroundHorse->GetCharacterMovement()):nullptr;
+                UE_LOG(LogSteppe,Display,TEXT("STEPPE_P16_6_TRAVERSAL: Distance=%.0f ReachedHerd=%d WaterObserved=%d Mounted=%d"),
+                    *Northernmost+31000.f,*Northernmost>10000.f,*WaterObserved,Rider->Riding->IsMounted());
+                UE_LOG(LogSteppe,Display,TEXT("STEPPE_P16_6_TRAVERSAL_STATE: Location=%s Yaw=%.0f Speed=%.0f Desired=%.0f Brake=%.2f Avoid=%d Obstacle=%.0f Stamina=%.0f Slope=%.1f Mode=%d"),
+                    PlaygroundHorse?*PlaygroundHorse->GetActorLocation().ToCompactString():TEXT("Missing"),PlaygroundHorse?PlaygroundHorse->GetActorRotation().Yaw:0.f,
+                    Movement?Movement->CurrentSpeed:0.f,Movement?Movement->DesiredSpeed:0.f,Movement?Movement->HorseIntent.BrakeStrength:0.f,
+                    Movement && Movement->bRiderAvoidingObstacle,Movement?Movement->RiderObstacleDistance:0.f,
+                    PlaygroundHorse && PlaygroundHorse->Attributes?PlaygroundHorse->Attributes->CurrentStamina:0.f,
+                    Movement?Movement->GroundSlope:0.f,Movement?static_cast<int32>(Movement->MovementMode):0);
+            }),58.f,false);
+        }
         if (bGrasslandSmoke)
         {
             GetWorldTimerManager().SetTimer(GrasslandCameraHandle,FTimerDelegate::CreateWeakLambda(this,[this,NewPlayer]()
@@ -467,7 +496,7 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
             GetWorldTimerManager().SetTimer(PresentationShotHandle,FTimerDelegate::CreateWeakLambda(this,[]()
             { FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeP13Presentation.png"),true,false); }),4.5f,false);
         }
-        else if (!bHerdIdleSmoke && !bLassoSmoke && !bGrasslandSmoke)
+        else if (!bHerdIdleSmoke && !bLassoSmoke && !bGrasslandSmoke && !bGrasslandTraversalSmoke)
         {
             GetWorldTimerManager().SetTimer(StartHandle,FTimerDelegate::CreateWeakLambda(Rider,[Rider]()
             {
@@ -606,7 +635,7 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
                 FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeP14HorseModel.png"),true,false);
             }
             if (!bMetricsSmoke && !bHorseModelSmoke && !bGrasslandSmoke) { FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeSmoke.png"),true,false); }
-        }),bGrasslandSmoke?2.5f:(bHorseModelSmoke?1.5f:(bArchetypeSmoke?1.5f:(bHerdIdleSmoke?3.5f:(bVerticalFailureSmoke?4.f:(bFullLoopSequence?14.5f:(bPostCaptureSequence?10.f:7.f)))))),false);
-        GetWorldTimerManager().SetTimer(ExitHandle,FTimerDelegate::CreateWeakLambda(NewPlayer,[NewPlayer]() { NewPlayer->ConsoleCommand(TEXT("quit")); }),bGrasslandSmoke?4.f:(bHorseModelSmoke?3.f:(bArchetypeSmoke?3.f:(bHerdIdleSmoke?5.5f:(bVerticalFailureSmoke?6.f:(bFullLoopSequence?16.f:(bPostCaptureSequence?12.f:9.f)))))),false);
+        }),bGrasslandTraversalSmoke?58.5f:(bGrasslandSmoke?2.5f:(bHorseModelSmoke?1.5f:(bArchetypeSmoke?1.5f:(bHerdIdleSmoke?3.5f:(bVerticalFailureSmoke?4.f:(bFullLoopSequence?14.5f:(bPostCaptureSequence?10.f:7.f))))))),false);
+        GetWorldTimerManager().SetTimer(ExitHandle,FTimerDelegate::CreateWeakLambda(NewPlayer,[NewPlayer]() { NewPlayer->ConsoleCommand(TEXT("quit")); }),bGrasslandTraversalSmoke?60.f:(bGrasslandSmoke?4.f:(bHorseModelSmoke?3.f:(bArchetypeSmoke?3.f:(bHerdIdleSmoke?5.5f:(bVerticalFailureSmoke?6.f:(bFullLoopSequence?16.f:(bPostCaptureSequence?12.f:9.f))))))),false);
     }
 }

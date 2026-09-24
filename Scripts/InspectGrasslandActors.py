@@ -6,4 +6,7 @@ for a in actors.get_all_level_actors():
  print(a.get_actor_label(), a.get_class().get_name(), a.get_actor_location())
  if isinstance(a, unreal.SteppeGrassField):
   print('STEPPE_GRASS_INSTANCES', a.get_component_by_class(unreal.HierarchicalInstancedStaticMeshComponent).get_instance_count())
+ if a.get_actor_label() == 'P16.6_ShallowRiver':
+  c=a.get_component_by_class(unreal.StaticMeshComponent)
+  print('STEPPE_RIVER_COLLISION',c.get_collision_enabled(),c.get_collision_response_to_channel(unreal.CollisionChannel.ECC_PAWN))
 unreal.SystemLibrary.quit_editor()

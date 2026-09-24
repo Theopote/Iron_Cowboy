@@ -72,6 +72,7 @@ def block(label, location, scale, mat, mesh=cube, collision=True, yaw=0):
     c.set_static_mesh(mesh)
     c.set_material(0, mat)
     if not collision:
+        c.set_collision_profile_name('NoCollision')
         c.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
     return a
 

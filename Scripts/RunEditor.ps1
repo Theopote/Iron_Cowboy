@@ -24,6 +24,7 @@ param(
     [switch]$FeedbackSmoke,
     [switch]$PresentationSmoke,
     [switch]$GrasslandSmoke,
+    [switch]$GrasslandTraversalSmoke,
     [switch]$MetricsSmoke,
     [switch]$MetricsFailureSmoke,
     [switch]$HorseModelSmoke,
@@ -88,6 +89,10 @@ if ($PresentationSmoke) {
 if ($GrasslandSmoke) {
     if (!$Smoke -or !$Game) { throw 'GrasslandSmoke requires Game and Smoke.' }
     $editorArgs += '-SteppeGrasslandSmoke'
+}
+if ($GrasslandTraversalSmoke) {
+    if (!$Smoke -or !$Game) { throw 'GrasslandTraversalSmoke requires Game and Smoke.' }
+    $editorArgs += '-SteppeGrasslandTraversalSmoke'
 }
 if ($MetricsSmoke) {
     if (!$Smoke -or !$Game) { throw 'MetricsSmoke requires Game and Smoke.' }
@@ -292,6 +297,14 @@ if ($GrasslandSmoke) {
         throw "P16.6 ridge, riverbed or hard-ground route did not produce the expected gameplay terrain; see $logPath"
     }
     Write-Output 'P16.6 grassland smoke: Landscape route, habitat, obstacles, camp and shallow-water gameplay validated.'
+}
+if ($GrasslandTraversalSmoke) {
+    $traversalLog = Get-Content $logPath -Raw
+    $traversal = [regex]::Match($traversalLog,'STEPPE_P16_6_TRAVERSAL: Distance=([0-9]+) ReachedHerd=([01]) WaterObserved=([01]) Mounted=([01])')
+    if (!$traversal.Success -or [int]$traversal.Groups[1].Value -lt 40000 -or $traversal.Groups[2].Value -ne '1' -or $traversal.Groups[3].Value -ne '1' -or $traversal.Groups[4].Value -ne '1') {
+        throw "P16.6 camp-to-herd riding traversal failed; see $logPath"
+    }
+    Write-Output 'P16.6 traversal smoke: mounted rider crossed the shallow river and reached the herd habitat.'
 }
 if ($MetricsSmoke -or $MetricsFailureSmoke) {
     $metricsLog = Get-Content $logPath -Raw
