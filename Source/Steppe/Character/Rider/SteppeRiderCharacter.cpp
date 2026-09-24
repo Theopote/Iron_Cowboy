@@ -46,8 +46,8 @@ ASteppeRiderCharacter::ASteppeRiderCharacter()
     Camera=CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
     Camera->SetupAttachment(CameraBoom,USpringArmComponent::SocketName); Camera->bUsePawnControlRotation=false;
     RidingCamera=CreateDefaultSubobject<URidingCameraComponent>(TEXT("RidingCamera"));
-    bUseControllerRotationYaw=false;
-    GetCharacterMovement()->bOrientRotationToMovement=true; GetCharacterMovement()->MaxWalkSpeed=450;
+    bUseControllerRotationYaw=true;
+    GetCharacterMovement()->bOrientRotationToMovement=false; GetCharacterMovement()->MaxWalkSpeed=300;
     PlaceholderRider=CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PlaceholderRider")); PlaceholderRider->SetupAttachment(GetRootComponent());
     PlaceholderRider->SetCollisionEnabled(ECollisionEnabled::NoCollision); PlaceholderRider->SetRelativeScale3D(FVector(.4f,.4f,1.2f));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Shape(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
@@ -72,6 +72,10 @@ ASteppeRiderCharacter::ASteppeRiderCharacter()
     static ConstructorHelpers::FObjectFinder<UAnimSequence> MountedBrace(TEXT("/Game/Steppe/Presentation/Rider/RiderMountedBrace_Pose.RiderMountedBrace_Pose"));
     static ConstructorHelpers::FObjectFinder<UAnimSequence> OnFootThrow(TEXT("/Game/Steppe/Presentation/Rider/RiderOnFootThrow_Pose.RiderOnFootThrow_Pose"));
     static ConstructorHelpers::FObjectFinder<UAnimSequence> OnFootBrace(TEXT("/Game/Steppe/Presentation/Rider/RiderOnFootBrace_Pose.RiderOnFootBrace_Pose"));
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> OnFootThrowWalk(TEXT("/Game/Steppe/Presentation/Rider/RiderOnFootThrow_Walk.RiderOnFootThrow_Walk"));
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> OnFootThrowRun(TEXT("/Game/Steppe/Presentation/Rider/RiderOnFootThrow_Run.RiderOnFootThrow_Run"));
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> OnFootBraceWalk(TEXT("/Game/Steppe/Presentation/Rider/RiderOnFootBrace_Walk.RiderOnFootBrace_Walk"));
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> OnFootBraceRun(TEXT("/Game/Steppe/Presentation/Rider/RiderOnFootBrace_Run.RiderOnFootBrace_Run"));
     TemporaryIdleAnimation=Idle.Object;
     TemporaryWalkAnimation=Walk.Object;
     TemporaryRunAnimation=Run.Object;
@@ -82,6 +86,10 @@ ASteppeRiderCharacter::ASteppeRiderCharacter()
     TemporaryMountedBraceAnimation=MountedBrace.Object;
     TemporaryOnFootThrowAnimation=OnFootThrow.Object;
     TemporaryOnFootBraceAnimation=OnFootBrace.Object;
+    TemporaryOnFootThrowWalkAnimation=OnFootThrowWalk.Object;
+    TemporaryOnFootThrowRunAnimation=OnFootThrowRun.Object;
+    TemporaryOnFootBraceWalkAnimation=OnFootBraceWalk.Object;
+    TemporaryOnFootBraceRunAnimation=OnFootBraceRun.Object;
     if (TemporaryRider.Succeeded())
     {
         GetMesh()->SetSkeletalMeshAsset(TemporaryRider.Object);
@@ -92,7 +100,7 @@ ASteppeRiderCharacter::ASteppeRiderCharacter()
         GetMesh()->VisibilityBasedAnimTickOption=EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
         static ConstructorHelpers::FClassFinder<URiderAnimInstance> RiderAnimBP(
             TEXT("/Game/Steppe/Presentation/ABP_Rider"));
-        if (RiderAnimBP.Succeeded()) { GetMesh()->SetAnimInstanceClass(RiderAnimBP.Class); }
+        if (RiderAnimBP.Succeeded()) { RiderAnimClass=RiderAnimBP.Class; GetMesh()->SetAnimInstanceClass(RiderAnimClass); }
         PlaceholderRider->SetVisibility(false);
     }
 }
@@ -167,6 +175,10 @@ void ASteppeRiderCharacter::Tick(float Dt)
     }
     if (auto* RiderMesh=GetMesh(); RiderMesh && RiderMesh->GetSkeletalMeshAsset())
     {
+        if (Horse && RiderAnimClass && !Cast<URiderAnimInstance>(RiderMesh->GetAnimInstance()))
+        {
+            RiderMesh->SetAnimInstanceClass(RiderAnimClass);
+        }
         UAnimSequence* Desired=TemporaryIdleAnimation;
         float PlayRate=1.f;
         if (PresentationData.bFalling || PresentationData.bDragged)
@@ -185,40 +197,45 @@ void ASteppeRiderCharacter::Tick(float Dt)
             else if (PresentationData.bRopeAttached && PresentationData.bBracing) { Desired=TemporaryMountedBraceAnimation; }
             else { Desired=TemporaryMountedAnimation; }
         }
-        else if (PresentationData.bLassoThrown) { Desired=TemporaryOnFootThrowAnimation; }
-        else if (PresentationData.bRopeAttached && PresentationData.bBracing) { Desired=TemporaryOnFootBraceAnimation; }
-        else if (PresentationData.Speed>300.f)
+        else if (PresentationData.bLassoThrown)
+        {
+            Desired=PresentationData.Speed>400.f?TemporaryOnFootThrowRunAnimation:
+                PresentationData.Speed>20.f?TemporaryOnFootThrowWalkAnimation:TemporaryOnFootThrowAnimation;
+        }
+        else if (PresentationData.bRopeAttached && PresentationData.bBracing)
+        {
+            Desired=PresentationData.Speed>400.f?TemporaryOnFootBraceRunAnimation:
+                PresentationData.Speed>20.f?TemporaryOnFootBraceWalkAnimation:TemporaryOnFootBraceAnimation;
+        }
+        else if (PresentationData.Speed>400.f)
         {
             Desired=TemporaryRunAnimation;
-            PlayRate=FMath::Clamp(PresentationData.Speed/450.f,.7f,1.3f);
+            PlayRate=FMath::Clamp(PresentationData.Speed/650.f,.8f,1.3f);
         }
         else if (PresentationData.Speed>20.f)
         {
             Desired=TemporaryWalkAnimation;
-            PlayRate=FMath::Clamp(PresentationData.Speed/220.f,.65f,1.3f);
+            PlayRate=FMath::Clamp(PresentationData.Speed/260.f,.75f,1.4f);
         }
-        if (auto* Anim=Cast<URiderAnimInstance>(RiderMesh->GetAnimInstance()))
+        if (PresentationData.bMounted)
         {
-            UAnimSequence* Base=Desired;
-            UAnimSequence* UpperBody=nullptr;
-            if (!PresentationData.bFalling && !PresentationData.bDragged)
+            if (auto* Anim=Cast<URiderAnimInstance>(RiderMesh->GetAnimInstance()))
             {
-                if (PresentationData.bMounted)
-                {
-                    Base=TemporaryMountedAnimation;
-                    if (Desired!=Base) { UpperBody=Desired; }
-                }
-                else if (Desired==TemporaryOnFootThrowAnimation || Desired==TemporaryOnFootBraceAnimation)
+                UAnimSequence* Base=TemporaryMountedAnimation;
+                UAnimSequence* UpperBody=nullptr;
+                if (!PresentationData.bFalling && !PresentationData.bDragged && Desired!=Base)
                 {
                     UpperBody=Desired;
-                    Base=PresentationData.Speed>300.f?TemporaryRunAnimation:
-                        PresentationData.Speed>20.f?TemporaryWalkAnimation:TemporaryIdleAnimation;
                 }
+                Anim->ApplyRiderPose(PresentationData.bFalling || PresentationData.bDragged?Desired:Base,UpperBody,PlayRate);
             }
-            Anim->ApplyRiderPose(Base,UpperBody,PlayRate);
         }
         else if (Desired)
         {
+            if (RiderMesh->GetAnimationMode()!=EAnimationMode::AnimationSingleNode)
+            {
+                RiderMesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+            }
             auto* Instance=RiderMesh->GetSingleNodeInstance();
             if (!Instance || Instance->GetAnimationAsset()!=Desired)
             {
@@ -389,7 +406,12 @@ void ASteppeRiderCharacter::Look(const FInputActionValue& Value)
     Intent.LookInput=Value.Get<FVector2D>(); Riding->SetIntent(Intent);
     AddControllerYawInput(Intent.LookInput.X*LookSensitivity); AddControllerPitchInput(Intent.LookInput.Y*LookSensitivity);
 }
-void ASteppeRiderCharacter::Sprint(const FInputActionValue& Value) { Intent.bSprint=Value.Get<bool>(); Riding->SetIntent(Intent); }
+void ASteppeRiderCharacter::Sprint(const FInputActionValue& Value)
+{
+    Intent.bSprint=Value.Get<bool>();
+    Riding->SetIntent(Intent);
+    if (!Riding->IsMounted()) { GetCharacterMovement()->MaxWalkSpeed=Intent.bSprint?650.f:300.f; }
+}
 void ASteppeRiderCharacter::Brake(const FInputActionValue& Value) { Intent.bBrake=Value.Get<bool>(); Riding->SetIntent(Intent); }
 void ASteppeRiderCharacter::Interact()
 {
@@ -409,7 +431,15 @@ void ASteppeRiderCharacter::Interact()
 }
 void ASteppeRiderCharacter::ToggleDebug() { if (auto* PC=Cast<ASteppePlayerController>(Controller)) { PC->SteppeToggleDebug(); } }
 void ASteppeRiderCharacter::FocusTarget() { if (auto* PC=Cast<ASteppePlayerController>(Controller)) { PC->SteppeFocusTarget(); } }
-void ASteppeRiderCharacter::BeginLassoAim() { Lasso->BeginAim(); }
+void ASteppeRiderCharacter::BeginLassoAim()
+{
+    if (Lasso->State==ELassoState::Attached || Lasso->State==ELassoState::Subdued || Lasso->State==ELassoState::Captured)
+    {
+        Lasso->Release();
+        return;
+    }
+    Lasso->BeginAim();
+}
 void ASteppeRiderCharacter::EndLassoAim() { Lasso->CancelAim(); }
 void ASteppeRiderCharacter::ThrowLasso() { if (Lasso->State==ELassoState::Attached || Lasso->State==ELassoState::Subdued || Lasso->State==ELassoState::Captured) { Lasso->Release(); } else { Lasso->Throw(); } }
 void ASteppeRiderCharacter::BraceLasso(const FInputActionValue& Value) { Lasso->SetBracing(Value.Get<bool>()); }

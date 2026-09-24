@@ -39,6 +39,7 @@ bool URidingComponent::TryMount(ASteppeHorseCharacter* Horse)
     }
     const FVector PreviousMeshLocation=Rider->GetMesh()->GetComponentLocation();
     MountedHorse=Horse; Horse->MountedRider=Rider;
+    Rider->bUseControllerRotationYaw=false;
     Rider->ResetRidingInput();
     Rider->GetCharacterMovement()->StopMovementImmediately();
     Rider->GetCharacterMovement()->DisableMovement();
@@ -90,6 +91,8 @@ void URidingComponent::Dismount()
     Rider->SetActorLocationAndRotation(Exit,FRotator(0,Horse->GetActorRotation().Yaw,0),false,nullptr,ETeleportType::TeleportPhysics);
     Rider->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
     Rider->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+    Rider->GetCharacterMovement()->MaxWalkSpeed=300.f;
+    Rider->bUseControllerRotationYaw=true;
     Rider->BeginDismountVisualTransition(PreviousMeshLocation);
     Rider->ResetRidingInput(); Rider->RefreshInputContext();
 }
@@ -106,6 +109,8 @@ bool URidingComponent::ForceDismount(FVector LaunchVelocity)
     Rider->SetActorLocation(Horse->GetActorLocation()+Side*DismountOffset+FVector(0,0,120),false,nullptr,ETeleportType::TeleportPhysics);
     Rider->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
     Rider->GetCharacterMovement()->SetMovementMode(MOVE_Falling);
+    Rider->GetCharacterMovement()->MaxWalkSpeed=300.f;
+    Rider->bUseControllerRotationYaw=true;
     Rider->GetCharacterMovement()->Velocity=LaunchVelocity;
     Rider->ResetRidingInput(); Rider->RefreshInputContext();
     return true;
@@ -118,6 +123,8 @@ void URidingComponent::OnHorseDestroyed(AActor* Actor)
         Rider->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
         Rider->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
         Rider->GetCharacterMovement()->SetMovementMode(MOVE_Falling);
+        Rider->GetCharacterMovement()->MaxWalkSpeed=300.f;
+        Rider->bUseControllerRotationYaw=true;
         Rider->ResetRidingInput(); Rider->RefreshInputContext();
     }
 }

@@ -13,6 +13,7 @@ class ULassoComponent;
 class URiderBalanceComponent;
 class USteppeFeedbackComponent;
 class UAnimSequence;
+class URiderAnimInstance;
 struct FInputActionValue;
 
 USTRUCT(BlueprintType)
@@ -97,6 +98,11 @@ private:
     UPROPERTY() TObjectPtr<UAnimSequence> TemporaryMountedBraceAnimation;
     UPROPERTY() TObjectPtr<UAnimSequence> TemporaryOnFootThrowAnimation;
     UPROPERTY() TObjectPtr<UAnimSequence> TemporaryOnFootBraceAnimation;
+    UPROPERTY() TObjectPtr<UAnimSequence> TemporaryOnFootThrowWalkAnimation;
+    UPROPERTY() TObjectPtr<UAnimSequence> TemporaryOnFootThrowRunAnimation;
+    UPROPERTY() TObjectPtr<UAnimSequence> TemporaryOnFootBraceWalkAnimation;
+    UPROPERTY() TObjectPtr<UAnimSequence> TemporaryOnFootBraceRunAnimation;
+    UPROPERTY() TSubclassOf<URiderAnimInstance> RiderAnimClass;
     FRidingIntent Intent;
     FVector VisualTransitionStart = FVector::ZeroVector;
     float VisualTransitionRemaining = 0.f;

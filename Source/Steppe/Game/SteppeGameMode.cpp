@@ -428,13 +428,13 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
                 Target->Brain->SetComponentTickEnabled(true);
                 HerdManager->HandleFirstContactInteraction(Rider);
                 const FVector Direction=FVector(1,0,0);
-                FVector DeliveryLocation=Target->GetActorLocation()+Direction*650.f;
+                FVector DeliveryLocation=Target->GetActorLocation()+Direction*700.f;
                 DeliveryLocation.Z=Rider->GetActorLocation().Z;
                 DeliveryZone->SetActorLocation(DeliveryLocation);
                 Rider->SetActorLocation(DeliveryZone->GetActorLocation(),false,nullptr,ETeleportType::TeleportPhysics);
                 Rider->SetActorRotation(Direction.Rotation());
                 Rider->GetCharacterMovement()->Velocity=FVector::ZeroVector;
-                NewPlayer->SetControlRotation(FRotator(-10,180,0));
+                NewPlayer->SetControlRotation(FRotator(-10,0,0));
             }),8.65f,false);
             GetWorldTimerManager().SetTimer(LeadShotHandle,FTimerDelegate::CreateWeakLambda(this,[]()
             { FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeP10Lead.png"),true,false); }),9.4f,false);
@@ -445,9 +445,9 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
                 const FVector Center=Target->GetActorLocation()+FVector(250,0,0);
                 DeliveryZone->SetActorLocation(Center);
                 Rider->SetActorLocation(Center,false,nullptr,ETeleportType::TeleportPhysics);
-            }),12.6f,false);
+            }),14.2f,false);
             GetWorldTimerManager().SetTimer(CardShotHandle,FTimerDelegate::CreateWeakLambda(this,[]()
-            { FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeP10Card.png"),true,false); }),13.f,false);
+            { FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeP10Card.png"),true,false); }),14.6f,false);
             GetWorldTimerManager().SetTimer(NameHandle,FTimerDelegate::CreateWeakLambda(this,[this,NewPlayer]()
             {
                 auto* Target=HerdManager && !HerdManager->DeliveredHorses.IsEmpty()?HerdManager->DeliveredHorses[0].Get():nullptr;
@@ -460,7 +460,7 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
                     GetWorldTimerManager().SetTimer(CloseCardHandle,FTimerDelegate::CreateWeakLambda(PC,[PC]()
                     { PC->CloseHorseNaming(); }),.9f,false);
                 }
-            }),13.2f,false);
+            }),17.2f,false);
         }
         if (bPresentationSmoke)
         {
@@ -635,7 +635,7 @@ void ASteppeGameMode::HandleStartingNewPlayer_Implementation(APlayerController* 
                 FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeP14HorseModel.png"),true,false);
             }
             if (!bMetricsSmoke && !bHorseModelSmoke && !bGrasslandSmoke) { FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Screenshots/SteppeSmoke.png"),true,false); }
-        }),bGrasslandTraversalSmoke?58.5f:(bGrasslandSmoke?2.5f:(bHorseModelSmoke?1.5f:(bArchetypeSmoke?1.5f:(bHerdIdleSmoke?3.5f:(bVerticalFailureSmoke?4.f:(bFullLoopSequence?14.5f:(bPostCaptureSequence?10.f:7.f))))))),false);
-        GetWorldTimerManager().SetTimer(ExitHandle,FTimerDelegate::CreateWeakLambda(NewPlayer,[NewPlayer]() { NewPlayer->ConsoleCommand(TEXT("quit")); }),bGrasslandTraversalSmoke?60.f:(bGrasslandSmoke?4.f:(bHorseModelSmoke?3.f:(bArchetypeSmoke?3.f:(bHerdIdleSmoke?5.5f:(bVerticalFailureSmoke?6.f:(bFullLoopSequence?16.f:(bPostCaptureSequence?12.f:9.f))))))),false);
+        }),bGrasslandTraversalSmoke?58.5f:(bGrasslandSmoke?2.5f:(bHorseModelSmoke?1.5f:(bArchetypeSmoke?1.5f:(bHerdIdleSmoke?3.5f:(bVerticalFailureSmoke?4.f:(bFullLoopSequence?18.5f:(bPostCaptureSequence?10.f:7.f))))))),false);
+        GetWorldTimerManager().SetTimer(ExitHandle,FTimerDelegate::CreateWeakLambda(NewPlayer,[NewPlayer]() { NewPlayer->ConsoleCommand(TEXT("quit")); }),bGrasslandTraversalSmoke?60.f:(bGrasslandSmoke?4.f:(bHorseModelSmoke?3.f:(bArchetypeSmoke?3.f:(bHerdIdleSmoke?5.5f:(bVerticalFailureSmoke?6.f:(bFullLoopSequence?20.f:(bPostCaptureSequence?12.f:9.f))))))),false);
     }
 }

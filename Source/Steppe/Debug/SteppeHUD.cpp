@@ -23,7 +23,7 @@
 void ASteppeHUD::DrawHUD()
 {
     Super::DrawHUD();
-    DrawText(TEXT("STEPPE | W/S urge/slow  A/D reins  Mouse look  Shift sprint  Ctrl brake  E mount  Q target  RMB swing  LMB throw/release  Space brace  C capture  F1/F2"),FLinearColor::White,24,20,nullptr,.85f);
+    DrawText(TEXT("STEPPE  |  F1 details  F2 restart"),FLinearColor(1.f,1.f,1.f,.7f),18,16,nullptr,.75f);
     auto* Rider=PlayerOwner?Cast<ASteppeRiderCharacter>(PlayerOwner->GetPawn()):nullptr;
     auto* Mode=GetWorld()->GetAuthGameMode<ASteppeGameMode>();
     auto* Lasso=Rider?Rider->Lasso.Get():nullptr;
@@ -98,7 +98,7 @@ void ASteppeHUD::DrawHUD()
             DrawRect(FLinearColor(.12f,.12f,.12f,1),LassoX,147,520,8);
             DrawRect(BalanceColor,LassoX,147,520*NormalizedBalance,8);
         }
-        if (Rider->Feedback)
+        if (Rider->Feedback && GetWorld()->GetSubsystem<USteppeDebugSubsystem>()->IsHorseDebugEnabled())
         {
             const auto EventText=UEnum::GetDisplayValueAsText(Rider->Feedback->LastEvent).ToString().ToUpper();
             DrawRect(FLinearColor(0,0,0,.6f),LassoX-6,169,558,43);
@@ -345,7 +345,7 @@ void ASteppeHUD::DrawHUD()
                 if (Rider && Rider->Balance && Rider->Balance->State==ERiderBalanceState::Dragged)
                 {
                     ActionTitle=TEXT("YOU ARE BEING DRAGGED");
-                    ActionDetail=FString::Printf(TEXT("Hold Space to keep controlling the horse  |  LMB releases  |  stand in %.1f s"),Rider->Balance->DraggedRemaining);
+                    ActionDetail=FString::Printf(TEXT("Hold Space to keep controlling the horse  |  RMB releases  |  stand in %.1f s"),Rider->Balance->DraggedRemaining);
                     ActionColor=FLinearColor(1.f,.08f,.03f);
                 }
                 else if (Rider && Rider->Balance && Rider->Balance->State==ERiderBalanceState::Pulled)
@@ -379,7 +379,7 @@ void ASteppeHUD::DrawHUD()
                 else if (Rider && Rider->Balance && Rider->Balance->State==ERiderBalanceState::Warning)
                 {
                     ActionTitle=TEXT("HORSE IS PULLING YOU OFF BALANCE");
-                    ActionDetail=TEXT("Turn toward the rope or slow down  |  LMB releases the rope");
+                    ActionDetail=TEXT("Turn toward the rope or slow down  |  RMB releases the rope");
                     ActionColor=FLinearColor(1.f,.18f,.05f);
                 }
                 else if (Lasso->Tension>Lasso->UsefulTensionMax)
@@ -431,30 +431,29 @@ void ASteppeHUD::DrawHUD()
             {
                 ActionDetail+=TEXT("  |  OBSTACLE BEND IS SLOWING THE HORSE");
             }
-            if (!ActionTitle.IsEmpty())
+            if (!ActionTitle.IsEmpty() && (FocusHorse || PreviewHorse || (Lasso && Lasso->State!=ELassoState::Stored)))
             {
-                const float CardW=FMath::Min(760.f,Canvas->ClipX-36.f);
-                const float CardX=(Canvas->ClipX-CardW)*.5f;
-                const float CardY=Canvas->ClipY*.67f;
+                const float CardW=FMath::Min(480.f,Canvas->ClipX-36.f);
+                const float CardX=Canvas->ClipX-CardW-18.f;
                 const bool bRopeFight=Lasso && Lasso->State==ELassoState::Attached;
-                const float CardH=bRopeFight?128.f:76.f;
-                DrawRect(FLinearColor(0,0,0,.82f),CardX,CardY,CardW,CardH);
-                DrawRect(ActionColor,CardX,CardY,CardW,5.f);
-                DrawText(ActionTitle,ActionColor,CardX+22.f,CardY+13.f,nullptr,1.35f);
-                DrawText(ActionDetail,FLinearColor::White,CardX+22.f,CardY+48.f,nullptr,.95f);
+                const float CardH=bRopeFight?100.f:42.f;
+                const float CardY=Canvas->ClipY-CardH-90.f;
+                DrawRect(FLinearColor(0,0,0,.62f),CardX,CardY,CardW,CardH);
+                DrawRect(ActionColor,CardX,CardY,CardW,3.f);
+                DrawText(ActionTitle.Left(49),ActionColor,CardX+12.f,CardY+9.f,nullptr,1.f);
                 if (bRopeFight)
                 {
-                    const float BarX=CardX+150.f;
-                    const float BarW=CardW-174.f;
-                    const float TensionY=CardY+78.f;
-                    const float ControlY=CardY+104.f;
-                    DrawText(TEXT("TENSION"),FLinearColor::White,CardX+22.f,TensionY-4.f,nullptr,.85f);
+                    const float BarX=CardX+112.f;
+                    const float BarW=CardW-126.f;
+                    const float TensionY=CardY+48.f;
+                    const float ControlY=CardY+73.f;
+                    DrawText(TEXT("TENSION"),FLinearColor::White,CardX+12.f,TensionY-4.f,nullptr,.75f);
                     DrawRect(FLinearColor(.13f,.13f,.13f,1.f),BarX,TensionY,BarW,12.f);
                     DrawRect(FLinearColor(.12f,.6f,.16f,1.f),BarX+BarW*(Lasso->UsefulTensionMin/1.2f),TensionY,
                         BarW*((Lasso->UsefulTensionMax-Lasso->UsefulTensionMin)/1.2f),12.f);
                     const float MarkerX=BarX+BarW*FMath::Clamp(Lasso->Tension/1.2f,0.f,1.f);
                     DrawRect(FLinearColor::White,MarkerX-3.f,TensionY-4.f,6.f,20.f);
-                    DrawText(Lasso->OnFootSurrenderProgress>0.f?TEXT("SURRENDER"):TEXT("CALMING"),FLinearColor::White,CardX+22.f,ControlY-4.f,nullptr,.85f);
+                    DrawText(Lasso->OnFootSurrenderProgress>0.f?TEXT("SURRENDER"):TEXT("CALMING"),FLinearColor::White,CardX+12.f,ControlY-4.f,nullptr,.75f);
                     DrawRect(FLinearColor(.13f,.13f,.13f,1.f),BarX,ControlY,BarW,12.f);
                     DrawRect(FLinearColor(.2f,.65f,1.f,1.f),BarX,ControlY,BarW*FMath::Max(Lasso->ControlProgress,Lasso->OnFootSurrenderProgress),12.f);
                 }
@@ -486,7 +485,7 @@ void ASteppeHUD::DrawHUD()
             }
             if (Rider && Rider->Balance)
             {
-                if (Rider->Balance->State==ERiderBalanceState::Dragged) { Objective=TEXT("DRAGGED  Hold Space to control; LMB releases"); }
+                if (Rider->Balance->State==ERiderBalanceState::Dragged) { Objective=TEXT("DRAGGED  Hold Space to control; RMB releases"); }
                 else if (Rider->Balance->State==ERiderBalanceState::Pulled) { Objective=TEXT("PULLED ON FOOT  Run with the horse and hold Space"); }
                 else if (Rider->Balance->State==ERiderBalanceState::Falling) { Objective=TEXT("FALL  Release the rope and recover"); }
                 else if (Rider->Balance->State==ERiderBalanceState::Warning) { Objective=TEXT("BALANCE WARNING  Turn toward the rope or slow down"); }

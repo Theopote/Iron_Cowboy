@@ -160,7 +160,7 @@ bool ULassoComponent::CaptureWithHerd(ASteppeHerdManager* Herd)
     bBracing=false;
     Tension=0.f;
     ControlProgress=1.f;
-    Feedback=FString::Printf(TEXT("CAPTURED | herd secured %d | LMB stow"),Herd->CapturedCount);
+    Feedback=FString::Printf(TEXT("CAPTURED | herd secured %d | RMB stow"),Herd->CapturedCount);
     return true;
 }
 
@@ -294,7 +294,7 @@ void ULassoComponent::AttachHorse(ASteppeWildHorseCharacter* Horse, const FVecto
     RopeBendPoint=FVector::ZeroVector;
     RopeWrapClearTime=0.f;
     Horse->Brain->SetLassoed(true);
-    Feedback=FString::Printf(TEXT("%s PHYSICAL LOOP - Left Mouse to release"),*UEnum::GetDisplayValueAsText(HitZone).ToString().ToUpper());
+    Feedback=FString::Printf(TEXT("%s PHYSICAL LOOP - Right Mouse to release"),*UEnum::GetDisplayValueAsText(HitZone).ToString().ToUpper());
 }
 
 void ULassoComponent::UpdateRopeObstacle(float Dt)
@@ -366,7 +366,7 @@ void ULassoComponent::TickComponent(float Dt, ELevelTick TickType, FActorCompone
             {
                 Horse->Brain->SetCaptured(true);
                 CastChecked<UHorseMovementComponent>(Horse->GetCharacterMovement())->ClearExternalAcceleration();
-                Feedback=TEXT("CAPTURED | LMB stow lasso");
+                Feedback=TEXT("CAPTURED | RMB stow lasso");
                 return;
             }
             if (State==ELassoState::Subdued)

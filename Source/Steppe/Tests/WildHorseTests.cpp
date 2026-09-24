@@ -1126,8 +1126,12 @@ bool FRiderPresentationSocketsTest::RunTest(const FString& Parameters)
     const FVector RightKnee=Rider->GetMesh()->GetBoneLocation(TEXT("calf_r"));
     const float LeftKneeSide=FVector::DotProduct(LeftKnee-Horse->GetActorLocation(),Horse->GetActorRightVector());
     const float RightKneeSide=FVector::DotProduct(RightKnee-Horse->GetActorLocation(),Horse->GetActorRightVector());
+    UE_LOG(LogTemp,Display,TEXT("STEPPE_RIDER_LEGS: LeftFoot=%.1f RightFoot=%.1f LeftKnee=%.1f RightKnee=%.1f KneeZ=%.1f/%.1f FootZ=%.1f/%.1f"),
+        LeftSide,RightSide,LeftKneeSide,RightKneeSide,LeftKnee.Z,RightKnee.Z,LeftFoot.Z,RightFoot.Z);
     TestTrue(TEXT("Mounted knees bow to the correct outside of the horse"),
         LeftKneeSide<0.f && RightKneeSide>0.f);
+    TestTrue(TEXT("Mounted knees sit outside the lower-leg contacts"),
+        FMath::Abs(LeftKneeSide)>FMath::Abs(LeftSide)+5.f && FMath::Abs(RightKneeSide)>FMath::Abs(RightSide)+5.f);
     TestTrue(TEXT("Mounted lower legs remain close to the horse flanks"),
         FMath::Abs(LeftSide)<65.f && FMath::Abs(RightSide)<65.f);
     TestTrue(TEXT("Symmetric riding legs keep both feet at similar heights"),FMath::Abs(LeftFoot.Z-RightFoot.Z)<25.f);
@@ -1168,9 +1172,64 @@ bool FRiderPresentationSocketsTest::RunTest(const FString& Parameters)
     Rider->Riding->Dismount();
     TestTrue(TEXT("Safe dismount begins a visual transition"),Rider->IsVisualTransitionActive());
     Fixture.Step(.02f);
-    TestEqual(TEXT("On-foot rope control keeps a standing brace pose"),CurrentRiderAnimation(),FString(TEXT("RiderOnFootBrace_Pose")));
+    TestTrue(TEXT("On-foot rope control keeps a brace pose with the current gait"),
+        CurrentRiderAnimation().StartsWith(TEXT("RiderOnFootBrace_")));
     Fixture.Step(.5f);
     TestFalse(TEXT("Dismount visual transition settles without affecting gameplay"),Rider->IsVisualTransitionActive());
+    TestTrue(TEXT("On-foot movement keeps the rider facing while stepping backward"),
+        Rider->bUseControllerRotationYaw && !Rider->GetCharacterMovement()->bOrientRotationToMovement);
+    Rider->Lasso->State=ELassoState::Stored;
+    Rider->Lasso->bBracing=false;
+    Rider->GetCharacterMovement()->SetComponentTickEnabled(false);
+    Rider->GetCharacterMovement()->Velocity=FVector(220.f,0.f,0.f);
+    FVector MovingFootA=FVector::ZeroVector;
+    float FootMotion=0.f;
+    for (int32 Sample=0; Sample<10; ++Sample)
+    {
+        Fixture.Step(.1f);
+        const FVector Foot=Rider->GetActorTransform().InverseTransformPosition(Rider->GetFootLocation(true));
+        if (Sample>0) { FootMotion=FMath::Max(FootMotion,FVector::Dist(MovingFootA,Foot)); }
+        MovingFootA=Foot;
+    }
+    UE_LOG(LogTemp,Display,TEXT("STEPPE_RIDER_WALK: Base=%s MaxFootStep=%.1f Speed=%.1f"),
+        *CurrentRiderAnimation(),FootMotion,Rider->PresentationData.Speed);
+    TestEqual(TEXT("On-foot velocity selects the walk animation"),
+        CurrentRiderAnimation(),FString(TEXT("ThirdPersonWalk")));
+    TestTrue(TEXT("Walking moves the foot relative to the rider capsule"),FootMotion>2.f);
+    Rider->GetCharacterMovement()->Velocity=FVector(600.f,0.f,0.f);
+    float RunFootMotion=0.f;
+    for (int32 Sample=0; Sample<10; ++Sample)
+    {
+        Fixture.Step(.1f);
+        const FVector Foot=Rider->GetActorTransform().InverseTransformPosition(Rider->GetFootLocation(true));
+        RunFootMotion=FMath::Max(RunFootMotion,FVector::Dist(MovingFootA,Foot));
+        MovingFootA=Foot;
+    }
+    UE_LOG(LogTemp,Display,TEXT("STEPPE_RIDER_RUN: Base=%s MaxFootStep=%.1f Speed=%.1f"),
+        *CurrentRiderAnimation(),RunFootMotion,Rider->PresentationData.Speed);
+    TestEqual(TEXT("On-foot sprint velocity selects the run animation"),
+        CurrentRiderAnimation(),FString(TEXT("ThirdPersonRun")));
+    TestTrue(TEXT("Running moves the foot relative to the rider capsule"),RunFootMotion>2.f);
+    Rider->GetCharacterMovement()->Velocity=FVector::ZeroVector;
+    Rider->GetCharacterMovement()->SetComponentTickEnabled(true);
+    const FVector BackwardStart=Rider->GetActorLocation();
+    const FVector Facing=Rider->GetActorForwardVector();
+    const float FacingYaw=Rider->GetActorRotation().Yaw;
+    for (int32 Frame=0; Frame<30; ++Frame)
+    {
+        Rider->AddMovementInput(-Facing,1.f,true);
+        Fixture.Step(1.f/60.f);
+    }
+    TestTrue(TEXT("On-foot backward input moves opposite the facing direction"),
+        FVector::DotProduct(Rider->GetActorLocation()-BackwardStart,Facing)<-40.f);
+    TestTrue(TEXT("On-foot backward input does not rotate the rider"),
+        FMath::Abs(FMath::FindDeltaAngleDegrees(FacingYaw,Rider->GetActorRotation().Yaw))<1.f);
+    Rider->SetActorLocation(BackwardStart,false,nullptr,ETeleportType::TeleportPhysics);
+    Rider->GetCharacterMovement()->Velocity=FVector::ZeroVector;
+    TestTrue(TEXT("Rider can remount after using on-foot locomotion"),Rider->Riding->TryMount(Horse));
+    Fixture.Step(.2f);
+    TestNotNull(TEXT("Remount restores the mounted layered animation instance"),
+        Cast<URiderAnimInstance>(Rider->GetMesh()->GetAnimInstance()));
     return true;
 }
 #endif

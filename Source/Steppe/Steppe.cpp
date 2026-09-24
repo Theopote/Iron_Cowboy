@@ -60,16 +60,29 @@ class FSteppeModule final : public FDefaultGameModuleImpl
             {
                 for (UAnimGraphNode_TwoBoneIK* IK : ExistingIKNodes)
                 {
+                    FVector KneeTarget=FVector::ZeroVector;
                     if (IK->Node.IKBone.BoneName==TEXT("foot_l"))
                     {
                         // The mannequin mesh is yawed -90 degrees on the rider. In
                         // component space +X is the rider's left, so the old -X
                         // target folded this knee inward across the horse.
-                        IK->Node.JointTargetLocation=FVector(62.f,22.f,-32.f);
+                        KneeTarget=FVector(72.f,22.f,90.f);
                     }
                     else if (IK->Node.IKBone.BoneName==TEXT("foot_r"))
                     {
-                        IK->Node.JointTargetLocation=FVector(-62.f,22.f,-32.f);
+                        KneeTarget=FVector(-72.f,22.f,90.f);
+                    }
+                    if (!KneeTarget.IsZero())
+                    {
+                        IK->Node.JointTargetLocation=KneeTarget;
+                        for (UEdGraphPin* Pin : IK->Pins)
+                        {
+                            if (Pin && Pin->PinName==TEXT("JointTargetLocation"))
+                            {
+                                UE_LOG(LogSteppe,Display,TEXT("Rider knee pin %s old=%s"),*IK->Node.IKBone.BoneName.ToString(),*Pin->DefaultValue);
+                                Pin->DefaultValue=FString::Printf(TEXT("%f,%f,%f"),KneeTarget.X,KneeTarget.Y,KneeTarget.Z);
+                            }
+                        }
                     }
                 }
                 Graph->NotifyGraphChanged();
@@ -124,8 +137,8 @@ class FSteppeModule final : public FDefaultGameModuleImpl
                 IK->Node.IKBone.BoneName=Bones[Index];
                 IK->Node.EffectorLocationSpace=BCS_ComponentSpace;
                 IK->Node.JointTargetLocationSpace=BCS_ComponentSpace;
-                IK->Node.JointTargetLocation=Index==0?FVector(62.f,22.f,-32.f):
-                    (Index==1?FVector(-62.f,22.f,-32.f):FVector(0.f,70.f,35.f));
+                IK->Node.JointTargetLocation=Index==0?FVector(72.f,22.f,90.f):
+                    (Index==1?FVector(-72.f,22.f,90.f):FVector(0.f,70.f,35.f));
                 IK->Node.bAllowStretching=false;
                 IKCreator.Finalize();
                 IK->ReconstructNode();
